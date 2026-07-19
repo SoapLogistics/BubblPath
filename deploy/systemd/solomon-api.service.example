@@ -1,0 +1,17 @@
+[Unit]
+Description=Solomon API Gateway and Mnemosyne Runtime
+After=network.target
+
+[Service]
+Type=simple
+User=millerm
+WorkingDirectory=/home/millerm/Projects/JARVISWebUI
+EnvironmentFile=/etc/solomon/solomon.env
+ExecStart=/usr/bin/python3 app.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
