@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-07-19 18:32:53 UTC",
+  "checklist_count": 5,
+  "test_file_count": 1,
+  "unpinned_dependencies": [
+    "flask",
+    "openai"
+  ],
+  "pinned_dependencies": [],
+  "uses_deprecated_openai": true,
+  "total_procedures": 5,
+  "has_auth_protection": false
+}
