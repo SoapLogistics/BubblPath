@@ -62,7 +62,7 @@ class DoctrineImporter:
         if lines:
             summary = " ".join(lines[:3])[:250] + "..."
 
-        now_str = datetime.datetime.utcnow().isoformat() + "Z"
+        now_str = datetime.datetime.now(datetime.UTC).isoformat()
 
         card = KnowledgeCard(
             card_id=card_id,
@@ -110,7 +110,6 @@ class DoctrineImporter:
                         card = self.import_file(full_path)
                         imported_cards.append(card)
                     except Exception as e:
-                        # Log and continue so minor parsing issues in one file don't halt import
                         print(f"Error importing {full_path}: {e}")
 
         return imported_cards
