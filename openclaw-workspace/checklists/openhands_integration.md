@@ -68,3 +68,17 @@ If OpenHands encounters an unresolvable error, hangs, or fails the verification 
   ```
 - [ ] **4.3 Retry Protocol:** If the error is a transient timeout, retry exactly once with a more specific, narrowed task prompt.
 - [ ] **4.4 Human Escalation:** If the retry fails or the codebase remains broken, record details in `ERROR_STATE.md` and transition the task state to `PAUSED_BLOCKED`.
+
+## [PROPOSED] Self-Healing Protocol
+- Before executing tool deployments, execute port diagnostics and resolve binding conflicts as detailed in RC-E54E3141:
+  > Failure Reference: FC-4F1AF4AE
+  > Root Cause: A rogue node server was listening on port 3000, preventing Docker socket binding.
+  > Remediation Actions:
+  > Set environment variables to port 3001, or run: kill $(lsof -t -i :3000) before launch.
+
+## [PROPOSED] Self-Healing Protocol
+- Before executing tool deployments, execute port diagnostics and resolve binding conflicts as detailed in RC-2AA6ECFD:
+  > Failure Reference: FC-FB54ADD6
+  > Root Cause: A rogue node server was listening on port 3000, preventing Docker socket binding.
+  > Remediation Actions:
+  > Set environment variables to port 3001, or run: kill $(lsof -t -i :3000) before launch.

@@ -80,8 +80,8 @@ def test_search_ranking_and_security_filtering(repo_and_services):
     # card1 must be ranked higher since it matched in the Title (weight 10 vs body weight 2)
     assert results[0]["card_id"] == "KC-SRC-1"
     assert results[1]["card_id"] == "KC-SRC-2"
-    assert "Matched terms in Title" in results[0]["explanation"]
-    assert "Matched terms in Body" in results[1]["explanation"]
+    assert "Lexical Title matches" in results[0]["explanation"]
+    assert "Lexical Body matches" in results[1]["explanation"]
 
     # 2. Test Security Classification Filtering
     restricted_results = repo.search("OpenHands timeout", security_classification="RESTRICTED")

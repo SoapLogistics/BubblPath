@@ -2,13 +2,19 @@ import re
 from typing import List, Dict, Any, Optional
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
+from solomon_knowledge_cards.api.embeddings import SemanticEmbedder
 
 class CardRepository:
-    def __init__(self, db_manager: DatabaseManager):
+    def __init__(self, db_manager: DatabaseManager, embedder: Optional[SemanticEmbedder] = None):
         self.db_manager = db_manager
+        self.embedder = embedder or SemanticEmbedder()
 
     def create_card(self, card: KnowledgeCard, creator: str = "system", reason: Optional[str] = None) -> None:
-        """Creates a new card in the storage layer."""
+        """Creates a new card, automatically generating and attaching its embedding vector."""
+        if "embedding" not in card.extra_metadata or not card.extra_metadata["embedding"]:
+            combined_text = f"{card.title} {card.summary} {card.body}"
+            card.extra_metadata["embedding"] = self.embedder.get_embedding(combined_text)
+
         self.db_manager.store_card(card, updater=creator, reason=reason or "Initial creation")
 
     def get_card(self, card_id: str) -> Optional[KnowledgeCard]:
@@ -16,7 +22,10 @@ class CardRepository:
         return self.db_manager.get_card(card_id)
 
     def update_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
-        """Updates an existing card in the database, appending to revision history."""
+        """Updates a card, regenerating its embedding vector."""
+        combined_text = f"{card.title} {card.summary} {card.body}"
+        card.extra_metadata["embedding"] = self.embedder.get_embedding(combined_text)
+
         existing = self.db_manager.get_card(card.card_id)
         if not existing:
             raise ValueError(f"Card {card.card_id} does not exist. Use create_card first.")
@@ -31,13 +40,19 @@ class CardRepository:
         return self.db_manager.list_all_cards(include_deleted=include_deleted)
 
     def link_cards(self, source_id: str, target_id: str, link_type: str, updater: str = "system", reason: Optional[str] = None) -> None:
-        """Links two cards together (e.g. source_id links to target_id with link_type)."""
+        """Links two cards together."""
         source_card = self.db_manager.get_card(source_id)
         target_card = self.db_manager.get_card(target_id)
         if not source_card:
             raise ValueError(f"Source card {source_id} does not exist.")
         if not target_card:
             raise ValueError(f"Target card {target_id} does not exist.")
+
+        # Accept newly extended semantic link types
+        # Validate that link_type is a valid link relation
+        supported_links = {"PARENT", "RELATED", "SUPERSEDES", "DEPENDS_ON", "PREVENTS", "ENHANCES", "PROPOSES_UPDATE_TO"}
+        if link_type not in supported_links:
+            raise ValueError(f"Unsupported link type: {link_type}")
 
         if link_type == "PARENT":
             if target_id not in source_card.parent_card_ids:
@@ -46,24 +61,47 @@ class CardRepository:
             if target_id not in source_card.related_card_ids:
                 source_card.related_card_ids.append(target_id)
         else:
-            raise ValueError(f"Unsupported link type: {link_type}")
+            # Custom linking relations stored inside extra_metadata for backward-compatible models
+            if "links" not in source_card.extra_metadata:
+                source_card.extra_metadata["links"] = []
+            link_record = {"target_id": target_id, "link_type": link_type}
+            if link_record not in source_card.extra_metadata["links"]:
+                source_card.extra_metadata["links"].append(link_record)
 
-        self.db_manager.store_card(source_card, updater=updater, reason=reason or f"Linked to {target_id}")
+        self.db_manager.store_card(source_card, updater=updater, reason=reason or f"Linked to {target_id} via {link_type}")
 
     def get_related_cards(self, card_id: str) -> List[KnowledgeCard]:
-        """Retrieves linked parent and related cards of a given card."""
+        """Retrieves linked parent, related, and other semantic cards of a given card."""
         card = self.get_card(card_id)
         if not card:
             return []
         related = []
+        seen = set()
+
         for p_id in card.parent_card_ids:
-            p_card = self.get_card(p_id)
-            if p_card:
-                related.append(p_card)
+            if p_id not in seen:
+                p_card = self.get_card(p_id)
+                if p_card:
+                    related.append(p_card)
+                    seen.add(p_id)
+
         for r_id in card.related_card_ids:
-            r_card = self.get_card(r_id)
-            if r_card:
-                related.append(r_card)
+            if r_id not in seen:
+                r_card = self.get_card(r_id)
+                if r_card:
+                    related.append(r_card)
+                    seen.add(r_id)
+
+        # Retrieve custom link targets as well
+        custom_links = card.extra_metadata.get("links", [])
+        for link in custom_links:
+            target_id = link.get("target_id")
+            if target_id and target_id not in seen:
+                t_card = self.get_card(target_id)
+                if t_card:
+                    related.append(t_card)
+                    seen.add(target_id)
+
         return related
 
     def retrieve_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
@@ -92,7 +130,7 @@ class CardRepository:
         return results
 
     def search_by_source(self, source_id: str) -> List[KnowledgeCard]:
-        """Returns all cards associated with a given source ID (e.g. worker report or task id)."""
+        """Returns all cards associated with a given source ID."""
         results = []
         for c in self.list_cards():
             if source_id in c.source_ids:
@@ -107,32 +145,31 @@ class CardRepository:
         security_classification: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Performs keyword-based search with field weighting, ranking, and explanation.
-        Query terms are matched against title, summary, body, tags, and 'why_created', 'problem_solved'.
+        Performs hybrid semantic-lexical search with weighted scoring.
+        Calculates lexical scores (keywords) and dense cosine similarity scores.
         """
         all_cards = self.list_cards()
         ranked_results = []
 
-        # Tokenize query
+        # Tokenize query for lexical search
         terms = [t.lower() for t in re.findall(r'\w+', query)] if query else []
 
+        # Generate query embedding
+        query_vector = self.embedder.get_embedding(query) if query else None
+
         for card in all_cards:
-            # Type filter
             if card_type and card.card_type.upper() != card_type.upper():
                 continue
-
-            # Tags filter (must match at least one if tags filter is provided)
             if tags and not any(t.lower() in [ct.lower() for ct in card.tags] for t in tags):
                 continue
-
-            # Security classification filter
             if security_classification and card.security_classification != security_classification:
                 continue
 
-            score = 0.0
+            lexical_score = 0.0
+            semantic_score = 0.0
             explanations = []
 
-            # Keyword matching and scoring
+            # 1. Lexical Matching
             if terms:
                 title_matches = 0
                 summary_matches = 0
@@ -140,62 +177,68 @@ class CardRepository:
                 tag_matches = 0
                 rationale_matches = 0
 
-                # Title (weight: 10)
                 for term in terms:
                     count = card.title.lower().count(term)
                     if count > 0:
                         title_matches += count
-                        score += count * 10.0
+                        lexical_score += count * 10.0
                 if title_matches:
-                    explanations.append(f"Matched terms in Title ({title_matches} times, +{title_matches * 10:.1f} pts)")
+                    explanations.append(f"Lexical Title matches ({title_matches}x, +{title_matches * 10:.1f} pts)")
 
-                # Summary (weight: 5)
                 for term in terms:
                     count = card.summary.lower().count(term)
                     if count > 0:
                         summary_matches += count
-                        score += count * 5.0
+                        lexical_score += count * 5.0
                 if summary_matches:
-                    explanations.append(f"Matched terms in Summary ({summary_matches} times, +{summary_matches * 5:.1f} pts)")
+                    explanations.append(f"Lexical Summary matches ({summary_matches}x, +{summary_matches * 5:.1f} pts)")
 
-                # Body (weight: 2)
                 for term in terms:
                     count = card.body.lower().count(term)
                     if count > 0:
                         body_matches += count
-                        score += count * 2.0
+                        lexical_score += count * 2.0
                 if body_matches:
-                    explanations.append(f"Matched terms in Body ({body_matches} times, +{body_matches * 2:.1f} pts)")
+                    explanations.append(f"Lexical Body matches ({body_matches}x, +{body_matches * 2:.1f} pts)")
 
-                # Tags (weight: 8)
                 for term in terms:
                     for tag in card.tags:
                         if term in tag.lower():
                             tag_matches += 1
-                            score += 8.0
+                            lexical_score += 8.0
                 if tag_matches:
-                    explanations.append(f"Matched terms in Tags ({tag_matches} times, +{tag_matches * 8:.1f} pts)")
+                    explanations.append(f"Lexical Tags matches ({tag_matches}x, +{tag_matches * 8:.1f} pts)")
 
-                # Rationale / "Why does this exist" fields (weight: 6)
                 for term in terms:
                     for field_val in [card.why_created, card.problem_solved, card.future_work_dependent]:
                         count = field_val.lower().count(term)
                         if count > 0:
                             rationale_matches += count
-                            score += count * 6.0
+                            lexical_score += count * 6.0
                 if rationale_matches:
-                    explanations.append(f"Matched terms in Rationale fields ({rationale_matches} times, +{rationale_matches * 6:.1f} pts)")
+                    explanations.append(f"Lexical Rationale matches ({rationale_matches}x, +{rationale_matches * 6:.1f} pts)")
+
+            # 2. Semantic Embedding Matching
+            card_vector = card.extra_metadata.get("embedding")
+            if query_vector and card_vector:
+                similarity = self.embedder.cosine_similarity(query_vector, card_vector)
+                # Map negative similarity to 0.0, keep range [0.0, 1.0]
+                semantic_score = max(0.0, similarity)
+                explanations.append(f"Semantic similarity: {semantic_score:.3f} (+{semantic_score * 60.0:.1f} pts)")
+
+            # Combine scores: 40% lexical + 60% semantic (where semantic is scaled to [0.0, 60.0])
+            # If no query string is provided, use card confidence score
+            if query:
+                base_score = (lexical_score * 0.4) + (semantic_score * 60.0)
             else:
-                # If no query string, base score is confidence * 10
-                score = card.confidence * 10.0
-                explanations.append(f"Default ranking based on confidence score (Score: {score:.1f})")
+                base_score = card.confidence * 10.0
+                explanations.append(f"Default confidence rank (+{base_score:.1f} pts)")
 
-            # Multiply or adjust score by card confidence to factor correctness
-            confidence_multiplier = 0.5 + (card.confidence * 0.5)  # maps [0,1] to [0.5, 1]
-            final_score = score * confidence_multiplier
+            # Factor confidence as a multiplier
+            confidence_multiplier = 0.5 + (card.confidence * 0.5)
+            final_score = base_score * confidence_multiplier
 
-            if terms and final_score == 0.0:
-                # Filter out completely irrelevant results when keyword search is active
+            if query and final_score == 0.0:
                 continue
 
             explanation_str = "; ".join(explanations) if explanations else "No matched terms."
@@ -210,6 +253,5 @@ class CardRepository:
                 "explanation": f"{explanation_str} [Confidence Multiplier: {confidence_multiplier:.2f}]"
             })
 
-        # Rank by score descending, then by confidence descending
         ranked_results.sort(key=lambda x: (x["score"], x["confidence"]), reverse=True)
         return ranked_results

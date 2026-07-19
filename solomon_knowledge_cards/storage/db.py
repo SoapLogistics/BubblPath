@@ -110,7 +110,18 @@ class DatabaseManager:
                             (1, datetime.datetime.now(datetime.UTC).isoformat())
                         )
 
-                # Any future migrations can go here (e.g., if current_version < 2: ...)
+                # Re-query current version to apply sequential migrations
+                cursor.execute("SELECT MAX(version) FROM schema_version")
+                current_version = cursor.fetchone()[0]
+
+                # Migration 2: Add optional embedding column
+                if current_version < 2:
+                    with conn:
+                        conn.execute("ALTER TABLE cards ADD COLUMN embedding TEXT;")
+                        conn.execute(
+                            "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
+                            (2, datetime.datetime.now(datetime.UTC).isoformat())
+                        )
 
             finally:
                 conn.close()
@@ -130,6 +141,10 @@ class DatabaseManager:
                 cursor.execute("SELECT count(*) FROM cards WHERE card_id = ?", (card.card_id,))
                 exists = cursor.fetchone()[0] > 0
 
+                # Extract embedding if present in extra_metadata
+                embedding_list = card.extra_metadata.get("embedding")
+                embedding_json = json.dumps(embedding_list) if embedding_list else None
+
                 meta_json = json.dumps(card.extra_metadata)
 
                 if not exists:
@@ -139,14 +154,14 @@ class DatabaseManager:
                             card_id, card_type, schema_version, title, summary, body, status,
                             confidence, validation_state, created_at, updated_at, created_by,
                             source_type, security_classification, evidence, supersedes, superseded_by,
-                            why_created, problem_solved, future_work_dependent, extra_metadata, deleted
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                            why_created, problem_solved, future_work_dependent, extra_metadata, deleted, embedding
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
                     """, (
                         card.card_id, card.card_type, card.schema_version, card.title, card.summary,
                         card.body, card.status, card.confidence, card.validation_state, card.created_at,
                         card.updated_at, card.created_by, card.source_type, card.security_classification,
                         card.evidence, card.supersedes, card.superseded_by, card.why_created,
-                        card.problem_solved, card.future_work_dependent, meta_json
+                        card.problem_solved, card.future_work_dependent, meta_json, embedding_json
                     ))
                     revision_num = 1
                 else:
@@ -156,14 +171,15 @@ class DatabaseManager:
                             card_type = ?, schema_version = ?, title = ?, summary = ?, body = ?, status = ?,
                             confidence = ?, validation_state = ?, updated_at = ?, source_type = ?,
                             security_classification = ?, evidence = ?, supersedes = ?, superseded_by = ?,
-                            why_created = ?, problem_solved = ?, future_work_dependent = ?, extra_metadata = ?
+                            why_created = ?, problem_solved = ?, future_work_dependent = ?, extra_metadata = ?,
+                            embedding = ?
                         WHERE card_id = ? AND deleted = 0
                     """, (
                         card.card_type, card.schema_version, card.title, card.summary, card.body, card.status,
                         card.confidence, card.validation_state, card.updated_at, card.source_type,
                         card.security_classification, card.evidence, card.supersedes, card.superseded_by,
                         card.why_created, card.problem_solved, card.future_work_dependent, meta_json,
-                        card.card_id
+                        embedding_json, card.card_id
                     ))
                     # Get next revision number
                     cursor.execute("SELECT COALESCE(MAX(revision_number), 0) FROM card_revisions WHERE card_id = ?", (card.card_id,))
@@ -180,7 +196,6 @@ class DatabaseManager:
                     conn.execute("INSERT OR IGNORE INTO card_sources (card_id, source_id) VALUES (?, ?)", (card.card_id, s_id))
 
                 # Manage card links
-                # Remove existing links of link_type "PARENT" or "RELATED" from this source_id
                 conn.execute("DELETE FROM card_links WHERE source_id = ? AND link_type IN ('PARENT', 'RELATED')", (card.card_id,))
                 for p_id in card.parent_card_ids:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'PARENT')", (card.card_id, p_id))
@@ -236,6 +251,10 @@ class DatabaseManager:
                 card_data["related_card_ids"] = [r[0] for r in cursor.fetchall()]
 
                 card_data["extra_metadata"] = json.loads(card_data["extra_metadata"]) if card_data.get("extra_metadata") else {}
+
+                # Retrieve embedding column if present and populate in extra_metadata
+                if "embedding" in card_data and card_data["embedding"]:
+                    card_data["extra_metadata"]["embedding"] = json.loads(card_data["embedding"])
 
                 return KnowledgeCard.from_dict(card_data)
             finally:

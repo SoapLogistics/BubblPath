@@ -10,7 +10,9 @@ SUPPORTED_CARD_TYPES = {
     "FAILURE",
     "REPAIR",
     "DECISION",
-    "SKILL"
+    "SKILL",
+    "RESEARCH",
+    "PROPOSAL"
 }
 
 # Validation states
