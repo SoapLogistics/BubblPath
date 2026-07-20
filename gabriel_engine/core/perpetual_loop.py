@@ -16,6 +16,7 @@ from gabriel_engine.core.capability_extraction import CapabilityExtractionEngine
 from gabriel_engine.core.assimilation_decision import AssimilationDecisionEngine
 from gabriel_engine.core.independent_construction import CleanRoomBuilder
 from gabriel_engine.core.crucible import Crucible
+from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
 
 class GabrielPerpetualLoop:
     """
@@ -32,6 +33,7 @@ class GabrielPerpetualLoop:
         self.decision_engine = AssimilationDecisionEngine()
         self.builder = CleanRoomBuilder()
         self.crucible = Crucible()
+        self.registry = DynamicCapabilityRegistry()
 
         # Database state mirrors
         self.acquisition_records: Dict[str, AcquisitionRecord] = {}
@@ -122,6 +124,16 @@ class GabrielPerpetualLoop:
                 }
                 cap.implementation_status = "independently_implemented" if action == "REIMPLEMENT" else "integrated"
 
+                # DYNAMIC DIRECTIVE: Fold the new code directly into self (import dynamically)
+                try:
+                    self.registry.register_and_save(cap.name, native_code)
+                    self.registry.load_capability(cap.name)
+                    fold_status = "SUCCESS"
+                except Exception as e:
+                    fold_status = f"FAILED: {str(e)}"
+            else:
+                fold_status = "SKIPPED_NOT_PROMOTED"
+
             # Run in the Crucible validation lab
             report = self.crucible.run_validation(
                 capability_name=cap.name,
@@ -133,6 +145,7 @@ class GabrielPerpetualLoop:
                 "capability_name": cap.name,
                 "utility_score": round(score, 3),
                 "chosen_action": action,
+                "fold_into_self_status": fold_status,
                 "decision_metrics": decision_metrics,
                 "requirements_packet_preview": req_packet[:200] + "..." if req_packet else "",
                 "native_code_preview": native_code[:200] + "..." if native_code else "",

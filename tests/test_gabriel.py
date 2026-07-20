@@ -242,6 +242,40 @@ def test_crucible_and_perpetual_loop():
         assert loop_res["loop_learning_summary"]["lane_assigned"] == "GREEN"
 
 
+def test_dynamic_execution_layer():
+    """
+    Verifies that we can dynamically load and execute newly assimilated capabilities.
+    """
+    mock_code = """class DynamicMathHelper:
+    def add_numbers(self, a, b):
+        return a + b
+"""
+    # 1. Register and save code
+    gabriel_loop.registry.register_and_save("mock_math_helper", mock_code)
+
+    # 2. Execute via the Registry directly
+    result = gabriel_loop.registry.execute_capability(
+        capability_name="mock_math_helper",
+        class_name="DynamicMathHelper",
+        method_name="add_numbers",
+        method_args=[15, 27]
+    )
+    assert result == 42
+
+    # 3. Execute via HTTP API endpoint
+    client = app.test_client()
+    res = client.post("/api/gabriel/execute", json={
+        "capability_name": "mock_math_helper",
+        "class_name": "DynamicMathHelper",
+        "method_name": "add_numbers",
+        "method_args": [100, 200]
+    })
+    assert res.status_code == 200
+    payload = json.loads(res.data)
+    assert payload["status"] == "success"
+    assert payload["result"] == 300
+
+
 def test_flask_endpoints():
     """
     Verify app Flask endpoints structure and responses.

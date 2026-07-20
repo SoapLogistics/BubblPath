@@ -72,6 +72,53 @@ def assimilate():
         }), 500
 
 
+@app.route("/api/gabriel/execute", methods=["POST"])
+def execute_assimilated_code():
+    """
+    Dynamically executes any code capability that has been assimilated and folded into self.
+    """
+    data = request.json or {}
+    capability_name = data.get("capability_name")
+    class_name = data.get("class_name")
+    method_name = data.get("method_name")
+
+    if not capability_name or not class_name or not method_name:
+        return jsonify({
+            "status": "error",
+            "message": "Parameters 'capability_name', 'class_name', and 'method_name' are required."
+        }), 400
+
+    init_args = data.get("init_args", [])
+    init_kwargs = data.get("init_kwargs", {})
+    method_args = data.get("method_args", [])
+    method_kwargs = data.get("method_kwargs", {})
+
+    try:
+        result = gabriel_loop.registry.execute_capability(
+            capability_name=capability_name,
+            class_name=class_name,
+            method_name=method_name,
+            init_args=init_args,
+            init_kwargs=init_kwargs,
+            method_args=method_args,
+            method_kwargs=method_kwargs
+        )
+        return jsonify({
+            "status": "success",
+            "capability": capability_name,
+            "class": class_name,
+            "method": method_name,
+            "result": result
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "status": "error",
+            "message": f"Execution failed: {str(e)}",
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 @app.route("/api/gabriel/records", methods=["GET"])
 def get_records():
     """
