@@ -8,6 +8,7 @@ from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.extractor.extractor import KnowledgeExtractor
 from solomon_knowledge_cards.api.review import ReviewGate
 from solomon_knowledge_cards.migrator.importer import DoctrineImporter
+from solomon_autonomous_daemon import SolomonAutonomousDaemon
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -27,7 +28,6 @@ client = OpenAI(api_key=api_key) if api_key else None
 DEFAULT_MODEL = os.environ.get("SOLOMON_MODEL", "gpt-3.5-turbo")
 
 # Run Doctrine Importer on startup to load standard operational checklists
-# Rather than checking if the DB is empty, check whether each file has already been imported
 try:
     importer = DoctrineImporter(db_manager)
     checklists_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "openclaw-workspace", "checklists"))
@@ -48,6 +48,13 @@ try:
                     print(f"Doctrine Importer successfully imported checklist: {file}")
 except Exception as e:
     print(f"Warning: Doctrine Importer failed during startup: {e}")
+
+# Start the 24/7 Autonomous Optimization Daemon
+try:
+    daemon = SolomonAutonomousDaemon(DB_PATH, interval_seconds=60)
+    daemon.start()
+except Exception as e:
+    print(f"Warning: Failed to start autonomous optimization daemon: {e}")
 
 
 @app.route("/chat", methods=["POST"])

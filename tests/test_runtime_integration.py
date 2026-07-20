@@ -9,6 +9,7 @@ os.environ["OPENAI_API_KEY"] = "mock-key"
 
 from app import app, DB_PATH
 from solomon_knowledge_cards.models.card import KnowledgeCard
+from solomon_autonomous_daemon import SolomonAutonomousDaemon
 
 @pytest.fixture
 def client():
@@ -224,3 +225,26 @@ def test_worker_report_extraction_and_review_flow(client):
     rej_data = rej_resp.get_json()
     assert rej_data["status"] == "DEPRECATED"
     assert rej_data["validation_state"] == "INVALID"
+
+def test_autonomous_optimization_daemon(tmp_path):
+    test_db = str(tmp_path / "daemon_test.db")
+    import sqlite3
+    conn = sqlite3.connect(test_db)
+    conn.execute("CREATE TABLE dummy (id INTEGER PRIMARY KEY);")
+    conn.commit()
+    conn.close()
+
+    daemon = SolomonAutonomousDaemon(test_db, interval_seconds=1)
+
+    # Execute single cycle and evaluate results
+    metrics = daemon.execute_optimization_cycle()
+    assert metrics["database_vacuumed"] is True
+    assert "timestamp" in metrics
+    assert "ram_info" in metrics
+    assert metrics["bytecode_pruned"] >= 0
+
+    # Daemon background thread lifecycle
+    daemon.start()
+    assert daemon.is_running is True
+    daemon.stop()
+    assert daemon.is_running is False
