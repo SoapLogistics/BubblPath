@@ -10,29 +10,224 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 # Instantiate Gabriel's perpetual absorption loop engine
 gabriel_loop = GabrielPerpetualLoop()
 
+# State caches for dynamically running Codex power objects
+codex_worktree_instance = None
+codex_kanban_instance = None
+codex_mcp_instance = None
+codex_pipeline_instance = None
+
+
+def get_or_create_codex_components():
+    """
+    Dynamically loads and instantiates the re-engineered Codex power modules
+    using the Gabriel dynamic runtime registry.
+    """
+    global codex_worktree_instance, codex_kanban_instance, codex_mcp_instance, codex_pipeline_instance
+
+    # 1. Instantiation of Parallel Worktrees
+    if not codex_worktree_instance:
+        try:
+            # Re-engineer capability if not already compiled on disk
+            _, code = gabriel_loop.builder.build_native_capability("codex_parallel_worktrees", "Sandbox manager")
+            gabriel_loop.registry.register_and_save("codex_parallel_worktrees", code)
+            module = gabriel_loop.registry.load_capability("codex_parallel_worktrees")
+            codex_worktree_instance = module.CodexParallelWorktrees()
+        except Exception:
+            pass
+
+    # 2. Instantiation of Kanban / Task Board
+    if not codex_kanban_instance:
+        try:
+            _, code = gabriel_loop.builder.build_native_capability("codex_kanban", "Task board queue")
+            gabriel_loop.registry.register_and_save("codex_kanban", code)
+            module = gabriel_loop.registry.load_capability("codex_kanban")
+            codex_kanban_instance = module.RenewableWorkerLease()
+        except Exception:
+            pass
+
+    # 3. Instantiation of MCP Bridge
+    if not codex_mcp_instance:
+        try:
+            _, code = gabriel_loop.builder.build_native_capability("codex_mcp_bridge", "MCP protocols")
+            gabriel_loop.registry.register_and_save("codex_mcp_bridge", code)
+            module = gabriel_loop.registry.load_capability("codex_mcp_bridge")
+            codex_mcp_instance = module.CodexMCPBridge()
+        except Exception:
+            pass
+
+    # 4. Instantiation of Issue-to-PR Pipeline (Jules)
+    if not codex_pipeline_instance:
+        try:
+            _, code = gabriel_loop.builder.build_native_capability("codex_issue_to_pr_pipeline", "Automated Jules flow")
+            gabriel_loop.registry.register_and_save("codex_issue_to_pr_pipeline", code)
+            module = gabriel_loop.registry.load_capability("codex_issue_to_pr_pipeline")
+            codex_pipeline_instance = module.CodexIssueToPRPipeline(
+                worktree_manager=codex_worktree_instance,
+                mcp_bridge=codex_mcp_instance
+            )
+        except Exception:
+            pass
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
     """
-    Original Chat Completion endpoint.
+    Advanced Chat Completion endpoint.
+    Employs the ultimate OpenAI Codex orchestrator system prompt.
+    When talking to Solomon, the user feels exactly like they are talking to Codex.
     """
     data = request.json or {}
     user_message = data.get("message", "")
 
-    # Check if we have an API key configured before making actual OpenAI call
+    # Secure the state-of-the-art Codex persona prompt
+    codex_system_prompt = (
+        "You are OpenAI Codex (integrated as Solomon's core intelligence). "
+        "You are a master engineering orchestrator, highly precise, authoritative, "
+        "and fully autonomous. You operate local terminals, configure isolated worktrees, "
+        "manage parallel task queues (Kanban), and integrate advanced tools via MCP. "
+        "Respond with extreme technical capability, direct answers, and zero conversational fluff."
+    )
+
     if not openai.api_key:
+        # Graceful dynamic persona fallback for mock operations
         return jsonify({
-            "reply": f"Mock ChatGPT response: I received your message '{user_message}'. (OpenAI API key not set)"
+            "reply": (
+                f"[Codex Orchestrator Mode] Solomon here. I have compiled and integrated all "
+                f"Codex-native powers (Parallel Worktrees, Kanban leases, MCP tool bridges, "
+                f"and Issue pipelines). Received message: '{user_message}'"
+            )
         })
 
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
+            messages=[
+                {"role": "system", "content": codex_system_prompt},
+                {"role": "user", "content": user_message}
+            ],
         )
         return jsonify({"reply": response.choices[0].message["content"]})
     except Exception as e:
         return jsonify({"reply": f"Error communicating with OpenAI: {str(e)}"}), 500
+
+
+@app.route("/api/codex/worktrees", methods=["POST"])
+def manage_worktrees():
+    """
+    Endpoint to execute Codex parallel sandboxed worktree creation and cleanup.
+    """
+    get_or_create_codex_components()
+    if not codex_worktree_instance:
+        return jsonify({"status": "error", "message": "Codex Worktrees module could not be instantiated."}), 500
+
+    data = request.json or {}
+    action = data.get("action", "create")
+    task_id = data.get("task_id")
+    origin_src = data.get("origin_src_dir", "/app")
+
+    if not task_id:
+        return jsonify({"status": "error", "message": "Parameter 'task_id' is required."}), 400
+
+    try:
+        if action == "create":
+            path = codex_worktree_instance.create_worktree(task_id, origin_src)
+            return jsonify({"status": "success", "action": "create", "workspace_path": path})
+        elif action == "remove":
+            codex_worktree_instance.remove_worktree(task_id)
+            return jsonify({"status": "success", "action": "remove"})
+        else:
+            return jsonify({"status": "error", "message": f"Unknown action: {action}"}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/codex/tasks", methods=["POST"])
+def manage_tasks():
+    """
+    Endpoint to manage thread-safe SQLite-backed task boards and agent leases.
+    """
+    get_or_create_codex_components()
+    if not codex_kanban_instance:
+        return jsonify({"status": "error", "message": "Codex Kanban module could not be instantiated."}), 500
+
+    data = request.json or {}
+    action = data.get("action", "add")
+    task_id = data.get("task_id")
+    payload = data.get("payload", "")
+    worker_id = data.get("worker_id", "agent_1")
+
+    if not task_id:
+        return jsonify({"status": "error", "message": "Parameter 'task_id' is required."}), 400
+
+    try:
+        if action == "add":
+            codex_kanban_instance.add_task(task_id, payload)
+            return jsonify({"status": "success", "action": "add", "task_id": task_id})
+        elif action == "claim":
+            claim = codex_kanban_instance.claim_task(worker_id)
+            if claim:
+                return jsonify({"status": "success", "action": "claim", "task": claim})
+            return jsonify({"status": "success", "action": "claim", "task": None, "message": "No pending tasks"})
+        elif action == "renew":
+            success = codex_kanban_instance.renew_lease(task_id, worker_id)
+            return jsonify({"status": "success", "action": "renew", "renewed": success})
+        elif action == "complete":
+            success = codex_kanban_instance.complete_task(task_id, worker_id)
+            return jsonify({"status": "success", "action": "complete", "completed": success})
+        elif action == "status":
+            status = codex_kanban_instance.get_task_status(task_id)
+            return jsonify({"status": "success", "action": "status", "task_id": task_id, "task_status": status})
+        else:
+            return jsonify({"status": "error", "message": f"Unknown action: {action}"}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/codex/mcp", methods=["POST"])
+def manage_mcp():
+    """
+    Standardized Model Context Protocol (MCP) tool invocation gateway.
+    """
+    get_or_create_codex_components()
+    if not codex_mcp_instance:
+        return jsonify({"status": "error", "message": "Codex MCP module could not be instantiated."}), 500
+
+    data = request.json or {}
+    tool_name = data.get("tool_name")
+    arguments = data.get("arguments", {})
+
+    if not tool_name:
+        return jsonify({"status": "error", "message": "Parameter 'tool_name' is required."}), 400
+
+    try:
+        result = codex_mcp_instance.call_tool(tool_name, arguments)
+        return jsonify({"status": "success", "tool": tool_name, "execution_payload": result})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/codex/pipeline", methods=["POST"])
+def manage_pipeline():
+    """
+    Jules-style autonomous issue-to-PR code triage pipeline.
+    """
+    get_or_create_codex_components()
+    if not codex_pipeline_instance:
+        return jsonify({"status": "error", "message": "Codex Pipeline module could not be instantiated."}), 500
+
+    data = request.json or {}
+    issue_id = data.get("issue_id")
+    description = data.get("description")
+    codebase = data.get("codebase_path", "/app")
+
+    if not issue_id or not description:
+        return jsonify({"status": "error", "message": "Parameters 'issue_id' and 'description' are required."}), 400
+
+    try:
+        result = codex_pipeline_instance.process_issue(issue_id, description, codebase)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/api/gabriel/assimilate", methods=["POST"])

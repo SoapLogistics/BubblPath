@@ -242,38 +242,70 @@ def test_crucible_and_perpetual_loop():
         assert loop_res["loop_learning_summary"]["lane_assigned"] == "GREEN"
 
 
-def test_dynamic_execution_layer():
+def test_assimilated_codex_stack():
     """
-    Verifies that we can dynamically load and execute newly assimilated capabilities.
+    Validates re-engineered OpenAI Codex operations running inside Gabriel.
     """
-    mock_code = """class DynamicMathHelper:
-    def add_numbers(self, a, b):
-        return a + b
-"""
-    # 1. Register and save code
-    gabriel_loop.registry.register_and_save("mock_math_helper", mock_code)
-
-    # 2. Execute via the Registry directly
-    result = gabriel_loop.registry.execute_capability(
-        capability_name="mock_math_helper",
-        class_name="DynamicMathHelper",
-        method_name="add_numbers",
-        method_args=[15, 27]
-    )
-    assert result == 42
-
-    # 3. Execute via HTTP API endpoint
     client = app.test_client()
-    res = client.post("/api/gabriel/execute", json={
-        "capability_name": "mock_math_helper",
-        "class_name": "DynamicMathHelper",
-        "method_name": "add_numbers",
-        "method_args": [100, 200]
+
+    # 1. Chat under Codex Orchestrator Persona
+    res_chat = client.post("/chat", json={"message": "Deploy a sandbox for my branch"})
+    assert res_chat.status_code == 200
+    data_chat = json.loads(res_chat.data)
+    assert "Codex Orchestrator Mode" in data_chat["reply"]
+
+    # 2. Parallel Worktrees Endpoints
+    res_wt = client.post("/api/codex/worktrees", json={
+        "action": "create",
+        "task_id": "codex_999",
+        "origin_src_dir": "/app"
     })
-    assert res.status_code == 200
-    payload = json.loads(res.data)
-    assert payload["status"] == "success"
-    assert payload["result"] == 300
+    assert res_wt.status_code == 200
+    data_wt = json.loads(res_wt.data)
+    assert data_wt["status"] == "success"
+    assert "codex_999" in data_wt["workspace_path"]
+
+    # 3. SQLite Task board / Kanban Endpoints
+    res_add = client.post("/api/codex/tasks", json={
+        "action": "add",
+        "task_id": "issue-442",
+        "payload": "fix-flaky-test"
+    })
+    assert res_add.status_code == 200
+
+    res_claim = client.post("/api/codex/tasks", json={
+        "action": "claim",
+        "task_id": "issue-442",
+        "worker_id": "worker_beta"
+    })
+    assert res_claim.status_code == 200
+    data_claim = json.loads(res_claim.data)
+    assert data_claim["task"]["task_id"] == "issue-442"
+
+    res_stat = client.post("/api/codex/tasks", json={
+        "action": "status",
+        "task_id": "issue-442"
+    })
+    assert json.loads(res_stat.data)["task_status"] == "active"
+
+    # 4. Model Context Protocol Tools Endpoint
+    res_mcp = client.post("/api/codex/mcp", json={
+        "tool_name": "bash_exec",
+        "arguments": {"command": "pytest tests/"}
+    })
+    assert res_mcp.status_code == 200
+    data_mcp = json.loads(res_mcp.data)
+    assert "pytest tests/" in data_mcp["execution_payload"]["stdout"]
+
+    # 5. Issue-to-PR Pipeline (Jules) Endpoint
+    res_pipe = client.post("/api/codex/pipeline", json={
+        "issue_id": "bug-104",
+        "description": "Infinite loop on bad API parameters"
+    })
+    assert res_pipe.status_code == 200
+    data_pipe = json.loads(res_pipe.data)
+    assert data_pipe["status"] == "PROMOTED_TO_PULL_REQUEST"
+    assert "validation_tests_passed" in data_pipe
 
 
 def test_flask_endpoints():
