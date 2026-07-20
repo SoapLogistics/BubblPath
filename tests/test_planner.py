@@ -5,6 +5,7 @@ import pytest
 
 # Configure a unique test DB path at module level BEFORE importing app
 os.environ["SOLOMON_DB_PATH"] = "test_planner_only.db"
+os.environ["SOLOMON_ACTIONS_API_KEY"] = "secure_test_key"
 
 from app import app, db_manager, repository
 from solomon_knowledge_cards.models.card import KnowledgeCard
@@ -26,14 +27,15 @@ def planner_client():
 def test_planner_safeguard_and_arbitration(planner_client):
     client, repo = planner_client
     now_str = datetime.datetime.now(datetime.UTC).isoformat()
+    headers = {"Authorization": "Bearer secure_test_key"}
 
     # -------------------------------------------------------------
     # 1. Test baseline planning without memory context
     # -------------------------------------------------------------
-    response = client.post("/planner/draft", json={
+    response = client.post("/api/command-center/planner/draft", json={
         "task_id": "T-PLAN-01",
         "objective": "Deploy openhands container to port 3000"
-    })
+    }, headers=headers)
     assert response.status_code == 201
     data = json.loads(response.data)
     plan = data["plan"]
@@ -63,10 +65,10 @@ def test_planner_safeguard_and_arbitration(planner_client):
     # -------------------------------------------------------------
     # 3. Test planning WITH memory context (pre-emptive safeguard injection)
     # -------------------------------------------------------------
-    response_with_memory = client.post("/planner/draft", json={
+    response_with_memory = client.post("/api/command-center/planner/draft", json={
         "task_id": "T-PLAN-02",
         "objective": "Deploy openhands container to port 3000"
-    })
+    }, headers=headers)
     assert response_with_memory.status_code == 201
     data_wm = json.loads(response_with_memory.data)
     plan_wm = data_wm["plan"]
@@ -80,10 +82,10 @@ def test_planner_safeguard_and_arbitration(planner_client):
     # -------------------------------------------------------------
     # 4. Test plan execution and Tool Configuration Arbitration
     # -------------------------------------------------------------
-    exec_response = client.post("/planner/execute", json={
+    exec_response = client.post("/api/command-center/planner/execute", json={
         "plan_id": plan_wm["plan_id"],
         "port": 3000
-    })
+    }, headers=headers)
     assert exec_response.status_code == 200
     exec_data = json.loads(exec_response.data)
     assert exec_data["plan_status"] == "EXECUTED"

@@ -1,0 +1,33 @@
+{
+  "engine": "Solomon Autonomous OS",
+  "last_audit_timestamp": "2026-07-20T09:21:46.302292+00:00",
+  "capabilities": {
+    "Memory Card Engine (Project Mnemosyne)": {
+      "status": "ACTIVE",
+      "submodules": [
+        "solomon_knowledge_cards/models",
+        "solomon_knowledge_cards/storage",
+        "solomon_knowledge_cards/api",
+        "solomon_knowledge_cards/migrator",
+        "solomon_knowledge_cards/extractor"
+      ]
+    },
+    "Planning & Safeguards Engine (Project Prometheus)": {
+      "status": "ACTIVE",
+      "submodules": [
+        "solomon_knowledge_cards/planner"
+      ]
+    },
+    "Secure Edge Proxy Boundary": {
+      "status": "ACTIVE",
+      "files": [
+        "solomon-proxy.js"
+      ]
+    }
+  },
+  "telemetry": {
+    "total_monitored_source_files": 29,
+    "total_source_lines_of_code": 3750,
+    "exposed_secure_endpoints_count": 9
+  }
+}
