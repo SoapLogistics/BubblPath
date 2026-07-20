@@ -9,6 +9,9 @@ from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.extractor.extractor import KnowledgeExtractor
 from solomon_knowledge_cards.api.review import ReviewGate
 from solomon_knowledge_cards.migrator.importer import DoctrineImporter
+from solomon_knowledge_cards.planner.engine import DynamicPlanner
+from solomon_knowledge_cards.planner.arbiter import ToolArbiter
+from solomon_knowledge_cards.planner.models import TaskPlan
 
 app = Flask(__name__)
 
@@ -18,6 +21,8 @@ db_manager = DatabaseManager(DB_FILE)
 repository = CardRepository(db_manager)
 extractor = KnowledgeExtractor()
 review_gate = ReviewGate(db_manager)
+planner = DynamicPlanner(repository)
+arbiter = ToolArbiter(repository)
 
 # Safe bootstrap import of legacy checklists on startup
 importer = DoctrineImporter(db_manager)
@@ -27,7 +32,6 @@ if os.path.exists(CHECKLISTS_DIR):
         if f.endswith(".md"):
             full_path = os.path.join(CHECKLISTS_DIR, f)
             card_id = importer.parse_card_id(full_path, "")
-            # Verify if already imported to prevent duplicate operations
             if not db_manager.get_card(card_id, include_deleted=True):
                 try:
                     importer.import_file(full_path)
@@ -35,18 +39,18 @@ if os.path.exists(CHECKLISTS_DIR):
                 except Exception as e:
                     print(f"[Bootstrap] Error importing {full_path}: {e}")
 
+# Global memory storage for active/draft plans since plans can remain in-memory or be saved to extra_metadata
+active_plans: dict[str, TaskPlan] = {}
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json or {}
     user_message = data.get("message", "")
     clearance = data.get("clearance", "INTERNAL")  # PUBLIC, INTERNAL, RESTRICTED
 
-    # 1. Retrieve related approved operational guidance
     memories_str = ""
     if user_message:
-        # Search approved guidelines matching user query
         search_results = repository.search(user_message, security_classification=clearance)
-        # Filters to only include APPROVED or ACTIVE guidance
         filtered_results = [
             res for res in search_results
             if res["card"]["status"] in ("APPROVED", "ACTIVE")
@@ -67,7 +71,6 @@ def chat():
                 )
             memories_str = "\n\n".join(ctx_blocks)
 
-    # 2. Assemble Context-Augmented Prompt
     system_prompt = (
         "You are Solomon, a highly capable, self-improving autonomous AI operating system. "
         "Use the retrieved memory cards below (which represent approved legacy operating checklists, "
@@ -82,7 +85,6 @@ def chat():
         {"role": "user", "content": user_message}
     ]
 
-    # 3. Query OpenAI
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
         try:
@@ -95,7 +97,6 @@ def chat():
         except Exception as e:
             reply = f"Error querying OpenAI API: {e}"
     else:
-        # Mock reply if API key is not configured for local integration testing
         reply = (
             f"[MOCK REPLY - NO API KEY] Received user query: '{user_message}'. "
             f"Retrieved {len(filtered_results) if user_message and 'filtered_results' in locals() else 0} memory blocks."
@@ -174,11 +175,9 @@ def list_cards():
                 tags=tags_filter,
                 security_classification=security
             )
-            # Format outputs as a list of match records
             return jsonify({"results": results}), 200
         else:
             cards = repository.list_cards()
-            # Apply basic manual filters if present
             if card_type:
                 cards = [c for c in cards if c.card_type.upper() == card_type.upper()]
             if tag:
@@ -189,6 +188,87 @@ def list_cards():
             return jsonify({"cards": [c.to_dict() for c in cards]}), 200
     except Exception as e:
         return jsonify({"error": f"Failed to list cards: {e}"}), 500
+
+# -------------------------------------------------------------
+# Phase 3C: Planning & Safeguards Endpoints
+# -------------------------------------------------------------
+
+@app.route("/planner/draft", methods=["POST"])
+def draft_task_plan():
+    """Formulates a new TaskPlan with pre-emptive safeguards matching the objective."""
+    data = request.json or {}
+    task_id = data.get("task_id")
+    objective = data.get("objective")
+
+    if not task_id or not objective:
+        return jsonify({"error": "Missing 'task_id' or 'objective' parameters."}), 400
+
+    try:
+        plan = planner.draft_plan(task_id, objective)
+        active_plans[plan.plan_id] = plan
+        return jsonify({
+            "message": "Draft plan formulated successfully.",
+            "plan": plan.to_dict()
+        }), 201
+    except Exception as e:
+        return jsonify({"error": f"Plan formulation failed: {e}"}), 500
+
+@app.route("/planner/execute", methods=["POST"])
+def execute_task_plan():
+    """Simulates plan execution, running tool configuration arbitrations on steps."""
+    data = request.json or {}
+    plan_id = data.get("plan_id")
+    mock_port_config = data.get("port", 3000)
+    mock_timeout_config = data.get("timeout_seconds", 30)
+
+    if not plan_id:
+        return jsonify({"error": "Missing 'plan_id' parameter."}), 400
+
+    plan = active_plans.get(plan_id)
+    if not plan:
+        return jsonify({"error": f"Plan {plan_id} not found."}), 404
+
+    execution_history = []
+
+    try:
+        # Simulate execution of steps sequentially
+        for step in plan.steps:
+            action = step["action"]
+            tool = step["tool"]
+
+            # Execute Tool arbitration configuration if tool matches
+            if tool in ("openhands_run", "bash_run"):
+                base_config = {"port": mock_port_config, "timeout_seconds": mock_timeout_config}
+                optimized = arbiter.arbitrate_tool_config(action, base_config)
+
+                step_log = {
+                    "step_number": step["step_number"],
+                    "action": action,
+                    "tool": tool,
+                    "config_applied": optimized,
+                    "status": "COMPLETED"
+                }
+            else:
+                step_log = {
+                    "step_number": step["step_number"],
+                    "action": action,
+                    "tool": tool,
+                    "status": "COMPLETED"
+                }
+            execution_history.append(step_log)
+
+        plan.status = "EXECUTED"
+        plan.updated_at = datetime.datetime.now(datetime.UTC).isoformat()
+
+        return jsonify({
+            "message": f"Plan {plan_id} successfully executed.",
+            "plan_status": plan.status,
+            "execution_history": execution_history
+        }), 200
+    except Exception as e:
+        plan.status = "FAILED"
+        plan.updated_at = datetime.datetime.now(datetime.UTC).isoformat()
+        return jsonify({"error": f"Execution failed: {e}", "plan_status": plan.status}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))

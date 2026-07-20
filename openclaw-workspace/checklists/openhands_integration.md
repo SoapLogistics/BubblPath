@@ -82,3 +82,10 @@ If OpenHands encounters an unresolvable error, hangs, or fails the verification 
   > Root Cause: A rogue node server was listening on port 3000, preventing Docker socket binding.
   > Remediation Actions:
   > Set environment variables to port 3001, or run: kill $(lsof -t -i :3000) before launch.
+
+## [PROPOSED] Self-Healing Protocol
+- Before executing tool deployments, execute port diagnostics and resolve binding conflicts as detailed in RC-AC5ECE59:
+  > Failure Reference: FC-E4F13329
+  > Root Cause: A rogue node server was listening on port 3000, preventing Docker socket binding.
+  > Remediation Actions:
+  > Set environment variables to port 3001, or run: kill $(lsof -t -i :3000) before launch.

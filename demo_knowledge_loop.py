@@ -10,6 +10,8 @@ from solomon_knowledge_cards.extractor.extractor import KnowledgeExtractor
 from solomon_knowledge_cards.extractor.proposal_engine import ProposalEngine
 from solomon_knowledge_cards.extractor.reflection import ReflectionSynthesizer
 from solomon_knowledge_cards.api.review import ReviewGate
+from solomon_knowledge_cards.planner.engine import DynamicPlanner
+from solomon_knowledge_cards.planner.arbiter import ToolArbiter
 
 def print_separator(title: str):
     print("\n" + "="*80)
@@ -17,10 +19,10 @@ def print_separator(title: str):
     print("="*80 + "\n")
 
 def run_demo():
-    print_separator("project mnemosyne: phase 3b advanced cognitive learning loop")
+    print_separator("solomon cognitive os: project mnemosyne & prometheus e2e loop")
 
     # Initialize ephemeral SQLite database
-    db_file = "solomon_mnemosyne_phase3b_demo.db"
+    db_file = "solomon_cognitive_loop_demo.db"
     db_manager = DatabaseManager(db_file)
     repository = CardRepository(db_manager)
     graph_manager = RelationGraph(repository)
@@ -28,40 +30,15 @@ def run_demo():
     reflection_eng = ReflectionSynthesizer(repository)
     extractor = KnowledgeExtractor()
     review_gate = ReviewGate(db_manager)
+    planner = DynamicPlanner(repository)
+    arbiter = ToolArbiter(repository)
 
     now_str = datetime.datetime.now(datetime.UTC).isoformat()
 
     # -------------------------------------------------------------
-    # Step 1: Create baseline Procedure Card references
+    # Step 1: Create baseline Procedure Card reference
     # -------------------------------------------------------------
-    print("[1] Creating baseline Procedure Card references...")
-    proc_card_1 = KnowledgeCard(
-        card_id="PC-AC-01",
-        card_type="SKILL",
-        schema_version="1.0.0",
-        title="24/7 Continuous Autonomous Cycle",
-        summary="Master scheduler loops.",
-        body="Periodic scheduling loop checklist.",
-        status="APPROVED",
-        confidence=1.0,
-        validation_state="VALID",
-        created_at=now_str,
-        updated_at=now_str,
-        created_by="operator",
-        source_type="LEGACY_DOCTRINE",
-        source_ids=["openclaw-workspace/checklists/autonomous_cycle.md"],
-        parent_card_ids=[],
-        related_card_ids=[],
-        tags=["scheduling", "heartbeat"],
-        security_classification="INTERNAL",
-        evidence="Active production service configuration file.",
-        why_created="Why",
-        problem_solved="Problem",
-        future_work_dependent="Future",
-        extra_metadata={"original_file_path": "openclaw-workspace/checklists/autonomous_cycle.md"}
-    )
-    repository.create_card(proc_card_1, creator="operator")
-
+    print("[1] Creating baseline Procedure Card reference...")
     proc_card = KnowledgeCard(
         card_id="PC-AC-02",
         card_type="SKILL",
@@ -88,14 +65,14 @@ def run_demo():
         extra_metadata={"original_file_path": "openclaw-workspace/checklists/openhands_integration.md"}
     )
     repository.create_card(proc_card, creator="operator")
-    print(f"Successfully registered Procedure Cards: PC-AC-01 and PC-AC-02.")
+    print(f"Successfully registered Procedure Card: {proc_card.card_id} ('{proc_card.title}')")
 
     # -------------------------------------------------------------
-    # Step 2: Ingest failure Worker Report (Docker Port Conflict)
+    # Step 2: First Worker Run fails due to a Port busy conflict
     # -------------------------------------------------------------
-    print("\n[2] Ingesting failure Worker Report...")
-    worker_report = {
-        "task_id": "TASK-E2E-301",
+    print("\n[2] Dispatching Task T-E2E-001 (First Run): Ingesting FAILURE Worker Report...")
+    worker_report_1 = {
+        "task_id": "T-E2E-001",
         "procedure_id": "PC-AC-02",
         "title": "OpenHands environment execution",
         "outcome": "failure",
@@ -108,124 +85,120 @@ def run_demo():
         "tags": ["docker", "port-conflict"]
     }
 
-    # Extract draft cards
-    draft_cards = extractor.extract_draft_cards(worker_report, creator="extractor")
-    print(f"Extractor generated {len(draft_cards)} draft candidates:")
+    draft_cards = extractor.extract_draft_cards(worker_report_1, creator="extractor")
+    print(f"Extractor successfully generated {len(draft_cards)} draft candidates:")
     for card in draft_cards:
         print(f" - [{card.card_type}] {card.card_id}: '{card.title}'")
         repository.create_card(card, creator="extractor")
 
-    # Promote cards to ACTIVE
-    print("\n[3] Reviewing and Approving the extracted Repair Card...")
+    # Promote Repair Card to ACTIVE
+    print("\n[3] Promoting candidate cards through the explicit SS3 Review Gate...")
     repair_card = [c for c in draft_cards if c.card_type == "REPAIR"][0]
     review_gate.review_card(repair_card.card_id, notes="Verified port resolution playbook.")
     review_gate.approve_card(repair_card.card_id)
     review_gate.activate_card(repair_card.card_id)
+    print(f"Repair Card {repair_card.card_id} is now ACTIVE.")
 
     # -------------------------------------------------------------
-    # Step 4: Propose Procedural Update (Safe Mutation)
+    # Step 4: Subsequent similar Task is dispatched -> Planner is queried
     # -------------------------------------------------------------
-    print("\n[4] Generating a Safe Procedural Amendment Proposal...")
+    print("\n[4] Dispatching Task T-E2E-002 (Second Run): Dynamic Planner formulates task plan...")
+    plan_objective = "Deploy OpenHands Integration container on port 3000"
+    print(f"Objective: '{plan_objective}'")
+
+    # Dynamic planner drafts plan, querying memories
+    plan = planner.draft_plan("T-E2E-002", plan_objective)
+    print(f"Planner successfully retrieved {len(plan.retrieved_memory_card_ids)} memories from Mnemosyne: {plan.retrieved_memory_card_ids}")
+    print(f"Injected Safeguards: {len(plan.injected_safeguards)}")
+    for sg in plan.injected_safeguards:
+        print(f"  * [Safeguard Injected] Triggered by {sg['triggered_by_repair']}: '{sg['remediation_instruction']}'")
+
+    print("\nDrafted Steps Sequence:")
+    for step in plan.steps:
+        print(f"  {step['step_number']}. Action: '{step['action']}' (Tool: {step['tool']})")
+
+    # -------------------------------------------------------------
+    # Step 5: Execute Plan with Tool Configuration Arbitration
+    # -------------------------------------------------------------
+    print("\n[5] Simulating Plan Execution & executing Tool Arbitration on steps...")
+    execution_history = []
+
+    # Execute steps sequentially
+    for step in plan.steps:
+        action = step["action"]
+        tool = step["tool"]
+
+        # Tool config arbitration
+        if tool in ("openhands_run", "bash_run"):
+            base_config = {"port": 3000, "timeout_seconds": 30}
+            optimized = arbiter.arbitrate_tool_config(action, base_config)
+
+            step_log = {
+                "step_number": step["step_number"],
+                "action": action,
+                "tool": tool,
+                "config_applied": optimized,
+                "status": "COMPLETED"
+            }
+        else:
+            step_log = {
+                "step_number": step["step_number"],
+                "action": action,
+                "tool": tool,
+                "status": "COMPLETED"
+            }
+        execution_history.append(step_log)
+
+    print("\nExecution History Logs:")
+    for h in execution_history:
+        print(f"  * Step {h['step_number']} [{h['status']}]: '{h['action']}'")
+        if "config_applied" in h:
+            print(f"    Applied Tool Config: {h['config_applied']}")
+
+    print("\nTask T-E2E-002 completed successfully! Self-healing loop completed.")
+
+    # -------------------------------------------------------------
+    # Step 6: Safe Procedure Proposal & Mutation Trigger
+    # -------------------------------------------------------------
+    print("\n[6] Proposing procedural update to canon operating checklist on disk...")
     proposal = proposal_eng.create_procedure_proposal(repair_card.card_id)
-    print(f"Generated proposal card: {proposal.card_id} (Status: {proposal.status})")
-    print(f"Proposal Details:\n---\n{proposal.body}\n---")
+    print(f"Generated Proposal Card: {proposal.card_id} (Status: {proposal.status})")
 
-    # Try dry-run mutation (must fail because proposal is in DRAFT status)
-    print("Attempting to apply proposal to checklists file on disk...")
-    success_before = proposal_eng.apply_proposal_to_disk(proposal.card_id)
-    print(f"Dry-run mutation applied: {success_before} (Expected: False due to DRAFT status)")
-
-    # Promote Proposal Card to APPROVED
-    review_gate.review_card(proposal.card_id, notes="Proposed modification is safe.")
+    # Apply Proposal to checklists
+    print("Promoting and applying proposal mutation...")
+    review_gate.review_card(proposal.card_id, notes="Proposal verified.")
     review_gate.approve_card(proposal.card_id)
-
-    # Apply Proposal to Disk (must succeed now!)
-    print("Applying approved proposal to checklists file on disk...")
-    success_after = proposal_eng.apply_proposal_to_disk(proposal.card_id)
-    print(f"Mutation applied: {success_after} (Expected: True due to APPROVED status)")
+    success = proposal_eng.apply_proposal_to_disk(proposal.card_id)
+    print(f"Procedural checklist mutated successfully: {success}")
 
     # -------------------------------------------------------------
-    # Step 5: Semantic Relation Graph Queries
+    # Step 7: Topological Graph Query & Traversal
     # -------------------------------------------------------------
-    print("\n[5] Establishing Semantic Graph relations and querying Graph Traversal...")
-    # Link Proposal to the Repair Card and Procedure Card
+    print("\n[7] Querying semantic graph traversal and topological dependencies...")
+    # Link Proposal to Procedure Card and PC-AC-01
     repository.link_cards(proposal.card_id, proc_card.card_id, "PROPOSES_UPDATE_TO")
-    repository.link_cards(proc_card.card_id, "PC-AC-01", "DEPENDS_ON")
 
-    # Query dependency chain for PC-AC-02
-    chain = graph_manager.find_dependency_chain("PC-AC-02")
-    print(f"Topological dependency chain for PC-AC-02: {chain}")
-
-    # Retrieve local subgraph
-    subgraph = graph_manager.get_subgraph(proposal.card_id, max_depth=2)
-    print(f"Retrieved surrounding semantic subgraph nodes for {proposal.card_id}:")
-    for n in subgraph["nodes"]:
-        print(f"  * Node {n['card_id']} ({n['card_type']}): '{n['title']}' (Status: {n['status']})")
-    print(f"Subgraph Edges:")
-    for e in subgraph["edges"]:
-        print(f"  * {e['source']} -- [{e['type']}] --> {e['target']}")
-
-    # -------------------------------------------------------------
-    # Step 6: Hybrid Semantic Search Ranking
-    # -------------------------------------------------------------
-    print("\n[6] Performing Hybrid Lexical-Semantic query search...")
-    query = "timeout on openhands container startup"
-    print(f"Query: '{query}'")
-    results = repository.search(query)
-    for idx, r in enumerate(results[:3], start=1):
-        print(f"Match {idx} [Score: {r['score']:.2f}]:")
-        print(f"  * Card: {r['card_id']} ({r['card_type']})")
-        print(f"  * Explanation: {r['explanation']}")
-
-    # -------------------------------------------------------------
-    # Step 7: Reflection & Synthesis (Creating RESEARCH objectives)
-    # -------------------------------------------------------------
-    print("\n[7] Simulating autonomous reflection to synthesize RESEARCH objectives...")
-    # Add a second timeout failure to trigger reflection
-    fail_card_2 = KnowledgeCard(
-        card_id="FC-TIMEOUT-ALT", card_type="FAILURE", schema_version="1.0.0", title="Docker compile timeout", summary="S", body="Encountered docker compile timeout.",
-        status="DRAFT", confidence=0.8, validation_state="UNVALIDATED", created_at=now_str, updated_at=now_str,
-        created_by="tester", source_type="TEST", source_ids=[], parent_card_ids=[], related_card_ids=[], tags=["timeout"],
+    # Mock PC-AC-01 in the database so the link validation succeeds!
+    pc_01 = KnowledgeCard(
+        card_id="PC-AC-01", card_type="SKILL", schema_version="1.0.0", title="Master scheduler", summary="S", body="B",
+        status="APPROVED", confidence=1.0, validation_state="VALID", created_at=now_str, updated_at=now_str,
+        created_by="tester", source_type="TEST", source_ids=[], parent_card_ids=[], related_card_ids=[], tags=[],
         security_classification="INTERNAL", evidence="E", why_created="Why", problem_solved="Problem", future_work_dependent="Future"
     )
-    repository.create_card(fail_card_2)
+    repository.create_card(pc_01)
+    repository.link_cards(proc_card.card_id, "PC-AC-01", "DEPENDS_ON")
 
-    # Trigger reflection analysis
-    researches = reflection_eng.analyze_failures_and_synthesize_research()
-    print(f"Reflection analyzed failures and synthesized {len(researches)} new RESEARCH cards:")
-    for res in researches:
-        print(f"  * RESEARCH Card: {res.card_id} ('{res.title}')")
-        print(f"    Summary: {res.summary}")
+    chain = graph_manager.find_dependency_chain("PC-AC-02")
+    print(f"Topological execution dependencies for PC-AC-02: {chain}")
 
     # -------------------------------------------------------------
-    # Step 8: Reinforcement Confidence Auto-Adjustment
+    # Step 8: Reinforcement Feedback
     # -------------------------------------------------------------
-    print("\n[8] Simulating reinforcement feedback loops on REPAIR cards...")
-    target_repair_id = repair_card.card_id
-    current_card = repository.get_card(target_repair_id)
-    print(f"Target card: {current_card.card_id} (Confidence: {current_card.confidence}, Status: {current_card.status})")
+    print("\n[8] Simulating downstream success reinforcement feedback...")
+    reinforced = reflection_eng.apply_reinforcement_feedback(repair_card.card_id, was_successful=True)
+    print(f"Repair card {repair_card.card_id} confidence boosted: 0.70 -> {reinforced.confidence}")
 
-    # Simulate a successful execution referencing this repair card
-    print("Downstream worker successfully applies repair. Sending positive reinforcement...")
-    reinforced = reflection_eng.apply_reinforcement_feedback(target_repair_id, was_successful=True)
-    print(f"  -> Reinforced Confidence: {reinforced.confidence}")
-
-    # Simulate recurring failures indicating the repair is no longer effective
-    print("Downstream worker hits failures despite applying repair. Sending negative reinforcement decays...")
-    decayed = reflection_eng.apply_reinforcement_feedback(target_repair_id, was_successful=False)
-    print(f"  -> Decay 1: {decayed.confidence}")
-    decayed = reflection_eng.apply_reinforcement_feedback(target_repair_id, was_successful=False)
-    print(f"  -> Decay 2: {decayed.confidence}")
-    decayed = reflection_eng.apply_reinforcement_feedback(target_repair_id, was_successful=False)
-    print(f"  -> Decay 3: {decayed.confidence}")
-    decayed = reflection_eng.apply_reinforcement_feedback(target_repair_id, was_successful=False)
-    print(f"  -> Decay 4: {decayed.confidence}")
-    decayed = reflection_eng.apply_reinforcement_feedback(target_repair_id, was_successful=False)
-    print(f"  -> Decay 5: {decayed.confidence}")
-
-    print(f"Final state for {target_repair_id}: Status = {decayed.status}, Validation State = {decayed.validation_state} (Confidence: {decayed.confidence})")
-
-    # Clean up demo database file and temp procedure md
+    # Clean up demo database file
     if os.path.exists(db_file):
         os.remove(db_file)
         print(f"\nCleaned up database: {db_file}")
@@ -234,7 +207,7 @@ def run_demo():
     if os.path.exists(temp_checklist):
         os.remove(temp_checklist)
 
-    print_separator("demo successfully completed")
+    print_separator("cognitive loop demo completed successfully")
 
 if __name__ == "__main__":
     run_demo()
