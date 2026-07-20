@@ -5,9 +5,5 @@
  * Running on http://127.0.0.1:10000
  * Running on http://192.168.0.2:10000
 [33mPress CTRL+C to quit[0m
-127.0.0.1 - - [20/Jul/2026 15:37:08] "GET /api/gabriel/status HTTP/1.1" 200 -
-127.0.0.1 - - [20/Jul/2026 15:37:36] "POST /chat HTTP/1.1" 200 -
-127.0.0.1 - - [20/Jul/2026 15:46:09] "POST /api/gabriel/assimilate HTTP/1.1" 200 -
-127.0.0.1 - - [20/Jul/2026 15:46:54] "[35m[1mPOST /api/gabriel/execute HTTP/1.1[0m" 500 -
-127.0.0.1 - - [20/Jul/2026 15:47:47] "POST /api/gabriel/execute HTTP/1.1" 200 -
-127.0.0.1 - - [20/Jul/2026 15:47:47] "POST /api/gabriel/execute HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jul/2026 19:19:19] "GET /api/gabriel/status HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jul/2026 19:20:52] "GET /api/gabriel/status HTTP/1.1" 200 -
