@@ -42,16 +42,18 @@ The services load environmental values from a central configuration file.
 
 ## 3. Systemd Services Installation
 
-1. Install the Systemd service definition for the API:
+1. Install the Systemd service definitions (API, Proxy, and the 24/7 Background Learning Loop):
    ```bash
    sudo cp deploy/systemd/solomon-api.service.example /etc/systemd/system/solomon-api.service
    sudo cp deploy/systemd/solomon-proxy.service.example /etc/systemd/system/solomon-proxy.service
+   sudo cp deploy/systemd/solomon-loop.service.example /etc/systemd/system/solomon-loop.service
    ```
 2. Reload and enable systemd units:
    ```bash
    sudo systemctl daemon-reload
    sudo systemctl enable solomon-api.service
    sudo systemctl enable solomon-proxy.service
+   sudo systemctl enable solomon-loop.service
    ```
 
 ---
@@ -72,3 +74,23 @@ To trigger a manual emergency rollback to the previous configuration and databas
 ```bash
 ./deploy/scripts/rollback_ss1.sh
 ```
+
+---
+
+## 6. The 24/7 Perpetual Learning and Autonomous Improvement Loop Daemon (AIL)
+
+The 24/7 Autonomous Improvement Loop runs continuously in the background to discover, security scan, sandbox test, and dynamically integrate new system capabilities.
+
+### Operations and Management
+- **Start the background loop:**
+  ```bash
+  sudo systemctl start solomon-loop.service
+  ```
+- **Stop the background loop:**
+  ```bash
+  sudo systemctl stop solomon-loop.service
+  ```
+- **Inspect AIL live execution logs:**
+  ```bash
+  sudo journalctl -u solomon-loop.service -f
+  ```

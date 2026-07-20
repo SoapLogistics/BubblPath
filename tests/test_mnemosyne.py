@@ -303,3 +303,61 @@ def test_flask_full_integration_flow(flask_client):
     # Confirm that the card was retrieved in chat context telemetry
     retrieved_ids = chat_resp.json["memory"]["retrieved_card_ids"]
     assert "KC-DRAFT-WR-FLASK-001" in retrieved_ids
+
+
+# --- 4. Autonomous Improvement Loop Tests ---
+
+def test_autonomous_loop_security_scanner(runtime_test):
+    """Verify that dangerous patterns fail the static security audit of the AIL daemon."""
+    from solomon_knowledge_cards.autonomous_loop import AutonomousImprovementLoop
+    loop = AutonomousImprovementLoop(runtime_test)
+
+    # Insecure commands
+    bad_code_1 = "import os; os.system('rm -rf /')"
+    bad_code_2 = "subprocess.Popen(['ls'], shell=True)"
+    bad_code_3 = "eval(input('Enter secret: '))"
+    bad_code_4 = "__import__('os').system('chmod 777 file')"
+
+    # Secure commands
+    good_code = "def process_data(x):\n    return x * 2\n"
+
+    assert loop.static_security_audit(bad_code_1) is False
+    assert loop.static_security_audit(bad_code_2) is False
+    assert loop.static_security_audit(bad_code_3) is False
+    assert loop.static_security_audit(bad_code_4) is False
+    assert loop.static_security_audit(good_code) is True
+
+
+def test_autonomous_loop_sandbox_and_distill(runtime_test):
+    """Verify the discovery and dynamic distillation of safe candidates in the AIL daemon."""
+    from solomon_knowledge_cards.autonomous_loop import AutonomousImprovementLoop
+    loop = AutonomousImprovementLoop(runtime_test)
+
+    candidate = {
+        "name": "Math Doubler Helper",
+        "source": "https://github.com/example/math-doubler",
+        "code": "def double_value(n):\n    return n * 2\n",
+        "description": "Quick mathematical doubling procedure.",
+        "type": "MATHEMATICS"
+    }
+
+    # Execute cycle
+    draft_card = loop.run_discovery_and_absorption(mock_candidate=candidate)
+
+    # Assert successful distillation
+    assert draft_card is not None
+    assert draft_card["validation_state"] == "DRAFT"
+    assert "AIL-DISCOVER-01" in draft_card["title"]
+    assert "Math Doubler Helper" in draft_card["body"]
+
+    # Verify candidate is saved in DB but excluded from active retrieval until promoted
+    bundle = runtime_test.retrieve_context(query="Doubler", clearance="INTERNAL")
+    assert draft_card["card_id"] not in bundle["retrieved_card_ids"]
+
+    # Promote draft card to APPROVED and ACTIVE via Review Gate
+    runtime_test.review_card(draft_card["card_id"], "APPROVE", "SS3")
+    runtime_test.review_card(draft_card["card_id"], "ACTIVATE", "SS3")
+
+    # Verify now retrieved successfully
+    bundle_active = runtime_test.retrieve_context(query="Doubler", clearance="INTERNAL")
+    assert draft_card["card_id"] in bundle_active["retrieved_card_ids"]
