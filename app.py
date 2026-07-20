@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from openai import OpenAI
 
 from solomon_knowledge_cards.storage.db import DatabaseManager
@@ -48,6 +48,14 @@ try:
                     print(f"Doctrine Importer successfully imported checklist: {file}")
 except Exception as e:
     print(f"Warning: Doctrine Importer failed during startup: {e}")
+
+
+@app.route("/", methods=["GET"])
+def index():
+    """
+    Renders the modern Solomon Cognitive Workspace WebUI dashboard.
+    """
+    return render_template("index.html")
 
 
 @app.route("/chat", methods=["POST"])
