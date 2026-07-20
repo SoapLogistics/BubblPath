@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 from solomon_knowledge_cards.models import KnowledgeCardModel, CardStatus
 from solomon_knowledge_cards.db import SQLiteDatabase
 
@@ -28,7 +28,7 @@ class KnowledgeRepository:
     def list_cards(self, include_deprecated: bool = True) -> List[KnowledgeCardModel]:
         cards = self.db.list_all_cards()
         if not include_deprecated:
-            cards = [c for cards in cards if c.status != CardStatus.DEPRECATED]
+            cards = [c for c in cards if c.status != CardStatus.DEPRECATED]
         return cards
 
     def search_by_text(self, query: str) -> List[KnowledgeCardModel]:
@@ -87,7 +87,7 @@ class KnowledgeRepository:
         self.update_card(child, actor=actor)
 
     def retrieve_related_cards(self, card_id: str) -> List[KnowledgeCardModel]:
-        """Fetch all directly connected or nested related cards (1-hop traversal)."""
+        """Fetch all directly connected related cards (1-hop traversal)."""
         card = self.get_card(card_id)
         if not card:
             return []
@@ -98,6 +98,30 @@ class KnowledgeRepository:
             if r_card:
                 related_cards.append(r_card)
         return related_cards
+
+    def retrieve_transitive_relations(self, card_id: str, depth_limit: int = 3) -> List[KnowledgeCardModel]:
+        """Recursively crawl card linkages (transitive closures) to capture a complete contextual package."""
+        visited: Set[str] = set()
+        to_visit: List[tuple] = [(card_id, 0)]  # (current_id, current_depth)
+        transitive_cards: List[KnowledgeCardModel] = []
+
+        while to_visit:
+            curr_id, current_depth = to_visit.pop(0)
+            if curr_id in visited or current_depth > depth_limit:
+                continue
+
+            visited.add(curr_id)
+            curr_card = self.get_card(curr_id)
+            if curr_card:
+                if curr_id != card_id:  # Do not include the root search query itself in the result list
+                    transitive_cards.append(curr_card)
+                # Queue up related cards
+                next_ids = set(curr_card.parent_card_ids + curr_card.related_card_ids)
+                for n_id in next_ids:
+                    if n_id not in visited:
+                        to_visit.append((n_id, current_depth + 1))
+
+        return transitive_cards
 
     def get_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
         return self.db.get_revision_history(card_id)
