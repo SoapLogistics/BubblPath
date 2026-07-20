@@ -1,10 +1,12 @@
 services:
   - type: web
-    name: chatgpt-flask-app
+    name: loki-hugin-soss-gateway
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     envVars:
       - key: OPENAI_API_KEY
+        sync: false
+      - key: SOLOMON_ACTIONS_API_KEY
         sync: false
