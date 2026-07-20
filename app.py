@@ -119,6 +119,108 @@ def execute_assimilated_code():
         }), 500
 
 
+@app.route("/api/gabriel/ast-inject", methods=["POST"])
+def ast_inject():
+    """
+    Programmatically mutates class source code using AST injections.
+    """
+    data = request.json or {}
+    file_path = data.get("file_path")
+    class_name = data.get("class_name")
+    function_source = data.get("function_source")
+
+    if not file_path or not class_name or not function_source:
+        return jsonify({
+            "status": "error",
+            "message": "Parameters 'file_path', 'class_name', and 'function_source' are required."
+        }), 400
+
+    output_path = data.get("output_path")
+
+    try:
+        new_source = gabriel_loop.ast_injector.inject_function_to_class(
+            file_path=file_path,
+            class_name=class_name,
+            function_source=function_source,
+            output_path=output_path
+        )
+        return jsonify({
+            "status": "success",
+            "message": f"Function successfully injected into class {class_name} using AST.",
+            "source_code_preview": new_source[:300] + "..."
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "status": "error",
+            "message": f"AST Injection failed: {str(e)}",
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+@app.route("/api/gabriel/optimize", methods=["POST"])
+def optimize_capability():
+    """
+    Runs recursive self-optimizing feedback loops on code blocks.
+    """
+    data = request.json or {}
+    capability_name = data.get("capability_name")
+    original_code = data.get("original_code")
+    crucible_metrics = data.get("crucible_metrics")
+
+    if not capability_name or not original_code or not crucible_metrics:
+        return jsonify({
+            "status": "error",
+            "message": "Parameters 'capability_name', 'original_code', and 'crucible_metrics' are required."
+        }), 400
+
+    target_latency_ms = data.get("target_latency_ms", 100.0)
+
+    try:
+        opt_code, opt_metrics, rounds = gabriel_loop.recursive_optimizer.optimize_code(
+            capability_name=capability_name,
+            original_code=original_code,
+            crucible_metrics=crucible_metrics,
+            target_latency_ms=target_latency_ms
+        )
+        return jsonify({
+            "status": "success",
+            "capability_name": capability_name,
+            "rounds_completed": rounds,
+            "optimized_metrics": opt_metrics,
+            "optimized_code": opt_code
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Optimization failed: {str(e)}"
+        }), 500
+
+
+@app.route("/api/gabriel/observe", methods=["POST"])
+def observe_and_deconstruct():
+    """
+    Performs black-box sandboxing deconstruction on closed-source CLI utilities.
+    """
+    data = request.json or {}
+    binary_name = data.get("binary_name")
+
+    if not binary_name:
+        return jsonify({
+            "status": "error",
+            "message": "Parameter 'binary_name' is required."
+        }), 400
+
+    try:
+        result = gabriel_loop.deconstruct_and_rebuild_binary(binary_name)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Observational profiling failed: {str(e)}"
+        }), 500
+
+
 @app.route("/api/gabriel/records", methods=["GET"])
 def get_records():
     """

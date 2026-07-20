@@ -3,12 +3,31 @@ import uuid
 import sqlite3
 from typing import Optional, Dict, Any
 
+
+class TokenBucketThrottler:
+    def __init__(self, rate: int = 10, capacity: int = 10):
+        self.rate = rate
+        self.capacity = capacity
+        self.tokens = float(capacity)
+        self.last_fill = time.time()
+
+    def consume(self, tokens_needed: float = 1.0) -> bool:
+        now = time.time()
+        # Refill tokens based on time elapsed
+        elapsed = now - self.last_fill
+        self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
+        self.last_fill = now
+        if self.tokens >= tokens_needed:
+            self.tokens -= tokens_needed
+            return True
+        return False
+
 class RenewableWorkerLease:
     """
     A worker temporarily owns a task by renewing a timed lease.
     If it disappears, the lease expires and another worker may recover the task.
     """
-    def __init__(self, db_path: str = ":memory:", lease_duration_sec: int = 10):
+    def __init__(self, db_path: str = ":memory:", lease_duration_sec: int = 2):
         self.db_path = db_path
         self.lease_duration_sec = lease_duration_sec
         # Maintain a persistent connection to keep in-memory DB alive
