@@ -185,3 +185,57 @@ The engine will automate the loop by converting:
 - Execution errors, failures, and manual hotfixes
 
 into standardized, indexed **Knowledge Cards**. These cards will act as dynamic system proposals that automatically patch or update parent **Procedure Cards** under automated safety and human-in-the-loop governance. This will finalize Solomon's evolution into a robust, self-improving operating knowledge ecosystem.
+
+---
+
+## 8. Blueprint for the Perpetual Learning Core (PLC)
+
+To guide the long-term evolution of Solomon, we integrate the **Perpetual Learning Core (PLC)** vision blueprint. This is the architectural north star designed to make Solomon a self-improving cognitive system.
+
+### A. Executive Vision
+Solomon is a **Perpetual Learning Machine**. Specialty domains (Software Engineering, Research, Analysis, Medicine, Robotics) are dynamic skills that can be acquired. The core cognitive learning engine remains entirely domain-independent.
+
+### B. The Ten Cognitive Layers
+
+#### Layer 1: Experience Engine
+Captures everything Solomon experiences in real time, including conversations, code execution logs, worker reports, literature search, human interactions, and failures/successes.
+
+#### Layer 2: Knowledge Distillation Engine
+Converts raw experiences into structured, semantic cards (Fact, Concept, Procedure, Lesson Learned, Warning, Failure, Best Practice, Decision, Relationship).
+
+#### Layer 3: Memory Card System
+Requires that every memory unit contain explicit audit markers (UUID, Confidence, Evidence, Source, Author, Version, Dependencies, and SS3 Validation status).
+
+#### Layer 4: Knowledge Graph
+Establishes directed semantic connections among cards (`Requires`, `Supports`, `Contradicts`, `Improves`, `Replaces`, `DerivedFrom`).
+
+#### Layer 5: Capability Graph
+Tracks specialized capabilities and their prerequisites, tools, reliability metrics, and performance limits.
+
+#### Layer 6: Retrieval Engine
+Pre-populates working contexts with relevant procedures, similar failures, and successfully applied repairs before reasoning begins.
+
+#### Layer 7: Reasoning Engine
+Governs planning, decision-making, task decomposition, and risk analysis. Reasoning never directly edits long-term memory; it proposes updates.
+
+#### Layer 8: Builder Engine
+Generates assets (Code, SOPs, documentation, tests, scripts) to carry out actions.
+
+#### Layer 9: Reviewer Engine (SS3)
+An independent verification gate assessing correctness, reproducibility, and safety before promoting draft memories.
+
+#### Layer 10: Evolution Engine
+The meta-learning component. After each task, it assesses what made the task difficult, what skills were missing, and dynamically schedules card generation or skill acquisitions.
+
+### C. Learning Hierarchy
+1.  **Level 1:** Learn Facts.
+2.  **Level 2:** Learn Procedures.
+3.  **Level 3:** Learn Strategies.
+4.  **Level 4:** Learn Skills.
+5.  **Level 5:** Learn How To Learn Faster.
+6.  **Level 6:** Improve the Learning System Itself (The Ultimate Goal).
+
+### D. Three-Box Governance
+-   **SS1 (Production Brain):** Stable operational runtimes only.
+-   **SS2 (Experimental Lab):** Learning, building, testing, and drafting new cards.
+-   **SS3 (Independent Reviewer):** Security checks, code audits, and promotion approval. No automated edit reaches SS1 without SS3 approval.
