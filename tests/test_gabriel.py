@@ -248,11 +248,11 @@ def test_assimilated_codex_stack():
     """
     client = app.test_client()
 
-    # 1. Chat under Codex Orchestrator Persona
+    # 1. Chat under Codex/Jules Orchestrator Persona
     res_chat = client.post("/chat", json={"message": "Deploy a sandbox for my branch"})
     assert res_chat.status_code == 200
     data_chat = json.loads(res_chat.data)
-    assert "Codex Orchestrator Mode" in data_chat["reply"]
+    assert "Jules Agentic Mode" in data_chat["reply"]
 
     # 2. Parallel Worktrees Endpoints
     res_wt = client.post("/api/codex/worktrees", json={
@@ -306,6 +306,45 @@ def test_assimilated_codex_stack():
     data_pipe = json.loads(res_pipe.data)
     assert data_pipe["status"] == "PROMOTED_TO_PULL_REQUEST"
     assert "validation_tests_passed" in data_pipe
+
+
+def test_assimilated_jules_stack():
+    """
+    Validates re-engineered Google Jules capabilities.
+    """
+    client = app.test_client()
+
+    # 1. Dependency setup installer
+    res_ins = client.post("/api/jules/install", json={
+        "requirements_txt": "pytest>=8.0.0\nblack==24.1.0"
+    })
+    assert res_ins.status_code == 200
+    payload_ins = json.loads(res_ins.data)
+    assert any("pytest" in p for p in payload_ins["packages_installed"])
+    assert payload_ins["compilation_status"] == "SUCCESSFUL"
+
+    # 2. Diff Code Patcher
+    res_pat = client.post("/api/jules/patch", json={
+        "original_code": "def run_loop():\n    return 'error'",
+        "search_pattern": "error",
+        "replace_pattern": "fixed"
+    })
+    assert res_pat.status_code == 200
+    payload_pat = json.loads(res_pat.data)
+    assert payload_pat["success"] is True
+    assert "fixed" in payload_pat["updated_code"]
+
+    # 3. Recursive Test execution traceback solver
+    res_loop = client.post("/api/jules/test-loop", json={
+        "target_code": "def process():\n    return 'error'",
+        "test_script": "assert process() == 'fixed'",
+        "max_retries": 3
+    })
+    assert res_loop.status_code == 200
+    payload_loop = json.loads(res_loop.data)
+    assert payload_loop["success"] is True
+    assert "fixed" in payload_loop["optimized_code"]
+    assert len(payload_loop["execution_logs"]) > 0
 
 
 def test_flask_endpoints():

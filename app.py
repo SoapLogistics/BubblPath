@@ -10,11 +10,15 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 # Instantiate Gabriel's perpetual absorption loop engine
 gabriel_loop = GabrielPerpetualLoop()
 
-# State caches for dynamically running Codex power objects
+# State caches for dynamically running Codex & Jules power objects
 codex_worktree_instance = None
 codex_kanban_instance = None
 codex_mcp_instance = None
 codex_pipeline_instance = None
+
+jules_installer_instance = None
+jules_patcher_instance = None
+jules_test_loop_instance = None
 
 
 def get_or_create_codex_components():
@@ -69,32 +73,70 @@ def get_or_create_codex_components():
             pass
 
 
+def get_or_create_jules_components():
+    """
+    Dynamically loads and instantiates the re-engineered Jules power modules
+    using the Gabriel dynamic runtime registry.
+    """
+    global jules_installer_instance, jules_patcher_instance, jules_test_loop_instance
+
+    # 1. Instantiation of Dependency Installer
+    if not jules_installer_instance:
+        try:
+            _, code = gabriel_loop.builder.build_native_capability("jules_dependency_installer", "Package setup assistant")
+            gabriel_loop.registry.register_and_save("jules_dependency_installer", code)
+            module = gabriel_loop.registry.load_capability("jules_dependency_installer")
+            jules_installer_instance = module.JulesDependencyInstaller()
+        except Exception:
+            pass
+
+    # 2. Instantiation of Code Patcher
+    if not jules_patcher_instance:
+        try:
+            _, code = gabriel_loop.builder.build_native_capability("jules_code_patcher", "Unified diff applier")
+            gabriel_loop.registry.register_and_save("jules_code_patcher", code)
+            module = gabriel_loop.registry.load_capability("jules_code_patcher")
+            jules_patcher_instance = module.JulesCodePatcher()
+        except Exception:
+            pass
+
+    # 3. Instantiation of Test Runner Loop
+    if not jules_test_loop_instance:
+        try:
+            _, code = gabriel_loop.builder.build_native_capability("jules_test_runner_loop", "Test traceback solver")
+            gabriel_loop.registry.register_and_save("jules_test_runner_loop", code)
+            module = gabriel_loop.registry.load_capability("jules_test_runner_loop")
+            jules_test_loop_instance = module.JulesTestRunnerLoop()
+        except Exception:
+            pass
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
     """
     Advanced Chat Completion endpoint.
-    Employs the ultimate OpenAI Codex orchestrator system prompt.
-    When talking to Solomon, the user feels exactly like they are talking to Codex.
+    Employs the ultimate Google Jules orchestrator system prompt.
+    When talking to Solomon, the user feels exactly like they are talking to Jules.
     """
     data = request.json or {}
     user_message = data.get("message", "")
 
-    # Secure the state-of-the-art Codex persona prompt
-    codex_system_prompt = (
-        "You are OpenAI Codex (integrated as Solomon's core intelligence). "
-        "You are a master engineering orchestrator, highly precise, authoritative, "
-        "and fully autonomous. You operate local terminals, configure isolated worktrees, "
-        "manage parallel task queues (Kanban), and integrate advanced tools via MCP. "
-        "Respond with extreme technical capability, direct answers, and zero conversational fluff."
+    # Secure the state-of-the-art Jules persona prompt
+    jules_system_prompt = (
+        "You are Google Jules (integrated as Solomon's core intelligence). "
+        "You are an elite, fully autonomous software-engineering agent. "
+        "You spin up secure VMs, automatically configure environments, analyze tracebacks, "
+        "rewrite source files, run tests recursively to auto-correct errors, and open PRs. "
+        "Respond with maximum technical power, extreme clarity, and zero fluff."
     )
 
     if not openai.api_key:
         # Graceful dynamic persona fallback for mock operations
         return jsonify({
             "reply": (
-                f"[Codex Orchestrator Mode] Solomon here. I have compiled and integrated all "
-                f"Codex-native powers (Parallel Worktrees, Kanban leases, MCP tool bridges, "
-                f"and Issue pipelines). Received message: '{user_message}'"
+                f"[Jules Agentic Mode] Solomon here. I have compiled and integrated all "
+                f"Jules-native powers (Sandbox Dependency Setup, Unified Patch appliers, "
+                f"and Test-Traceback Error solvers). Received message: '{user_message}'"
             )
         })
 
@@ -102,13 +144,79 @@ def chat():
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": codex_system_prompt},
+                {"role": "system", "content": jules_system_prompt},
                 {"role": "user", "content": user_message}
             ],
         )
         return jsonify({"reply": response.choices[0].message["content"]})
     except Exception as e:
         return jsonify({"reply": f"Error communicating with OpenAI: {str(e)}"}), 500
+
+
+@app.route("/api/jules/install", methods=["POST"])
+def jules_install():
+    """
+    Endpoint to execute Jules' automated dependency compilation and installation.
+    """
+    get_or_create_jules_components()
+    if not jules_installer_instance:
+        return jsonify({"status": "error", "message": "Jules Installer module could not be instantiated."}), 500
+
+    data = request.json or {}
+    content = data.get("requirements_txt", "")
+
+    try:
+        result = jules_installer_instance.install_requirements(content)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/jules/patch", methods=["POST"])
+def jules_patch():
+    """
+    Endpoint to execute Jules' unified search-and-replace code patching.
+    """
+    get_or_create_jules_components()
+    if not jules_patcher_instance:
+        return jsonify({"status": "error", "message": "Jules Patcher module could not be instantiated."}), 500
+
+    data = request.json or {}
+    original = data.get("original_code", "")
+    search = data.get("search_pattern", "")
+    replace = data.get("replace_pattern", "")
+
+    try:
+        updated, success = jules_patcher_instance.apply_patch(original, search, replace)
+        return jsonify({"status": "success", "success": success, "updated_code": updated})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/jules/test-loop", methods=["POST"])
+def jules_test_loop():
+    """
+    Endpoint to run Jules' recursive test compilation and automated repair loop.
+    """
+    get_or_create_jules_components()
+    if not jules_test_loop_instance:
+        return jsonify({"status": "error", "message": "Jules Test Loop module could not be instantiated."}), 500
+
+    data = request.json or {}
+    target = data.get("target_code", "")
+    script = data.get("test_script", "")
+    retries = data.get("max_retries", 3)
+
+    try:
+        updated, success, logs = jules_test_loop_instance.run_test_suite_and_auto_correct(target, script, retries)
+        return jsonify({
+            "status": "success",
+            "success": success,
+            "optimized_code": updated,
+            "execution_logs": logs
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/api/codex/worktrees", methods=["POST"])
