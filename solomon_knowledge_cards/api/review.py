@@ -1,4 +1,5 @@
 import datetime
+import re
 from typing import Optional, Dict, Any
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
@@ -6,6 +7,13 @@ from solomon_knowledge_cards.models.card import KnowledgeCard
 class ReviewGate:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
+        # Clean regex to strip injection payloads
+        self.clean_regex = re.compile(r"[<>`%;()&]")
+
+    def _sanitize(self, text: Optional[str]) -> str:
+        if not text:
+            return ""
+        return self.clean_regex.sub("", text).strip()
 
     def transition_status(
         self,
@@ -16,75 +24,73 @@ class ReviewGate:
         notes: Optional[str] = None
     ) -> KnowledgeCard:
         """
-        Transitions a card through the explicit promotion process:
+        Transitions a card through the explicit promotion process safely:
         DRAFT -> REVIEWED -> APPROVED -> ACTIVE
-        Also supports deprecation or rejection.
         """
-        card = self.db_manager.get_card(card_id, include_deleted=True)
+        card_id_clean = self._sanitize(card_id)
+        target_status_clean = self._sanitize(target_status).upper()
+        updater_clean = self._sanitize(updater)
+        reason_clean = self._sanitize(reason)
+        notes_clean = self._sanitize(notes)
+
+        card = self.db_manager.get_card(card_id_clean, include_deleted=True)
         if not card:
-            raise ValueError(f"Card {card_id} does not exist.")
+            raise ValueError(f"Card {card_id_clean} does not exist.")
 
         current = card.status
 
-        # Define allowed transitions
-        # DRAFT can go to REVIEWED, or DEPRECATED (rejection)
-        # REVIEWED can go to APPROVED, or DRAFT/DEPRECATED (rejection)
-        # APPROVED can go to ACTIVE, or DEPRECATED (rejection)
-        # ACTIVE can go to DEPRECATED
-
         valid = False
         if current == "DRAFT":
-            if target_status in ("REVIEWED", "DEPRECATED"):
+            if target_status_clean in ("REVIEWED", "DEPRECATED"):
                 valid = True
         elif current == "REVIEWED":
-            if target_status in ("APPROVED", "DRAFT", "DEPRECATED"):
+            if target_status_clean in ("APPROVED", "DRAFT", "DEPRECATED"):
                 valid = True
         elif current == "APPROVED":
-            if target_status in ("ACTIVE", "DEPRECATED"):
+            if target_status_clean in ("ACTIVE", "DEPRECATED"):
                 valid = True
         elif current == "ACTIVE":
-            if target_status == "DEPRECATED":
+            if target_status_clean == "DEPRECATED":
                 valid = True
         elif current == "DEPRECATED":
-            if target_status == "DRAFT":
+            if target_status_clean == "DRAFT":
                 valid = True
 
         if not valid:
-            raise ValueError(f"Invalid status transition from {current} to {target_status}")
+            raise ValueError(f"Invalid status transition from {current} to {target_status_clean}")
 
-        card.status = target_status
+        card.status = target_status_clean
         card.updated_at = datetime.datetime.now(datetime.UTC).isoformat()
 
-        if notes:
-            card.extra_metadata["review_notes"] = notes
-        if reason:
-            card.extra_metadata["status_change_reason"] = reason
+        if notes_clean:
+            card.extra_metadata["review_notes"] = notes_clean
+        if reason_clean:
+            card.extra_metadata["status_change_reason"] = reason_clean
 
-        # Update validation state accordingly
-        if target_status in ("APPROVED", "ACTIVE"):
+        if target_status_clean in ("APPROVED", "ACTIVE"):
             card.validation_state = "VALID"
-        elif target_status == "DEPRECATED" and "rejected" in (reason or "").lower():
+        elif target_status_clean == "DEPRECATED" and "rejected" in reason_clean.lower():
             card.validation_state = "INVALID"
 
         self.db_manager.store_card(
             card,
-            updater=updater,
-            reason=reason or f"Transitioned status from {current} to {target_status}"
+            updater=updater_clean,
+            reason=reason_clean or f"Transitioned status from {current} to {target_status_clean}"
         )
         return card
 
     def review_card(self, card_id: str, notes: str, updater: str = "reviewer") -> KnowledgeCard:
-        """Promotes a card from DRAFT to REVIEWED."""
+        """Promotes a card from DRAFT to REVIEWED securely."""
         return self.transition_status(card_id, "REVIEWED", updater=updater, reason="Card reviewed and staged for approval", notes=notes)
 
     def approve_card(self, card_id: str, updater: str = "approver") -> KnowledgeCard:
-        """Promotes a card from REVIEWED to APPROVED."""
+        """Promotes a card from REVIEWED to APPROVED securely."""
         return self.transition_status(card_id, "APPROVED", updater=updater, reason="Card approved by review gate")
 
     def activate_card(self, card_id: str, updater: str = "operator") -> KnowledgeCard:
-        """Promotes a card from APPROVED to ACTIVE."""
+        """Promotes a card from APPROVED to ACTIVE securely."""
         return self.transition_status(card_id, "ACTIVE", updater=updater, reason="Card promoted to active operational status")
 
     def reject_card(self, card_id: str, reason: str, updater: str = "reviewer") -> KnowledgeCard:
-        """Rejects a card, marking it as DEPRECATED (with historical reason/notes preserved)."""
+        """Rejects a card securely, marking it as DEPRECATED."""
         return self.transition_status(card_id, "DEPRECATED", updater=updater, reason=f"Rejected: {reason}")

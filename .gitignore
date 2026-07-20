@@ -1,0 +1,19 @@
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.cache/
+
+# Databases and data stores
+*.db
+*.sqlite
+*.sqlite3
+
+# Local environment and secrets
+.env
+.venv/
+env/
+venv/
+*.log

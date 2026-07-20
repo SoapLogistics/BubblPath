@@ -3,8 +3,9 @@ from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
 class RelationGraph:
-    def __init__(self, repository: CardRepository):
+    def __init__(self, repository: CardRepository, max_recursion_depth: int = 50):
         self.repository = repository
+        self.max_recursion_depth = max_recursion_depth
 
     def get_all_outgoing_links(self, card: KnowledgeCard) -> List[Tuple[str, str]]:
         """
@@ -19,7 +20,6 @@ class RelationGraph:
         if card.supersedes:
             links.append((card.supersedes, "SUPERSEDES"))
 
-        # Add custom links stored in extra_metadata
         custom_links = card.extra_metadata.get("links", [])
         for cl in custom_links:
             target_id = cl.get("target_id")
@@ -32,14 +32,18 @@ class RelationGraph:
     def find_dependency_chain(self, card_id: str, relation_type: str = "DEPENDS_ON") -> List[str]:
         """
         Traverses DEPENDS_ON relations recursively to find the full dependency chain.
+        Strictly limits recursion depth to prevent Stack Overflow / thread stack exhaustion.
         Guards against circular dependencies cleanly.
         """
         chain = []
         visited = set()
 
-        def traverse(current_id: str):
+        def traverse(current_id: str, current_depth: int):
+            if current_depth > self.max_recursion_depth:
+                print(f"[RelationGraph] Recursion Limit Alert: Aborting traversal of {current_id} to prevent stack exhaustion.")
+                return
+
             if current_id in visited:
-                # Circular dependency detected, break gracefully
                 return
             visited.add(current_id)
 
@@ -47,40 +51,40 @@ class RelationGraph:
             if not card:
                 return
 
-            # Find outgoing links of specific relation_type
             outgoing = self.get_all_outgoing_links(card)
             for target_id, l_type in outgoing:
                 if l_type.upper() == relation_type.upper():
-                    # Traverse dependency first (post-order traversal to build correct topological order)
-                    traverse(target_id)
+                    traverse(target_id, current_depth + 1)
 
             if current_id not in chain:
                 chain.append(current_id)
 
-        traverse(card_id)
-        # Reverse chain to return execution order (from first dependency to leaf target)
+        traverse(card_id, 1)
         return chain[:-1] if chain else []
 
     def get_subgraph(self, card_id: str, max_depth: int = 2) -> Dict[str, Any]:
         """
         Retrieves the semantic subgraph surrounding a given card using BFS traversal.
-        Returns a dictionary representing nodes and edge links.
+        Strictly enforces max BFS queue size to prevent memory exhaustion on giant networks.
         """
         nodes: Dict[str, Dict[str, Any]] = {}
         edges: List[Dict[str, str]] = []
 
-        # Queue format: (card_id, current_depth)
         queue = [(card_id, 0)]
         visited = {card_id}
+        max_bfs_nodes = 500
 
         while queue:
+            if len(nodes) >= max_bfs_nodes:
+                print(f"[RelationGraph] BFS Nodes Limit Hit ({max_bfs_nodes}). Terminating subgraph search pre-emptively.")
+                break
+
             curr_id, depth = queue.pop(0)
 
             card = self.repository.get_card(curr_id)
             if not card:
                 continue
 
-            # Register node
             nodes[curr_id] = {
                 "card_id": card.card_id,
                 "card_type": card.card_type,
@@ -92,7 +96,6 @@ class RelationGraph:
             if depth >= max_depth:
                 continue
 
-            # Traverse outgoing links
             outgoing = self.get_all_outgoing_links(card)
             for target_id, l_type in outgoing:
                 edges.append({
