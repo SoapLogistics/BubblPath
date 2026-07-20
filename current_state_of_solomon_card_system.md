@@ -94,7 +94,7 @@ Task cards dictate individual runs dispatched to worker agents:
 
 ---
 
-## 4. The Closed learning Loop: Card Flow & Cognitive Cycle
+## 4. The Closed Learning Loop: Card Flow & Cognitive Cycle
 The flow of intelligence through Solomon is a circular learning system, transforming raw execution events into permanent, governed procedural intelligence:
 
 ```
