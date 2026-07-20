@@ -2,25 +2,42 @@ import unittest
 import os
 import json
 import tempfile
+
+# Set environment variables for the test suite before importing app or db
+os.environ["SOLOMON_DB_PATH"] = "test_app_only.db"
+
 from solomon_knowledge_cards.models import KnowledgeCardModel, CardType, CardStatus, ValidationState, CardRelation
 from solomon_knowledge_cards.db import SQLiteDatabase
 from solomon_knowledge_cards.repository import KnowledgeRepository
 from solomon_knowledge_cards.engine import KnowledgeEngine
 from solomon_knowledge_cards.importer import DoctrineImporter
+from app import app
 
 class TestKnowledgeCardEngine(unittest.TestCase):
     def setUp(self):
         # Establish unique, isolated sqlite database files at the module level
-        self.db_fd, self.db_path = tempfile.mkstemp()
+        self.db_path = "test_app_only.db"
         self.db = SQLiteDatabase(self.db_path)
         self.repo = KnowledgeRepository(self.db)
         self.engine = KnowledgeEngine(self.repo)
         self.importer = DoctrineImporter(self.repo)
 
+        # Override the app database components to point to our isolated test run DB
+        import app as flask_app
+        flask_app.db = self.db
+        flask_app.repo = self.repo
+        flask_app.engine = self.engine
+
     def tearDown(self):
-        os.close(self.db_fd)
+        # Ensure clean file system handles and release DB locks
+        self.db = None
+        self.repo = None
+        self.engine = None
         if os.path.exists(self.db_path):
-            os.unlink(self.db_path)
+            try:
+                os.remove(self.db_path)
+            except Exception:
+                pass
 
     def test_schema_validation_and_creation(self):
         # Confirm required fields structure
@@ -222,6 +239,129 @@ class TestKnowledgeCardEngine(unittest.TestCase):
         # Cleanup
         os.unlink(backup_path)
         os.rmdir(temp_dir)
+
+    def test_transitive_traversal(self):
+        c1 = KnowledgeCardModel(card_id="A", card_type=CardType.PROCEDURE, title="Proc A", summary="S", body="B")
+        c2 = KnowledgeCardModel(card_id="B", card_type=CardType.LESSON, title="Lesson B", summary="S", body="B")
+        c3 = KnowledgeCardModel(card_id="C", card_type=CardType.FAILURE, title="Fail C", summary="S", body="B")
+
+        self.repo.create_card(c1)
+        self.repo.create_card(c2)
+        self.repo.create_card(c3)
+
+        # Build dependency chains: A -> B -> C
+        self.repo.link_cards("A", "B", CardRelation.DEPENDS_ON)
+        self.repo.link_cards("B", "C", CardRelation.PREVENTS)
+
+        transitive_closure = self.repo.retrieve_transitive_relations("A")
+        card_ids = [c.card_id for c in transitive_closure]
+        self.assertIn("B", card_ids)
+        self.assertIn("C", card_ids)
+
+    def test_metrics_calculation(self):
+        c1 = KnowledgeCardModel(card_id="METRIC-01", card_type=CardType.KNOWLEDGE, title="K", summary="S", body="B", confidence=0.8)
+        c2 = KnowledgeCardModel(card_id="METRIC-02", card_type=CardType.DECISION, title="D", summary="S", body="B", confidence=0.4)
+        c2.status = CardStatus.APPROVED
+
+        self.repo.create_card(c1)
+        self.repo.update_card(c2)
+
+        # Run calculation
+        temp_dir = tempfile.mkdtemp()
+        metrics_path = os.path.join(temp_dir, "metrics.json")
+
+        metrics = self.engine.calculate_sok_metrics(export_path=metrics_path)
+        self.assertEqual(metrics["total_cards_count"], 2)
+        self.assertEqual(metrics["distribution_by_type"]["KNOWLEDGE"], 1)
+        self.assertEqual(metrics["distribution_by_type"]["DECISION"], 1)
+        self.assertTrue(os.path.exists(metrics_path))
+
+        # Cleanup
+        os.unlink(metrics_path)
+        os.rmdir(temp_dir)
+
+    def test_skill_auto_generation(self):
+        report = {
+            "task_id": "TASK-GAP-1",
+            "procedure_id": "PC-SO-01",
+            "success": False,
+            "summary": "Attempt failed to execute AST mapping.",
+            "error_logs": "Exception: missing capability 'ASTInjector' not found.",
+            "evidence": "Log seg #9"
+        }
+
+        generated = self.engine.extract_from_report(report)
+        skill_cards = [c for c in generated if c.card_type == CardType.SKILL]
+        self.assertEqual(len(skill_cards), 1)
+        self.assertEqual(skill_cards[0].status, CardStatus.DRAFT)
+        self.assertIn("missing capability 'ASTInjector' not found.", skill_cards[0].body)
+
+    def test_growth_deduplication(self):
+        c1 = KnowledgeCardModel(card_id="MAIN-SOP", card_type=CardType.LESSON, title="Main", summary="S", body="Exact Duplicate Content text.")
+        c2 = KnowledgeCardModel(card_id="DUP-SOP", card_type=CardType.LESSON, title="Duplicate", summary="S", body="Exact Duplicate Content text.")
+        stale_card = KnowledgeCardModel(card_id="STALE-01", card_type=CardType.LESSON, title="Stale", summary="S", body="Other text.", metadata={"is_stale_simulation": True})
+
+        c1.status = CardStatus.APPROVED
+        self.repo.update_card(c1)
+        self.repo.create_card(c2)
+        self.repo.create_card(stale_card)
+
+        # Run background deduplication
+        growth_results = self.engine.run_passive_growth_maintenance()
+        self.assertEqual(growth_results["duplicates_merged"], 1)
+        self.assertEqual(growth_results["stale_drafts_archived"], 1)
+
+        # Confirm duplicate card got deprecated
+        fetched_dup = self.repo.get_card("DUP-SOP")
+        self.assertEqual(fetched_dup.status, CardStatus.DEPRECATED)
+        self.assertIn("Merged as duplicate", fetched_dup.metadata["deduplication_status"])
+
+        # Confirm stale card got archived
+        fetched_stale = self.repo.get_card("STALE-01")
+        self.assertEqual(fetched_stale.status, CardStatus.ARCHIVED)
+
+    # NEW HTTP Endpoint Tests
+    def test_status_endpoint(self):
+        app.config["TESTING"] = True
+        with app.test_client() as client:
+            res = client.get("/api/command-center/status")
+            self.assertEqual(res.status_code, 200)
+            data = json.loads(res.data)
+            self.assertEqual(data["status"], "HEALTHY")
+
+    def test_worker_report_endpoint(self):
+        app.config["TESTING"] = True
+        with app.test_client() as client:
+            report_payload = {
+                "task_id": "WEB-TASK-001",
+                "procedure_id": "PC-SO-01",
+                "success": True,
+                "summary": "Everything ran correctly.",
+                "evidence": "Log trace"
+            }
+            res = client.post("/api/command-center/worker-report", json=report_payload)
+            self.assertEqual(res.status_code, 201)
+            data = json.loads(res.data)
+            self.assertEqual(data["status"], "SUCCESS")
+            self.assertEqual(len(data["draft_cards"]), 1)
+
+    def test_review_endpoint(self):
+        app.config["TESTING"] = True
+
+        # Insert a draft card
+        c = KnowledgeCardModel(card_id="WEB-REV-01", card_type=CardType.LESSON, title="P", summary="S", body="B")
+        self.repo.create_card(c)
+
+        with app.test_client() as client:
+            review_payload = {
+                "card_id": "WEB-REV-01",
+                "action": "APPROVE"
+            }
+            res = client.post("/api/command-center/review", json=review_payload)
+            self.assertEqual(res.status_code, 200)
+            data = json.loads(res.data)
+            self.assertEqual(data["status"], "SUCCESS")
+            self.assertEqual(data["card_status"], CardStatus.REVIEWED)
 
 if __name__ == "__main__":
     unittest.main()
