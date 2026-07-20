@@ -28,13 +28,18 @@ def validate_worker_report(report: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(evidence, list):
         raise ValueError("evidence must be a list of objects")
 
-    changed_files = report.get("changed_files", [])
-    if not isinstance(changed_files, list):
+    changed_files = report.get("changed_files")
+    if changed_files is not None and not isinstance(changed_files, list):
         raise ValueError("changed_files must be a list of strings")
 
-    test_results = report.get("test_results", {})
-    if not isinstance(test_results, dict):
+    test_results = report.get("test_results")
+    if test_results is not None and not isinstance(test_results, dict):
         raise ValueError("test_results must be a dictionary")
+
+    # Support an optional generic metadata dictionary for other domains
+    metadata = report.get("metadata", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("metadata must be a dictionary")
 
     # Return sanitized / normalized dict
     return {
@@ -52,8 +57,9 @@ def validate_worker_report(report: Dict[str, Any]) -> Dict[str, Any]:
         "root_cause": report.get("root_cause"),
         "repair_action": report.get("repair_action"),
         "evidence": evidence,
-        "changed_files": [str(f) for f in changed_files],
-        "test_results": test_results,
+        "changed_files": [str(f) for f in changed_files] if changed_files is not None else [],
+        "test_results": test_results if test_results is not None else {},
+        "metadata": metadata,
         "security_classification": classification,
         "candidate_learning": bool(report.get("candidate_learning", True))
     }
