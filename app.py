@@ -17,8 +17,15 @@ logger = logging.getLogger("solomon_api_server")
 
 app = Flask(__name__)
 
-# Initialize Mnemosyne Runtime
+# Initialize Mnemosyne Runtime and run Doctrine Importer
 runtime = MnemosyneRuntime()
+from solomon_knowledge_cards import DoctrineImporter
+importer = DoctrineImporter(runtime.db)
+try:
+    imported_docs = importer.import_directory("openclaw-workspace/checklists")
+    logger.info(f"Doctrine Importer complete. Imported {imported_docs} active procedures from workspace.")
+except Exception as ie:
+    logger.error(f"Failed to import checklist doctrine: {str(ie)}")
 
 # Load API key configuration safely (never log real key values)
 ACTIONS_API_KEY = os.environ.get("SOLOMON_ACTIONS_API_KEY", "DEMO_KEY")
@@ -144,6 +151,15 @@ def cc_solomon_chat():
         "You are Solomon, the primary autonomous capability coordinator and Growth Engine. "
         "Formulate a plan or response using the retrieved memory context if applicable. "
         "Preserve your identity, mission, tools, and rules.\n\n"
+        "You have full cognitive access and capability to coordinate your added open-source tools "
+        "defined in openclaw-workspace/TOOLS.md, including:\n"
+        "- file_ops: Read/write workspace files safely.\n"
+        "- bash_run: Execute non-interactive local terminal commands.\n"
+        "- openhands_run: Delegate deep repository software engineering tasks to OpenHands containers.\n"
+        "- crewai_run: Initiate multi-agent collaborative strategy and research tasks.\n"
+        "- github_search_and_clone: Scour and clone open-source repositories to sandbox directory.\n"
+        "- pypi_npm_install: Dynamically install open-source libraries into your environment.\n"
+        "- mcp_server_integrate: Dynamically orchestrate external Model Context Protocol servers to immediately mount new capabilities.\n\n"
     )
     if memory_context_prompt:
         system_instruction += (
