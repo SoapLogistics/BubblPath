@@ -1,0 +1,26 @@
+Doctrine Importer successfully imported checklist: crewai_integration.md
+Doctrine Importer successfully imported checklist: autonomous_cycle.md
+Doctrine Importer successfully imported checklist: passive_exponential_growth.md
+Doctrine Importer successfully imported checklist: solomon_code_absorption.md
+Doctrine Importer successfully imported checklist: openhands_integration.md
+Solomon 24/7 Autonomous Optimization Daemon successfully started!
+ * Serving Flask app 'app'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:10000
+ * Running on http://192.168.0.2:10000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [20/Jul/2026 23:13:25] "HEAD /cards HTTP/1.1" 200 -
+Daemon metrics save failed: name 'json' is not defined
+127.0.0.1 - - [20/Jul/2026 23:14:25] "HEAD /cards HTTP/1.1" 200 -
+Daemon metrics save failed: name 'json' is not defined
+127.0.0.1 - - [20/Jul/2026 23:15:01] "HEAD /cards HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jul/2026 23:15:02] "HEAD /cards HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jul/2026 23:15:02] "HEAD /cards HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jul/2026 23:15:25] "HEAD /cards HTTP/1.1" 200 -
+Daemon metrics save failed: name 'json' is not defined
+127.0.0.1 - - [20/Jul/2026 23:16:25] "[35m[1mHEAD /cards HTTP/1.1[0m" 500 -
+Daemon metrics save failed: name 'json' is not defined
+127.0.0.1 - - [20/Jul/2026 23:17:28] "[35m[1mHEAD /cards HTTP/1.1[0m" 500 -
+Daemon metrics save failed: name 'json' is not defined
