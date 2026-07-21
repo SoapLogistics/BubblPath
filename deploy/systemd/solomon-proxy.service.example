@@ -1,0 +1,17 @@
+[Unit]
+Description=Solomon Action Edge Proxy
+After=network.target
+
+[Service]
+Type=simple
+User=millerm
+WorkingDirectory=/srv/storage/toshiba/BubblePath/codexia-web
+EnvironmentFile=/etc/solomon/solomon.env
+ExecStart=/usr/bin/node solomon-proxy.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
