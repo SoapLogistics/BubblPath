@@ -2,6 +2,7 @@ import os
 import hmac
 import json
 import logging
+from datetime import datetime
 from flask import Flask, request, jsonify
 import openai
 
@@ -61,7 +62,11 @@ def handle_generic_exception(e):
 # --- Public Routing ---
 @app.route("/api/health", methods=["GET"])
 def health():
-    """Unauthenticated public health check endpoint."""
+    """Unauthenticated public health check endpoint with resource metrics."""
+    from solomon_knowledge_cards import enforce_resource_caps, get_memory_footprint_mb
+    is_stable = enforce_resource_caps()
+    mem_mb = get_memory_footprint_mb()
+
     health_data = runtime.health()
     return jsonify({
         "ok": True,
@@ -69,10 +74,13 @@ def health():
         "mnemosyne": {
             "connected": health_data.get("connected", False),
             "schema_version": health_data.get("schema_version", "1"),
-            "card_count": health_data.get("card_count", 0)
+            "card_count": health_data.get("card_count", 0),
+            "link_count": health_data.get("link_count", 0)
         },
         "runtime": {
-            "ready": True
+            "ready": True,
+            "memory_usage_mb": round(mem_mb, 2),
+            "resource_cap_stable": is_stable
         }
     })
 
@@ -117,6 +125,18 @@ def cc_solomon_chat():
         return jsonify({"ok": False, "error": "Missing required fields: message, conversation_id, request_id"}), 400
 
     logger.info(f"Received chat request {request_id} for conversation {conversation_id} with clearance {clearance}")
+
+    # Track execution traces and enforce resource thresholds
+    from solomon_knowledge_cards import enforce_resource_caps, get_memory_footprint_mb
+    is_stable = enforce_resource_caps()
+    mem_mb = get_memory_footprint_mb()
+
+    runtime.add_execution_trace(
+        request_id=request_id,
+        conversation_id=conversation_id,
+        step_name="Ingress Resource Verification",
+        details={"memory_usage_mb": mem_mb, "is_resource_cap_stable": is_stable}
+    )
 
     # 1. Retrieve supporting memory cards from Mnemosyne
     try:
@@ -301,7 +321,6 @@ def cc_get_cards():
         for r in rows:
             c = dict(r)
             c["source_ids"] = json.loads(c["source_ids"])
-            # Redact sensitive body details if requested by security level
             cards.append(c)
 
         return jsonify({
@@ -310,6 +329,122 @@ def cc_get_cards():
         })
     finally:
         conn.close()
+
+
+# --- Real-Time Node Sync & Visual Debugging Endpoints ---
+
+@app.route("/api/bubblepath/nodes", methods=["GET"])
+def bp_get_nodes():
+    """Exposes all knowledge cards and relational links for live node-based UI mapping."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    conn = runtime.db.get_connection()
+    try:
+        # Fetch cards
+        cards_cursor = conn.execute("SELECT card_id, card_type, title, summary, validation_state, security_classification FROM knowledge_cards")
+        nodes = [dict(row) for row in cards_cursor.fetchall()]
+
+        # Fetch links
+        links_cursor = conn.execute("SELECT source_id, target_id, relationship_type FROM card_links")
+        edges = [dict(row) for row in links_cursor.fetchall()]
+
+        return jsonify({
+            "ok": True,
+            "nodes": nodes,
+            "edges": edges,
+            "metrics": {
+                "total_nodes": len(nodes),
+                "total_edges": len(edges)
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to fetch visual node graph: {str(e)}")
+        return jsonify({"ok": False, "error": "Internal error retrieving node graph."}), 500
+    finally:
+        conn.close()
+
+@app.route("/api/bubblepath/execution-path/<request_id>", methods=["GET"])
+def bp_get_execution_path(request_id):
+    """Retrieves step-by-step trace logs for visual debugging of agent's execution path."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    conn = runtime.db.get_connection()
+    try:
+        cursor = conn.execute("""
+            SELECT step_name, details, timestamp FROM execution_traces
+            WHERE request_id = ?
+            ORDER BY id ASC
+        """, (request_id,))
+
+        traces = []
+        for row in cursor.fetchall():
+            trace = dict(row)
+            try:
+                trace["details"] = json.loads(trace["details"])
+            except Exception:
+                pass
+            traces.append(trace)
+
+        return jsonify({
+            "ok": True,
+            "request_id": request_id,
+            "execution_steps": traces,
+            "step_count": len(traces)
+        })
+    except Exception as e:
+        logger.error(f"Failed to retrieve execution path for {request_id}: {str(e)}")
+        return jsonify({"ok": False, "error": "Internal error retrieving execution traces."}), 500
+    finally:
+        conn.close()
+
+@app.route("/api/bubblepath/sync-files", methods=["POST"])
+def bp_sync_files():
+    """Synchronizes file system updates cleanly with the desktop second brain application."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    payload = request.json or {}
+    filepath = payload.get("filepath")
+    content = payload.get("content")
+
+    if not filepath or content is None:
+        return jsonify({"ok": False, "error": "Missing filepath or content."}), 400
+
+    safe_path = os.path.abspath(filepath)
+    workspace_root = os.path.abspath(os.getcwd())
+    if not safe_path.startswith(workspace_root + os.sep) and safe_path != workspace_root:
+        return jsonify({"ok": False, "error": "Access denied: Target path lies outside workspace boundaries."}), 403
+
+    try:
+        # Atomic file write with immediate read verification
+        temp_file = safe_path + ".tmp"
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        # Verify write matches exactly
+        with open(temp_file, "r", encoding="utf-8") as f:
+            read_back = f.read()
+
+        if read_back != content:
+            raise IOError("Write verification failed: Readback checksum mismatch.")
+
+        # Rename to target location (atomic write replacement)
+        os.replace(temp_file, safe_path)
+        logger.info(f"File synced atomically: {filepath}")
+
+        return jsonify({
+            "ok": True,
+            "filepath": filepath,
+            "bytes_written": len(content),
+            "synced_at": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Failed to sync file system update: {str(e)}")
+        if os.path.exists(safe_path + ".tmp"):
+            os.remove(safe_path + ".tmp")
+        return jsonify({"ok": False, "error": f"Friction error during file system write: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

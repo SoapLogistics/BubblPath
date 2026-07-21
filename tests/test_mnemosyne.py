@@ -361,3 +361,118 @@ def test_autonomous_loop_sandbox_and_distill(runtime_test):
     # Verify now retrieved successfully
     bundle_active = runtime_test.retrieve_context(query="Doubler", clearance="INTERNAL")
     assert draft_card["card_id"] in bundle_active["retrieved_card_ids"]
+
+
+# --- 5. Relational Linking, Traces, & Resource Monitor Tests ---
+
+def test_card_linking_relations(runtime_test):
+    """Verify that card relational links are created, retrieved, and validated."""
+    # Insert two active dummy cards
+    conn = runtime_test.db.get_connection()
+    with conn:
+        conn.execute("""
+            INSERT INTO knowledge_cards (card_id, card_type, title, summary, body, validation_state, security_classification, source_ids, created_at, updated_at)
+            VALUES
+            ('KC-SRC', 'PROCEDURE', 'Source card', 'Desc', 'Procedure details', 'ACTIVE', 'PUBLIC', '[]', 'now', 'now'),
+            ('KC-TGT', 'REPAIR', 'Target card', 'Desc', 'Repair details', 'ACTIVE', 'PUBLIC', '[]', 'now', 'now')
+        """)
+
+    # Establish a link
+    res = runtime_test.add_card_link("KC-SRC", "KC-TGT", "DEPENDS_ON")
+    assert res is True
+
+    # Retrieve links
+    links = runtime_test.get_card_links("KC-SRC")
+    assert len(links) == 1
+    assert links[0]["source_id"] == "KC-SRC"
+    assert links[0]["target_id"] == "KC-TGT"
+    assert links[0]["relationship_type"] == "DEPENDS_ON"
+
+
+def test_execution_traces_and_visual_path(runtime_test):
+    """Verify that step-by-step visual execution traces can be recorded and fetched."""
+    runtime_test.add_execution_trace(
+        request_id="REQ-TEST-123",
+        conversation_id="CONV-TEST-123",
+        step_name="Test Step",
+        details={"status": "OK", "step": 1}
+    )
+
+    conn = runtime_test.db.get_connection()
+    try:
+        cursor = conn.execute("SELECT * FROM execution_traces WHERE request_id = 'REQ-TEST-123'")
+        traces = [dict(r) for r in cursor.fetchall()]
+        assert len(traces) == 1
+        assert traces[0]["step_name"] == "Test Step"
+        assert "status" in json.loads(traces[0]["details"])
+    finally:
+        conn.close()
+
+
+def test_resource_monitor_and_capping():
+    """Verify that current process memory footprints are retrieved and within caps."""
+    from solomon_knowledge_cards import enforce_resource_caps, get_memory_footprint_mb
+
+    mem = get_memory_footprint_mb()
+    assert mem > 0.0
+
+    # Under typical test conditions, process is well under 1.5GB (1536MB)
+    assert enforce_resource_caps(max_memory_mb=1536.0) is True
+
+    # Test failure case when setting a ridiculously small memory cap
+    assert enforce_resource_caps(max_memory_mb=0.01) is False
+
+
+def test_abort_and_revert_failure_logging(runtime_test):
+    """Verify that calling trigger_abort_and_revert registers a FAILURE card in Mnemosyne."""
+    from solomon_knowledge_cards.autonomous_loop import AutonomousImprovementLoop
+    loop = AutonomousImprovementLoop(runtime_test)
+
+    failure_card_id = loop.trigger_abort_and_revert(
+        candidate_name="Crash Candidate",
+        error_message="SyntaxError: invalid syntax"
+    )
+
+    assert failure_card_id.startswith("KC-DRAFT-WR-FAIL-")
+
+    # Verify the card state is DRAFT and is logged in the database
+    conn = runtime_test.db.get_connection()
+    try:
+        cursor = conn.execute("SELECT * FROM knowledge_cards WHERE card_id = ?", (failure_card_id,))
+        row = cursor.fetchone()
+        assert row is not None
+        assert row["card_type"] == "REPAIR"
+        assert row["validation_state"] == "DRAFT"
+        assert "Crash Candidate" in row["body"]
+        assert "SyntaxError: invalid syntax" in row["body"]
+    finally:
+        conn.close()
+
+
+def test_flask_bubblepath_endpoints(flask_client):
+    """Verify that BubblePath visual synchronization and trace endpoints work via Flask."""
+    headers = {"Authorization": "Bearer TEST_ACTIONS_API_KEY"}
+
+    # 1. Test Node and Link Graph API
+    resp_nodes = flask_client.get("/api/bubblepath/nodes", headers=headers)
+    assert resp_nodes.status_code == 200
+    assert "nodes" in resp_nodes.json
+    assert "edges" in resp_nodes.json
+
+    # 2. Test Execution Path Trace API
+    resp_path = flask_client.get("/api/bubblepath/execution-path/REQ-TEST-123", headers=headers)
+    assert resp_path.status_code == 200
+    assert resp_path.json["request_id"] == "REQ-TEST-123"
+
+    # 3. Test File Sync API (Safe Sandbox Check)
+    sync_payload = {
+        "filepath": "docs/test_sync.txt",
+        "content": "Automated visual node synchronization content."
+    }
+    resp_sync = flask_client.post("/api/bubblepath/sync-files", headers=headers, json=sync_payload)
+    assert resp_sync.status_code == 200
+    assert resp_sync.json["filepath"] == "docs/test_sync.txt"
+
+    # Clean up test file
+    if os.path.exists("docs/test_sync.txt"):
+        os.remove("docs/test_sync.txt")

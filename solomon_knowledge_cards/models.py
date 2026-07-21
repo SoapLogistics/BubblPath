@@ -110,5 +110,31 @@ class DatabaseManager:
                     conn.execute("CREATE INDEX IF NOT EXISTS idx_reviews_card ON reviews(card_id);")
 
                     conn.execute("INSERT INTO migrations (version) VALUES (1);")
+
+                # Migration 2: Relational links table & execution_traces for debugging
+                if current_v < 2:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS card_links (
+                            source_id TEXT NOT NULL,
+                            target_id TEXT NOT NULL,
+                            relationship_type TEXT NOT NULL, -- DEPENDS_ON, PREVENTS, ENHANCES, PROPOSES_UPDATE_TO
+                            created_at TEXT NOT NULL,
+                            PRIMARY KEY (source_id, target_id, relationship_type),
+                            FOREIGN KEY (source_id) REFERENCES knowledge_cards(card_id) ON DELETE CASCADE,
+                            FOREIGN KEY (target_id) REFERENCES knowledge_cards(card_id) ON DELETE CASCADE
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS execution_traces (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            request_id TEXT NOT NULL,
+                            conversation_id TEXT NOT NULL,
+                            step_name TEXT NOT NULL,
+                            details TEXT NOT NULL, -- JSON formatted details or plain-text
+                            timestamp TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("CREATE INDEX IF NOT EXISTS idx_traces_request ON execution_traces(request_id);")
+                    conn.execute("INSERT INTO migrations (version) VALUES (2);")
         finally:
             conn.close()

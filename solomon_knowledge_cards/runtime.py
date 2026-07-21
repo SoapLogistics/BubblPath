@@ -2,11 +2,20 @@ import os
 import json
 import sqlite3
 import hmac
+import logging
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from .models import DatabaseManager
 
+logger = logging.getLogger("mnemosyne_runtime")
+
 CLEARANCE_ORDER = ["PUBLIC", "INTERNAL", "RESTRICTED"]
+
+# Eleven SOK Card Families
+CARD_FAMILIES = [
+    "IDENTITY", "MISSION", "PROCEDURE", "TASK", "REVIEW",
+    "KNOWLEDGE", "FAILURE", "REPAIR", "SKILL", "DECISION", "ARCHITECTURE"
+]
 
 def get_allowed_clearances(clearance: str) -> List[str]:
     c = (clearance or "INTERNAL").upper()
@@ -34,6 +43,58 @@ class MnemosyneRuntime:
         self.db_path = db_path
         self.db = DatabaseManager(self.db_path)
 
+    def add_card_link(self, source_id: str, target_id: str, relationship_type: str) -> bool:
+        """Establishes a relational link between two Knowledge Cards (DEPENDS_ON, PREVENTS, ENHANCES)."""
+        rel_types = ["DEPENDS_ON", "PREVENTS", "ENHANCES", "PROPOSES_UPDATE_TO"]
+        if relationship_type.upper() not in rel_types:
+            raise ValueError(f"Invalid relationship type: {relationship_type}. Must be one of {rel_types}")
+
+        conn = self.db.get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT OR IGNORE INTO card_links (source_id, target_id, relationship_type, created_at)
+                    VALUES (?, ?, ?, ?);
+                """, (source_id, target_id, relationship_type.upper(), datetime.utcnow().isoformat()))
+            return True
+        except Exception as e:
+            logger.error(f"Failed to create card link from {source_id} to {target_id}: {str(e)}")
+            return False
+        finally:
+            conn.close()
+
+    def get_card_links(self, card_id: str) -> List[Dict[str, Any]]:
+        """Retrieves all active relational links for a specific card."""
+        conn = self.db.get_connection()
+        try:
+            cursor = conn.execute("""
+                SELECT * FROM card_links
+                WHERE source_id = ? OR target_id = ?
+            """, (card_id, card_id))
+            return [dict(r) for r in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def add_execution_trace(self, request_id: str, conversation_id: str, step_name: str, details: Any):
+        """Records a step in the execution path for real-time visual debugging traces."""
+        conn = self.db.get_connection()
+        try:
+            with conn:
+                conn.execute("""
+                    INSERT INTO execution_traces (request_id, conversation_id, step_name, details, timestamp)
+                    VALUES (?, ?, ?, ?, ?);
+                """, (
+                    request_id,
+                    conversation_id,
+                    step_name,
+                    json.dumps(details) if not isinstance(details, str) else details,
+                    datetime.utcnow().isoformat()
+                ))
+        except Exception as e:
+            logger.error(f"Failed to record execution trace for {request_id}: {str(e)}")
+        finally:
+            conn.close()
+
     def retrieve_context(
         self,
         query: str,
@@ -41,18 +102,17 @@ class MnemosyneRuntime:
         task_type: Optional[str] = None,
         procedure_ids: Optional[List[str]] = None,
         limit: int = 3,
+        context_budget_chars: int = 4000  # Strict context budget to prevent prompt paralysis
     ) -> Dict[str, Any]:
         """
         Retrieves approved/active valid knowledge cards matching search query and clearance level.
-        Only retrieves APPROVED or ACTIVE cards.
+        Enforces a maximum characters context budget to prevent prompt paralysis.
         """
         allowed = get_allowed_clearances(clearance)
         placeholders = ",".join("?" for _ in allowed)
 
         conn = self.db.get_connection()
         try:
-            # Query all eligible cards
-            # We filter by validation_state IN ('APPROVED', 'ACTIVE') and clearance
             sql = f"""
                 SELECT * FROM knowledge_cards
                 WHERE validation_state IN ('APPROVED', 'ACTIVE')
@@ -62,24 +122,21 @@ class MnemosyneRuntime:
 
             if task_type:
                 sql += " AND card_type = ?"
-                params.append(task_type)
+                params.append(task_type.upper())
 
             cursor = conn.execute(sql, params)
             rows = cursor.fetchall()
 
-            # Rank rows based on a basic token matching score
             query_tokens = [t.lower() for t in query.split() if t]
             scored_cards = []
 
             for row in rows:
                 card = dict(row)
-                # Decode source_ids
                 try:
                     card["source_ids"] = json.loads(card["source_ids"])
                 except Exception:
                     card["source_ids"] = []
 
-                # Calculate match score
                 score = 0.0
                 title_lower = card["title"].lower()
                 summary_lower = card["summary"].lower()
@@ -93,9 +150,7 @@ class MnemosyneRuntime:
                     if token in body_lower:
                         score += 1.0
 
-                # Check procedure_ids overlapping if supplied
                 if procedure_ids:
-                    # Procedure_ids overlapping score bonus
                     for pid in procedure_ids:
                         if pid.lower() in card["body"].lower() or pid.lower() in card["summary"].lower():
                             score += 5.0
@@ -103,36 +158,41 @@ class MnemosyneRuntime:
                 card["_score"] = score
                 scored_cards.append(card)
 
-            # Sort by score descending, then by confidence descending, then by card_id
             scored_cards.sort(key=lambda x: (x["_score"], x["confidence"]), reverse=True)
 
-            # Slice to limit
-            results = scored_cards[:limit]
+            results = []
+            total_chars = 0
 
-            # Construct safe explanations and return bundles
-            retrieved_cards = []
-            for card in results:
-                # Build safe selected reason
-                reason = "Matched query keywords."
-                if card["_score"] > 5.0:
-                    reason = "Strong relevance based on overlap and procedures."
+            # Dynamic context budget assembly: slice cards dynamically
+            for card in scored_cards:
+                if len(results) >= limit:
+                    break
 
-                retrieved_cards.append({
-                    "card_id": card["card_id"],
-                    "card_type": card["card_type"],
-                    "title": card["title"],
-                    "summary": card["summary"],
-                    "body": card["body"],
-                    "confidence": card["confidence"],
-                    "validation_state": card["validation_state"],
-                    "source_ids": card["source_ids"],
-                    "reason_selected": reason
-                })
+                card_size = len(card["title"]) + len(card["summary"]) + len(card["body"])
+                # Only include within character budget to prevent prompt paralysis
+                if total_chars + card_size <= context_budget_chars:
+                    reason = "Matched query keywords."
+                    if card["_score"] > 5.0:
+                        reason = "Strong relevance based on overlap and procedures."
+
+                    results.append({
+                        "card_id": card["card_id"],
+                        "card_type": card["card_type"],
+                        "title": card["title"],
+                        "summary": card["summary"],
+                        "body": card["body"],
+                        "confidence": card["confidence"],
+                        "validation_state": card["validation_state"],
+                        "source_ids": card["source_ids"],
+                        "reason_selected": reason
+                    })
+                    total_chars += card_size
 
             return {
-                "memory_context": retrieved_cards,
-                "retrieved_card_ids": [c["card_id"] for c in retrieved_cards],
-                "retrieval_count": len(retrieved_cards)
+                "memory_context": results,
+                "retrieved_card_ids": [c["card_id"] for c in results],
+                "retrieval_count": len(results),
+                "total_chars_utilized": total_chars
             }
         finally:
             conn.close()
@@ -199,15 +259,18 @@ class MnemosyneRuntime:
                 # Generate Candidate Draft Card if learning is enabled
                 draft_cards = []
                 if report.get("candidate_learning", True):
-                    # Formulate draft card contents based on report outcome
                     card_id = f"KC-DRAFT-{report_id}"
                     outcome = report.get("outcome", "SUCCESS")
-                    card_type = "REPAIR" if outcome == "FAILURE" or report.get("repair_action") else "PROCEDURE"
+
+                    # Select Card Family rigidly based on outcome and attributes
+                    if outcome == "FAILURE" or report.get("repair_action"):
+                        card_type = "REPAIR"
+                    else:
+                        card_type = "PROCEDURE"
 
                     title = f"Candidate Learning from {report.get('task_id', 'Task')}"
                     summary = f"Automatically extracted from worker report of {report_id}."
 
-                    # Ensure secret redaction in body/summary
                     body = (
                         f"Attempted: {report.get('attempted', '')}\n"
                         f"Succeeded: {report.get('succeeded', '')}\n"
@@ -291,7 +354,6 @@ class MnemosyneRuntime:
         conn = self.db.get_connection()
         try:
             with conn:
-                # Find card
                 cursor = conn.execute("SELECT * FROM knowledge_cards WHERE card_id = ?", (card_id,))
                 row = cursor.fetchone()
                 if not row:
@@ -300,7 +362,6 @@ class MnemosyneRuntime:
                 card = dict(row)
                 current_state = card["validation_state"]
 
-                # Determine target validation state
                 if action == "REJECT":
                     if not reason:
                         raise ValueError("Reason is required for rejections.")
@@ -316,12 +377,10 @@ class MnemosyneRuntime:
                         raise ValueError(f"Cannot transition to APPROVED from state {current_state}.")
                     target_state = "APPROVED"
                 elif action == "ACTIVATE":
-                    # For activation, can come from DRAFT, REVIEWED, or APPROVED
                     target_state = "ACTIVE"
                 else:
                     raise ValueError(f"Unknown review action {action}.")
 
-                # Generate next revision version
                 rev_cursor = conn.execute("SELECT MAX(version) as max_v FROM revisions WHERE card_id = ?", (card_id,))
                 rev_row = rev_cursor.fetchone()
                 next_version = (rev_row["max_v"] or 0) + 1
@@ -380,20 +439,23 @@ class MnemosyneRuntime:
         try:
             conn = self.db.get_connection()
             try:
-                # Query migration version
                 mig_cursor = conn.execute("SELECT MAX(version) as v FROM migrations")
                 mig_row = mig_cursor.fetchone()
                 schema_v = str(mig_row["v"]) if mig_row and mig_row["v"] is not None else "0"
 
-                # Query card count
                 cnt_cursor = conn.execute("SELECT COUNT(*) as cnt FROM knowledge_cards")
                 cnt_row = cnt_cursor.fetchone()
                 card_count = cnt_row["cnt"] if cnt_row else 0
+
+                link_cursor = conn.execute("SELECT COUNT(*) as cnt FROM card_links")
+                link_row = link_cursor.fetchone()
+                link_count = link_row["cnt"] if link_row else 0
 
                 return {
                     "connected": True,
                     "schema_version": schema_v,
                     "card_count": card_count,
+                    "link_count": link_count,
                     "database_path": self.db_path
                 }
             finally:
