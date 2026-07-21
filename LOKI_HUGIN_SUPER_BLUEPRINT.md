@@ -165,32 +165,105 @@ Any dynamic model compiled by Gabriel (e.g., a custom WNBA sports model, or a cu
 
 ---
 
-## 6. Unified Integration Layer & Solomon Core SOK
+## 6. Solomon Blueprint 2.0: The Perpetual Learning Machine
 
-Loki and Hugin feed directly into Solomon's primary systems:
+To shift Solomon from "accumulating features" to "becoming an engine that builds himself," we formally restructure SOSS into a series of **evolutionary, governed phases** powered by the **Perpetual Learning Core (PLC)**.
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           SOLOMON SOSS CORE ENGINE                           │
-├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  [Project Hugin (Code AST)]  ─────┐                                          │
-│                                   ├─> [Gabriel Engine] ─> [GCPP Pipeline]    │
-│  [Project Loki (EV Model)]   ─────┘                           │              │
-│                                                               ▼              │
-│                                                   [Mnemosyne SQLite Storage] │
-│                                                               │              │
-│                                                               ▼              │
-│                                                   [ACTIVE SOSS SOK Cards]    │
-└──────────────────────────────────────────────────────────────────────────────┘
+                    ┌──────────────────────────────┐
+                    │             USER             │
+                    └──────────────┬───────────────┘
+                                   │
+                    ┌──────────────▼───────────────┐
+                    │         Solomon Core         │
+                    └──────────────┬───────────────┘
+                                   │
+      ┌────────────────────────────┼────────────────────────────┐
+      │                            │                            │
+┌─────▼──────────────┐   ┌─────────▼──────────┐   ┌─────────────▼──────┐
+│  Mnemosyne Memory  │   │ Prometheus Curiosity│   │ Gabriel Skill Fact.│
+│ (Governed Storage) │   │  (Opportunity Map) │   │ (Capability Synt.) │
+└─────┬──────────────┘   └─────────┬──────────┘   └─────────────┬──────┘
+      │                            │                            │
+      └────────────────────────────┼────────────────────────────┘
+                                   │
+                    ┌──────────────▼───────────────┐
+                    │   Perpetual Learning Core   │
+                    └──────────────┬───────────────┘
+                                   │
+       ┌───────────────────────────┼───────────────────────────┐
+       │                           │                           │
+┌──────▼─────────────┐   ┌─────────▼──────────┐   ┌────────────▼───────┐
+│ Experiment Engine  │   │    Review Gate     │   │ Deployment Engine  │
+└────────────────────┘   └────────────────────┘   └────────────────────┘
 ```
 
-1.  **AST-Based Optimization:** Hugin's static parsing engine allows the **Gabriel Assimilation Engine**'s AST Injector to safely inspect and refit Loki's Python mathematical modules at runtime under strict GCPP review.
-2.  **SOK Memory Card Generation:** Every discovered sports betting edge (Loki) or code verification pattern (Hugin) is structured as a permanent Knowledge Card in Solomon's long-term memory engine.
+Every design choice within Solomon 2.0 answers a single directive: **"Does this make Solomon learn better?"** If the answer is negative, execution is suspended.
 
 ---
 
-## 7. Technology Stack & Implementation Blueprint
+### 6.1. Phase-by-Phase Evolutionary Roadmap
+
+#### Phase 0: Freeze the Foundation (SS1)
+Establish a locked, immutable production brain. Features must be frozen to preserve complete baseline stability.
+*   **Active Controls:** 1 production API, 1 unified memory database, 1 execution planner, and 1 deployment pipeline.
+
+#### Phase 1: Perpetual Learning Core (Mnemosyne OS)
+Establish Mnemosyne as the perpetual operating system. Learning is the sole system responsibility.
+*   **Card Families:** Knowledge Cards, Procedural Cards, Repair Cards, Skill Cards, Failure Cards.
+*   **Lifecycle Rules:** Version control on all files. Memories must earn their retention score; obsolete knowledge is garbage collected.
+
+#### Phase 2: Curiosity Engine (Prometheus Opportunity Mapper)
+Instead of waiting for human prompts, Prometheus actively scans execution logs, CLI metrics, and user feedback to detect **Learning Opportunities (LOs)**.
+*   **Opportunity Weighting Matrix:**
+    $$\text{LO Score} = w_v \cdot \text{Value} + w_d \cdot \text{Difficulty} + w_u \cdot \text{FutureUse} - w_r \cdot \text{Risk} - w_c \cdot \text{ComputeCost}$$
+*   The highest-scoring LOs populate the automated learning queue.
+
+#### Phase 3: Experiment Engine (Scientific Method Pipeline)
+Every LO is converted into a structured, reproducible experiment:
+$$\text{Hypothesis} \longrightarrow \text{Plan} \longrightarrow \text{Sandbox Execution} \longrightarrow \text{Evidence Capture} \longrightarrow \text{Review} \longrightarrow \text{Mnemosyne Promotion}$$
+
+#### Phase 4: Skill Factory (Gabriel Re-engineered)
+Gabriel transitions from copy-pasting code into synthesizing structured, modular, and benchmarked **Skill Packages** (e.g., Git workflow, conflict resolution, mathematical models).
+*   Each package is isolated and contains defined: purpose, inputs, outputs, automated unit tests, and safety constraints.
+
+#### Phase 5: Skill Graph & Dependency Maps
+Skills teach each other by building a directed dependency graph.
+*   Loki and Hugin analyze the graph to discover prerequisites, missing knowledge vectors, and structural redundancies, automatically recommending what to learn next.
+
+#### Phase 6: Learning Process Optimization (Self-Study)
+Solomon monitors his own performance metrics (e.g., embedding search success, recall relevance, and execution accuracy).
+*   The system iteratively modifies its own hyperparameters (e.g., RAG vector search weights, decay parameters, and confidence thresholds) to optimize the learning rate.
+
+#### Phase 7: Autonomous Research & Proactive Evaluation
+Solomon initiates research projects independently (e.g., benchmark comparison of different mathematical calculators, sports databases, or parsing schemas), storing winners in the active ledger and archiving losers.
+
+#### Phase 8: Autonomous Tool Creation
+Solomon identifies missing operational capabilities, prototypes the utility in sandboxes, subjects it to AST safety audits, and registers it as a reusable skill.
+
+#### Phase 9: Self-Repair & Telemetry Probes
+Continuous self-audit probes monitor: memory corruption, broken APIs, hallucination rates, and model drift. Repair templates are automatically compiled and deployed.
+
+#### Phase 10: Distributed Node Ledger
+Nodes (macOS, Ubuntu local server, mobile nodes) sync knowledge updates, new failures, and repairs back to the primary SOSS ledger.
+
+#### Phase 11: SOSS Wisdom Layer
+A final ethical and limitation gate. Every promoted skill is marked with explicit constraints:
+$$\text{Wisdom Vector} = \{\text{Confidence}, \text{Risks}, \text{Limits}, \text{Human Overrides}, \text{Ethics Limits}\}$$
+
+#### Phase 12: Learning How to Learn (Meta-Learning)
+Solomon optimizes his own learning algorithms. Rather than just acquiring Python scripts or sports statistics, he modifies the structural algorithms of the Experiment Engine and the Review Gate. This is the point where growth transitions from additive to exponential.
+
+---
+
+### 6.2. The Solomon North Star Governing Rule
+To align every capability with self-improvement, Solomon commits to a single sovereign rule:
+
+> **Every hour Solomon must become measurably better than the hour before—not by changing randomly, but by acquiring verified, reusable knowledge that increases his ability to solve future problems safely and efficiently.**
+
+---
+
+## 8. Technology Stack & Implementation Blueprint
 
 *   **Languages:** Python 3.11+, TypeScript, Rust (for high-speed binary parsing).
 *   **Analysis Tools:** Python `ast` parser, `Z3 Theorem Prover` (SMT Solver), `NetworkX` (for Call Graphs and CFG graph math).
