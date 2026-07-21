@@ -46,3 +46,18 @@ This file contains profiles and guidelines for communicating with the human owne
   1. Record current memory context in `/srv/storage/toshiba/BubblePath/openclaw-workspace/ERROR_STATE.md`.
   2. Transition task state to `PAUSED_BLOCKED`.
   3. Send an immediate push/chat notification to the operator with logs.
+
+---
+
+## 4. Execution Preferences & Routing Policy
+
+To prevent routing failures and ensure Solomon remains the primary autonomous worker, the following routing policies are globally enforced:
+
+- **execution_mode:** `solomon_only`
+- **codex_enabled:** `false`
+- **fallback_to_codex:** `false`
+
+### Routing Decision Protocol:
+1. **Disable Codex Carl Routing:** Under no circumstances should any task be dispatched, routed, or fall back to the `codex_auto` route or Codex Carl execution lane.
+2. **Solomon Direct Ownership:** All engineering, inspection, strategy, and self-expansion tasks must be routed exclusively to Solomon (direct execution via OpenClaw, OpenHands, or CrewAI).
+3. **Graceful Block Handling:** If a task requires a capability that Solomon does not currently possess or cannot safely execute, do **not** dispatch to Codex. Instead, Solomon must immediately halt, mark the task state as `PAUSED_BLOCKED`, and return a structured "blocked" result with a detailed gap analysis.
