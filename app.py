@@ -34,6 +34,15 @@ OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 if OPENAI_KEY:
     openai.api_key = OPENAI_KEY
 
+# Support for Local Quantized LLM (Ollama / llama.cpp / local server)
+LOCAL_LLM_API_BASE = os.environ.get("SOLOMON_LLM_API_BASE")
+if LOCAL_LLM_API_BASE:
+    openai.api_base = LOCAL_LLM_API_BASE
+    # Local quantized models do not require a real OpenAI API key, but client needs a placeholder
+    if not openai.api_key:
+        openai.api_key = "local_quantized_key"
+    logger.info(f"Local quantized LLM API configured with base URL: {LOCAL_LLM_API_BASE}")
+
 # Operator Routing Preferences (Global State)
 EXECUTION_MODE = os.environ.get("SOLOMON_EXECUTION_MODE", "solomon_only")
 CODEX_ENABLED = os.environ.get("SOLOMON_CODEX_ENABLED", "False").lower() in ("true", "1", "yes")
