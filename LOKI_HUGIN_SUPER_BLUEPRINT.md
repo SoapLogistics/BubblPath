@@ -116,7 +116,56 @@ To mathematically prove software correctness, Hugin utilizes Symbolic Execution 
 
 ---
 
-## 5. Unified Integration Layer & Solomon Core SOK
+## 5. Hardening Gabriel's Assimilation via Mnemosyne Governance
+
+### 5.1. Resolving the Central Systemic Weakness
+A critical structural audit of Solomon's Cognitive Architecture reveals a central vulnerability: **The Gabriel Assimilation Engine's code-synthesis loops operate as an experimental/simulated sandbox without deterministic verification.** Running dynamically generated or "code thief" extracted modules directly in production introduces severe operational risk and model instability.
+
+To resolve this weakness, **Gabriel is formally decoupled from active execution and demoted to a pure "Proposer Substrate."** All capabilities generated or mutated by Gabriel must be audited, compiled, and registered as structured Knowledge Cards within **Mnemosyne—the mature, thread-safe, SQLite-backed, governed learning engine.**
+
+```
+ ┌──────────────────────────────────────┐
+ │      Gabriel Assimilation Core       │  (Experimental Code Extractor)
+ └──────────────────┬───────────────────┘
+                    │  [Outputs Raw Dynamic Code & Metadata]
+                    ▼
+ ┌──────────────────────────────────────┐
+ │     Mnemosyne Review Gate (SOSS)     │  (DRAFT State)
+ └──────────────────┬───────────────────┘
+                    │  [Hugin Static Audit, Taint Checks, & Unit Verifications]
+                    ▼
+ ┌──────────────────────────────────────┐
+ │      Human / SOK Review Panel        │  (REVIEWED ➔ APPROVED State)
+ └──────────────────┬───────────────────┘
+                    │  [Promoted to Read-Only SQLite Substrate]
+                    ▼
+ ┌──────────────────────────────────────┐
+ │    Active SOK Capability Registry    │  (ACTIVE State: Safe Production Run)
+ └──────────────────────────────────────┘
+```
+
+---
+
+### 5.2. The Governed Capability Promotion Pipeline (GCPP)
+Any dynamic model compiled by Gabriel (e.g., a custom WNBA sports model, or a custom parser hook) must traverse a strict 4-stage GCPP pipeline before execution:
+
+1.  **Stage 1: Card Structuring (DRAFT)**
+    Gabriel's raw python code payloads are formatted as a JSONL SOSS Capability Card. The card *must* record its core engineering rationale:
+    *   `why_created`: Objective context behind the generation.
+    *   `problem_solved`: The specific math, bug, or endpoint targeting.
+    *   `future_work_dependent`: Upstream capabilities relying on this card.
+2.  **Stage 2: Automatic Defensive Verification (REVIEWED)**
+    The draft card payload is queried by **Project Hugin**. Hugin runs:
+    *   **AST Safety Scanner**: Rejects cards containing unauthorized OS operations or unsanitized eval structures.
+    *   **Automated Unit Test Prober**: Runs isolated test scripts on the generated capability to verify it compiles and runs without memory leaks.
+3.  **Stage 3: Policy-Guided Review Gate (APPROVED)**
+    The card's metadata must satisfy SOK constraints. It transitions through `ReviewGate.review_card()` to enforce compliance checks.
+4.  **Stage 4: Capability Promotion (ACTIVE)**
+    Upon approval, the card is promoted to the immutable SQLite master ledger. The capability is registered inside the `DynamicCapabilityRegistry` and loaded into the namespace via safe `importlib` bindings. It is now cleared for secure production execution.
+
+---
+
+## 6. Unified Integration Layer & Solomon Core SOK
 
 Loki and Hugin feed directly into Solomon's primary systems:
 
@@ -126,22 +175,22 @@ Loki and Hugin feed directly into Solomon's primary systems:
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  [Project Hugin (Code AST)]  ─────┐                                          │
-│                                   ├─> [Gabriel Engine] ─> [Dynamic Exec]     │
-│  [Project Loki (EV Model)]   ─────┘                                          │
-│                                                                              │
-│                                    │                                         │
-│                                    ▼                                         │
-│                       [SOK Memory Card Promotion]                            │
-│                       (ACTIVE SOSS Knowledge Cards)                          │
+│                                   ├─> [Gabriel Engine] ─> [GCPP Pipeline]    │
+│  [Project Loki (EV Model)]   ─────┘                           │              │
+│                                                               ▼              │
+│                                                   [Mnemosyne SQLite Storage] │
+│                                                               │              │
+│                                                               ▼              │
+│                                                   [ACTIVE SOSS SOK Cards]    │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-1.  **AST-Based Optimization:** Hugin's static parsing engine allows the **Gabriel Assimilation Engine**'s AST Injector to safely inspect and refit Loki's Python mathematical modules at runtime.
+1.  **AST-Based Optimization:** Hugin's static parsing engine allows the **Gabriel Assimilation Engine**'s AST Injector to safely inspect and refit Loki's Python mathematical modules at runtime under strict GCPP review.
 2.  **SOK Memory Card Generation:** Every discovered sports betting edge (Loki) or code verification pattern (Hugin) is structured as a permanent Knowledge Card in Solomon's long-term memory engine.
 
 ---
 
-## 6. Technology Stack & Implementation Blueprint
+## 7. Technology Stack & Implementation Blueprint
 
 *   **Languages:** Python 3.11+, TypeScript, Rust (for high-speed binary parsing).
 *   **Analysis Tools:** Python `ast` parser, `Z3 Theorem Prover` (SMT Solver), `NetworkX` (for Call Graphs and CFG graph math).
@@ -150,4 +199,4 @@ Loki and Hugin feed directly into Solomon's primary systems:
 
 ---
 ## RECOMMENDED NEXT STEP
-**Implement a modular defensive parser module in `hugin/parser.py` that ingests Python files, constructs Abstract Syntax Tree (AST) representations, measures Cyclomatic Complexity, and generates structural Call Graphs to verify system correctness.**
+**Deploy the GCPP pipeline validation routes inside `app.py` under the `/api/gabriel/promote-to-mnemosyne` endpoint to programmatically bind Gabriel's output to Mnemosyne's SQLite storage.**
