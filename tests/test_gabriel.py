@@ -19,6 +19,7 @@ from gabriel_engine.core.capability_extraction import CapabilityExtractionEngine
 from gabriel_engine.core.assimilation_decision import AssimilationDecisionEngine
 from gabriel_engine.core.independent_construction import CleanRoomBuilder
 from gabriel_engine.core.crucible import Crucible
+from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
 
 
 def test_models():
@@ -345,6 +346,45 @@ def test_assimilated_jules_stack():
     assert payload_loop["success"] is True
     assert "fixed" in payload_loop["optimized_code"]
     assert len(payload_loop["execution_logs"]) > 0
+
+
+def test_hardening_and_exception_handling():
+    """
+    Ensures that validation checks and LRU eviction thresholds perform correctly.
+    """
+    client = app.test_client()
+
+    # 1. Parameter Type Mismatch (Expects 400 Bad Request)
+    res_bad_type = client.post("/api/jules/install", json={
+        "requirements_txt": 12345  # Must be string
+    })
+    assert res_bad_type.status_code == 400
+    assert "must be a valid string" in json.loads(res_bad_type.data)["message"]
+
+    # 2. Missing Parameters Schema check (Expects 400 Bad Request)
+    res_bad_schema = client.post("/api/jules/patch", json={
+        "original_code": "def run(): pass"
+    })
+    assert res_bad_schema.status_code == 400
+    assert "must be a valid string" in json.loads(res_bad_schema.data)["message"]
+
+    # 3. Dynamic Registry LRU cache bounds eviction check
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create unique directory cache
+        registry = DynamicCapabilityRegistry(target_dir=tmpdir, max_cached_modules=1)
+
+        # Write module 1 and 2
+        registry.register_and_save("mod_one", "class ModOne:\n    def get(self): return 1")
+        registry.register_and_save("mod_two", "class ModTwo:\n    def get(self): return 2")
+
+        # Load both (which triggers eviction of mod_one!)
+        registry.load_capability("mod_one")
+        assert "mod_one" in registry._loaded_modules
+
+        registry.load_capability("mod_two")
+        assert "mod_two" in registry._loaded_modules
+        # mod_one must be successfully evicted from the memory registry cache map
+        assert "mod_one" not in registry._loaded_modules
 
 
 def test_flask_endpoints():

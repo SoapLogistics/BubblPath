@@ -1,4 +1,5 @@
 import os
+import traceback
 import openai
 from flask import Flask, request, jsonify
 
@@ -111,6 +112,19 @@ def get_or_create_jules_components():
             pass
 
 
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    """
+    Global SOSS exception handler to prevent any thread crash from leaking or dropping the service.
+    """
+    response = {
+        "status": "error",
+        "message": f"Global SOSS Boundary Intercepted Crash: {str(error)}",
+        "traceback": traceback.format_exc()
+    }
+    return jsonify(response), 500
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
     """
@@ -163,6 +177,10 @@ def jules_install():
         return jsonify({"status": "error", "message": "Jules Installer module could not be instantiated."}), 500
 
     data = request.json or {}
+    # Strict validation boundary
+    if "requirements_txt" not in data or not isinstance(data["requirements_txt"], str):
+        return jsonify({"status": "error", "message": "Parameter 'requirements_txt' must be a valid string."}), 400
+
     content = data.get("requirements_txt", "")
 
     try:
@@ -182,6 +200,12 @@ def jules_patch():
         return jsonify({"status": "error", "message": "Jules Patcher module could not be instantiated."}), 500
 
     data = request.json or {}
+    # Strict schema validation boundary
+    required = ["original_code", "search_pattern", "replace_pattern"]
+    for field in required:
+        if field not in data or not isinstance(data[field], str):
+            return jsonify({"status": "error", "message": f"Parameter '{field}' must be a valid string."}), 400
+
     original = data.get("original_code", "")
     search = data.get("search_pattern", "")
     replace = data.get("replace_pattern", "")
@@ -203,9 +227,18 @@ def jules_test_loop():
         return jsonify({"status": "error", "message": "Jules Test Loop module could not be instantiated."}), 500
 
     data = request.json or {}
+    # Strict schema validation boundary
+    required = ["target_code", "test_script"]
+    for field in required:
+        if field not in data or not isinstance(data[field], str):
+            return jsonify({"status": "error", "message": f"Parameter '{field}' must be a valid string."}), 400
+
     target = data.get("target_code", "")
     script = data.get("test_script", "")
     retries = data.get("max_retries", 3)
+
+    if not isinstance(retries, int):
+        return jsonify({"status": "error", "message": "Parameter 'max_retries' must be an integer."}), 400
 
     try:
         updated, success, logs = jules_test_loop_instance.run_test_suite_and_auto_correct(target, script, retries)
@@ -233,8 +266,8 @@ def manage_worktrees():
     task_id = data.get("task_id")
     origin_src = data.get("origin_src_dir", "/app")
 
-    if not task_id:
-        return jsonify({"status": "error", "message": "Parameter 'task_id' is required."}), 400
+    if not task_id or not isinstance(task_id, str):
+        return jsonify({"status": "error", "message": "Parameter 'task_id' must be a valid string."}), 400
 
     try:
         if action == "create":
@@ -264,8 +297,8 @@ def manage_tasks():
     payload = data.get("payload", "")
     worker_id = data.get("worker_id", "agent_1")
 
-    if not task_id:
-        return jsonify({"status": "error", "message": "Parameter 'task_id' is required."}), 400
+    if not task_id or not isinstance(task_id, str):
+        return jsonify({"status": "error", "message": "Parameter 'task_id' must be a valid string."}), 400
 
     try:
         if action == "add":
@@ -304,8 +337,8 @@ def manage_mcp():
     tool_name = data.get("tool_name")
     arguments = data.get("arguments", {})
 
-    if not tool_name:
-        return jsonify({"status": "error", "message": "Parameter 'tool_name' is required."}), 400
+    if not tool_name or not isinstance(tool_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'tool_name' must be a valid string."}), 400
 
     try:
         result = codex_mcp_instance.call_tool(tool_name, arguments)
@@ -328,8 +361,10 @@ def manage_pipeline():
     description = data.get("description")
     codebase = data.get("codebase_path", "/app")
 
-    if not issue_id or not description:
-        return jsonify({"status": "error", "message": "Parameters 'issue_id' and 'description' are required."}), 400
+    if not issue_id or not isinstance(issue_id, str):
+        return jsonify({"status": "error", "message": "Parameter 'issue_id' must be a valid string."}), 400
+    if not description or not isinstance(description, str):
+        return jsonify({"status": "error", "message": "Parameter 'description' must be a valid string."}), 400
 
     try:
         result = codex_pipeline_instance.process_issue(issue_id, description, codebase)
@@ -347,11 +382,10 @@ def assimilate():
     project_name = data.get("project_name")
     source_location = data.get("source_location")
 
-    if not project_name or not source_location:
-        return jsonify({
-            "status": "error",
-            "message": "Both 'project_name' and 'source_location' parameters are required."
-        }), 400
+    if not project_name or not isinstance(project_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'project_name' must be a valid string."}), 400
+    if not source_location or not isinstance(source_location, str):
+        return jsonify({"status": "error", "message": "Parameter 'source_location' must be a valid string."}), 400
 
     source_type = data.get("source_type", "source_repository")
     aggressive_mode = data.get("aggressive_mode", True)  # Code Thief Mode enabled by default!
@@ -385,11 +419,12 @@ def execute_assimilated_code():
     class_name = data.get("class_name")
     method_name = data.get("method_name")
 
-    if not capability_name or not class_name or not method_name:
-        return jsonify({
-            "status": "error",
-            "message": "Parameters 'capability_name', 'class_name', and 'method_name' are required."
-        }), 400
+    if not capability_name or not isinstance(capability_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'capability_name' must be a valid string."}), 400
+    if not class_name or not isinstance(class_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'class_name' must be a valid string."}), 400
+    if not method_name or not isinstance(method_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'method_name' must be a valid string."}), 400
 
     init_args = data.get("init_args", [])
     init_kwargs = data.get("init_kwargs", {})
@@ -432,11 +467,12 @@ def ast_inject():
     class_name = data.get("class_name")
     function_source = data.get("function_source")
 
-    if not file_path or not class_name or not function_source:
-        return jsonify({
-            "status": "error",
-            "message": "Parameters 'file_path', 'class_name', and 'function_source' are required."
-        }), 400
+    if not file_path or not isinstance(file_path, str):
+        return jsonify({"status": "error", "message": "Parameter 'file_path' must be a valid string."}), 400
+    if not class_name or not isinstance(class_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'class_name' must be a valid string."}), 400
+    if not function_source or not isinstance(function_source, str):
+        return jsonify({"status": "error", "message": "Parameter 'function_source' must be a valid string."}), 400
 
     output_path = data.get("output_path")
 
@@ -471,11 +507,12 @@ def optimize_capability():
     original_code = data.get("original_code")
     crucible_metrics = data.get("crucible_metrics")
 
-    if not capability_name or not original_code or not crucible_metrics:
-        return jsonify({
-            "status": "error",
-            "message": "Parameters 'capability_name', 'original_code', and 'crucible_metrics' are required."
-        }), 400
+    if not capability_name or not isinstance(capability_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'capability_name' must be a valid string."}), 400
+    if not original_code or not isinstance(original_code, str):
+        return jsonify({"status": "error", "message": "Parameter 'original_code' must be a valid string."}), 400
+    if not crucible_metrics or not isinstance(crucible_metrics, dict):
+        return jsonify({"status": "error", "message": "Parameter 'crucible_metrics' must be a valid dictionary."}), 400
 
     target_latency_ms = data.get("target_latency_ms", 100.0)
 
@@ -508,11 +545,8 @@ def observe_and_deconstruct():
     data = request.json or {}
     binary_name = data.get("binary_name")
 
-    if not binary_name:
-        return jsonify({
-            "status": "error",
-            "message": "Parameter 'binary_name' is required."
-        }), 400
+    if not binary_name or not isinstance(binary_name, str):
+        return jsonify({"status": "error", "message": "Parameter 'binary_name' must be a valid string."}), 400
 
     try:
         result = gabriel_loop.deconstruct_and_rebuild_binary(binary_name)
