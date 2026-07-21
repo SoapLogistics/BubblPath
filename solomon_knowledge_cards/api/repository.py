@@ -1,4 +1,5 @@
 import re
+import math
 from typing import List, Dict, Any, Optional
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
@@ -99,6 +100,58 @@ class CardRepository:
                 results.append(c)
         return results
 
+    def _tokenize(self, text: str) -> List[str]:
+        """Utility method to safely normalize and tokenize text into words."""
+        return [w.lower() for w in re.findall(r'\w+', text or "")]
+
+    def _compute_cosine_similarity(self, query_tokens: List[str], doc_tokens: List[str], all_docs_tokens: List[List[str]]) -> float:
+        """Calculates lightweight cosine similarity between query and doc using TF-IDF."""
+        if not query_tokens or not doc_tokens:
+            return 0.0
+
+        # Term frequency for query & doc
+        query_tf = {}
+        for token in query_tokens:
+            query_tf[token] = query_tf.get(token, 0) + 1
+
+        doc_tf = {}
+        for token in doc_tokens:
+            doc_tf[token] = doc_tf.get(token, 0) + 1
+
+        # Inverse document frequency
+        total_docs = len(all_docs_tokens)
+        vocabulary = set(query_tokens).union(set(doc_tokens))
+        idf = {}
+        for term in vocabulary:
+            matching_docs = sum(1 for dt in all_docs_tokens if term in dt)
+            # Standard smooth idf formula
+            idf[term] = math.log((1 + total_docs) / (1 + matching_docs)) + 1.0
+
+        # Compute query vector
+        query_vec = {}
+        query_mag = 0.0
+        for term, tf in query_tf.items():
+            val = tf * idf.get(term, 1.0)
+            query_vec[term] = val
+            query_mag += val * val
+        query_mag = math.sqrt(query_mag)
+
+        # Compute doc vector
+        doc_vec = {}
+        doc_mag = 0.0
+        for term, tf in doc_tf.items():
+            val = tf * idf.get(term, 1.0)
+            doc_vec[term] = val
+            doc_mag += val * val
+        doc_mag = math.sqrt(doc_mag)
+
+        if query_mag == 0.0 or doc_mag == 0.0:
+            return 0.0
+
+        # Calculate dot product
+        dot_product = sum(query_vec.get(t, 0.0) * doc_vec.get(t, 0.0) for t in query_tokens if t in doc_vec)
+        return dot_product / (query_mag * doc_mag)
+
     def search(
         self,
         query: str,
@@ -107,16 +160,22 @@ class CardRepository:
         security_classification: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Performs keyword-based search with field weighting, ranking, and explanation.
+        Performs hybrid keyword-based lexical and TF-IDF semantic vector search with weighted ranking.
         Query terms are matched against title, summary, body, tags, and 'why_created', 'problem_solved'.
         """
         all_cards = self.list_cards()
         ranked_results = []
 
         # Tokenize query
-        terms = [t.lower() for t in re.findall(r'\w+', query)] if query else []
+        terms = self._tokenize(query)
 
+        # Build vocabulary for the entire memory corpus
+        all_docs_tokens = []
         for card in all_cards:
+            full_text = f"{card.title} {card.summary} {card.body} {' '.join(card.tags)} {card.why_created} {card.problem_solved}"
+            all_docs_tokens.append(self._tokenize(full_text))
+
+        for idx, card in enumerate(all_cards):
             # Type filter
             if card_type and card.card_type.upper() != card_type.upper():
                 continue
@@ -132,7 +191,7 @@ class CardRepository:
             score = 0.0
             explanations = []
 
-            # Keyword matching and scoring
+            # 1. Lexical FTS matching and scoring
             if terms:
                 title_matches = 0
                 summary_matches = 0
@@ -185,6 +244,15 @@ class CardRepository:
                             score += count * 6.0
                 if rationale_matches:
                     explanations.append(f"Matched terms in Rationale fields ({rationale_matches} times, +{rationale_matches * 6:.1f} pts)")
+
+                # 2. Semantic vector cosine similarity scoring
+                doc_tokens = all_docs_tokens[idx]
+                cosine_sim = self._compute_cosine_similarity(terms, doc_tokens, all_docs_tokens)
+                if cosine_sim > 0.0:
+                    # Semantic scale matches roughly 0-10pts
+                    semantic_boost = cosine_sim * 15.0
+                    score += semantic_boost
+                    explanations.append(f"Semantic Cosine Boost (+{semantic_boost:.2f} pts, similarity: {cosine_sim:.3f})")
             else:
                 # If no query string, base score is confidence * 10
                 score = card.confidence * 10.0

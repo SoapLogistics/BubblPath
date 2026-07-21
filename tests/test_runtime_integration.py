@@ -10,6 +10,7 @@ os.environ["OPENAI_API_KEY"] = "mock-key"
 from app import app, DB_PATH
 from solomon_knowledge_cards.models.card import KnowledgeCard
 from solomon_autonomous_daemon import SolomonAutonomousDaemon
+from solomon_knowledge_cards.api.reflection import ReflectionEngine
 
 @pytest.fixture
 def client():
@@ -248,3 +249,89 @@ def test_autonomous_optimization_daemon(tmp_path):
     assert daemon.is_running is True
     daemon.stop()
     assert daemon.is_running is False
+
+def test_perpetual_learning_vector_and_graph(client):
+    from app import repository as global_repo
+    now_str = datetime.datetime.now(datetime.UTC).isoformat()
+
+    # Create target cards representing Directed Semantic Graph Links
+    card_a = KnowledgeCard(
+        card_id="SK-KNOWLEDGE-A",
+        card_type="SKILL",
+        schema_version="1.0.0",
+        title="Orchestrate Postgres Container",
+        summary="A basic skill playbook for Postgres.",
+        body="Steps: run postgres",
+        status="ACTIVE",
+        confidence=0.8,
+        validation_state="VALID",
+        created_at=now_str,
+        updated_at=now_str,
+        created_by="tester",
+        source_type="TEST",
+        source_ids=[],
+        parent_card_ids=[],
+        related_card_ids=[],
+        tags=["postgres"],
+        security_classification="INTERNAL",
+        evidence="Evidence",
+        relationships=[{"target_id": "SK-KNOWLEDGE-B", "type": "DEPENDS_ON"}]
+    )
+
+    card_b = KnowledgeCard(
+        card_id="SK-KNOWLEDGE-B",
+        card_type="SKILL",
+        schema_version="1.0.0",
+        title="Check system volume space",
+        summary="Verifies disk space prior to database deployment",
+        body="Execute command: df -h",
+        status="ACTIVE",
+        confidence=0.9,
+        validation_state="VALID",
+        created_at=now_str,
+        updated_at=now_str,
+        created_by="tester",
+        source_type="TEST",
+        source_ids=[],
+        parent_card_ids=[],
+        related_card_ids=[],
+        tags=["disk", "space"],
+        security_classification="INTERNAL",
+        evidence="Evidence"
+    )
+
+    global_repo.create_card(card_b)
+    global_repo.create_card(card_a)
+
+    # 1. Verify Directed Semantic Relationships
+    fetched_a = global_repo.get_card("SK-KNOWLEDGE-A")
+    assert fetched_a.relationships == [{"target_id": "SK-KNOWLEDGE-B", "type": "DEPENDS_ON"}]
+
+    # 2. Verify Hybrid TF-IDF Semantic Vector Similarity Retrieval
+    results = global_repo.search("Postgres database run instructions")
+    assert len(results) > 0
+    # The postgres card should rank high and have Semantic Cosine Boost explanation
+    postgres_match = [r for r in results if r["card_id"] == "SK-KNOWLEDGE-A"][0]
+    assert "Semantic Cosine Boost" in postgres_match["explanation"]
+
+    # 3. Verify Reflection Engine Reinforcement Adjuster
+    engine = ReflectionEngine(global_repo, learning_rate=0.05)
+
+    # Success reinforces card-b upwards
+    reinforced = engine.reinforce_confidence("success", ["SK-KNOWLEDGE-B"])
+    assert len(reinforced) == 1
+    assert reinforced[0].confidence == 0.95
+
+    # Failure decrements card-b downwards
+    failed = engine.reinforce_confidence("failure", ["SK-KNOWLEDGE-B"])
+    assert len(failed) == 1
+    # 0.95 - (2 * 0.05) = 0.85
+    assert failed[0].confidence == 0.85
+
+    # 4. Verify Metrics and KPIs endpoint
+    resp = client.get("/metrics")
+    assert resp.status_code == 200
+    metrics_data = resp.get_json()
+    assert metrics_data["success"] is True
+    assert "database" in metrics_data
+    assert metrics_data["database"]["total_cards"] == 2

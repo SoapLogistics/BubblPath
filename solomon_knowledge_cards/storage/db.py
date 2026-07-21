@@ -180,14 +180,21 @@ class DatabaseManager:
                     conn.execute("INSERT OR IGNORE INTO card_sources (card_id, source_id) VALUES (?, ?)", (card.card_id, s_id))
 
                 # Manage card links
-                # Remove existing links of link_type "PARENT" or "RELATED" from this source_id
-                conn.execute("DELETE FROM card_links WHERE source_id = ? AND link_type IN ('PARENT', 'RELATED')", (card.card_id,))
+                # Remove existing links of any type from this source_id
+                conn.execute("DELETE FROM card_links WHERE source_id = ?", (card.card_id,))
                 for p_id in card.parent_card_ids:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'PARENT')", (card.card_id, p_id))
                 for r_id in card.related_card_ids:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'RELATED')", (card.card_id, r_id))
                 if card.supersedes:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'SUPERSEDES')", (card.card_id, card.supersedes))
+
+                # Directed semantic knowledge graph links
+                for rel in card.relationships:
+                    conn.execute(
+                        "INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, ?)",
+                        (card.card_id, rel["target_id"], rel["type"])
+                    )
 
                 # Write full revision log
                 serialized = json.dumps(card.to_dict())
@@ -234,6 +241,15 @@ class DatabaseManager:
                 # Fetch related card IDs
                 cursor.execute("SELECT target_id FROM card_links WHERE source_id = ? AND link_type = 'RELATED'", (card_id,))
                 card_data["related_card_ids"] = [r[0] for r in cursor.fetchall()]
+
+                # Fetch specialized Knowledge Graph directed links
+                cursor.execute(
+                    "SELECT target_id, link_type FROM card_links WHERE source_id = ? AND link_type NOT IN ('PARENT', 'RELATED', 'SUPERSEDES')",
+                    (card_id,)
+                )
+                card_data["relationships"] = [
+                    {"target_id": r["target_id"], "type": r["link_type"]} for r in cursor.fetchall()
+                ]
 
                 card_data["extra_metadata"] = json.loads(card_data["extra_metadata"]) if card_data.get("extra_metadata") else {}
 

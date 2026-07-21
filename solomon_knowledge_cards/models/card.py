@@ -29,6 +29,14 @@ CARD_STATUSES = {
     "DEPRECATED"
 }
 
+# Supported custom relationship types
+SUPPORTED_RELATIONSHIPS = {
+    "DEPENDS_ON",
+    "PREVENTS",
+    "ENHANCES",
+    "PROPOSES_UPDATE_TO"
+}
+
 class ValidationError(Exception):
     pass
 
@@ -60,7 +68,10 @@ class KnowledgeCard:
         why_created: str = "",
         problem_solved: str = "",
         future_work_dependent: str = "",
-        extra_metadata: Optional[Dict[str, Any]] = None
+        extra_metadata: Optional[Dict[str, Any]] = None,
+        # Directed Semantic Knowledge Graph Relationships
+        # Format: [{"target_id": "CARD-XXX", "type": "DEPENDS_ON"}]
+        relationships: Optional[List[Dict[str, str]]] = None
     ):
         self.card_id = card_id
         self.card_type = card_type
@@ -87,6 +98,7 @@ class KnowledgeCard:
         self.problem_solved = problem_solved
         self.future_work_dependent = future_work_dependent
         self.extra_metadata = extra_metadata or {}
+        self.relationships = relationships or []
 
         self.validate()
 
@@ -139,6 +151,15 @@ class KnowledgeCard:
         if not isinstance(self.future_work_dependent, str):
             raise ValidationError("future_work_dependent must be a string")
 
+        # Validate directed semantic relationships
+        if not isinstance(self.relationships, list):
+            raise ValidationError("relationships must be a list of dictionaries")
+        for rel in self.relationships:
+            if not isinstance(rel, dict) or "target_id" not in rel or "type" not in rel:
+                raise ValidationError("Each relationship must have a 'target_id' and 'type'")
+            if rel["type"] not in SUPPORTED_RELATIONSHIPS:
+                raise ValidationError(f"Relationship type must be one of {SUPPORTED_RELATIONSHIPS}")
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the card instance to a dictionary."""
         return {
@@ -166,7 +187,8 @@ class KnowledgeCard:
             "why_created": self.why_created,
             "problem_solved": self.problem_solved,
             "future_work_dependent": self.future_work_dependent,
-            "extra_metadata": self.extra_metadata
+            "extra_metadata": self.extra_metadata,
+            "relationships": self.relationships
         }
 
     @classmethod
@@ -197,5 +219,6 @@ class KnowledgeCard:
             why_created=data.get("why_created", ""),
             problem_solved=data.get("problem_solved", ""),
             future_work_dependent=data.get("future_work_dependent", ""),
-            extra_metadata=data.get("extra_metadata")
+            extra_metadata=data.get("extra_metadata"),
+            relationships=data.get("relationships")
         )

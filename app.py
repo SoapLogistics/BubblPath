@@ -27,6 +27,10 @@ api_key = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key) if api_key else None
 DEFAULT_MODEL = os.environ.get("SOLOMON_MODEL", "gpt-3.5-turbo")
 
+# Track performance statistics
+query_hits = 0
+query_misses = 0
+
 # Run Doctrine Importer on startup to load standard operational checklists
 try:
     importer = DoctrineImporter(db_manager)
@@ -59,6 +63,7 @@ except Exception as e:
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    global query_hits, query_misses
     data = request.json or {}
     user_message = data.get("message", "")
 
@@ -83,6 +88,7 @@ def chat():
                     filtered_results.append(res)
 
         if filtered_results:
+            query_hits += 1
             context_blocks = []
             for item in filtered_results[:3]: # Retrieve top 3 relevant cards
                 card = item["card"]
@@ -96,8 +102,11 @@ def chat():
                 )
                 context_blocks.append(block)
             retrieved_context = "\n".join(context_blocks)
+        else:
+            query_misses += 1
     except Exception as e:
         print(f"Error during memory retrieval: {e}")
+        query_misses += 1
 
     # 2. Inject context into the LLM system prompt before generating the reply
     system_instruction = (
@@ -249,6 +258,51 @@ def list_or_search_cards():
         })
     except Exception as e:
         return jsonify({"error": f"Failed to list/search cards: {e}"}), 500
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    """
+    Exposes live system-wide KPIs: query hit rates, RAM footprints,
+    daemon health logs, and database metrics.
+    """
+    db_size_bytes = 0
+    if os.path.exists(DB_PATH):
+        db_size_bytes = os.path.getsize(DB_PATH)
+
+    daemon_metrics = {}
+    health_log_path = "solomon_daemon_health.json"
+    if os.path.exists(health_log_path):
+        try:
+            with open(health_log_path, "r") as f:
+                daemon_metrics = json.load(f)
+        except Exception:
+            pass
+
+    # Distribute cards by type
+    all_cards = repository.list_cards()
+    type_distribution = {}
+    for c in all_cards:
+        type_distribution[c.card_type] = type_distribution.get(c.card_type, 0) + 1
+
+    total_queries = query_hits + query_misses
+    hit_rate = (query_hits / total_queries) if total_queries > 0 else 1.0
+
+    return jsonify({
+        "success": True,
+        "database": {
+            "path": DB_PATH,
+            "size_bytes": db_size_bytes,
+            "total_cards": len(all_cards),
+            "distribution": type_distribution
+        },
+        "telemetry": {
+            "query_hits": query_hits,
+            "query_misses": query_misses,
+            "hit_rate": hit_rate,
+            "daemon_health": daemon_metrics
+        }
+    })
 
 
 if __name__ == "__main__":
