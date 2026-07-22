@@ -34,6 +34,20 @@ OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 if OPENAI_KEY:
     openai.api_key = OPENAI_KEY
 
+# Support for Local Quantized LLM (Ollama / llama.cpp / local server)
+LOCAL_LLM_API_BASE = os.environ.get("SOLOMON_LLM_API_BASE")
+if LOCAL_LLM_API_BASE:
+    openai.api_base = LOCAL_LLM_API_BASE
+    # Local quantized models do not require a real OpenAI API key, but client needs a placeholder
+    if not openai.api_key:
+        openai.api_key = "local_quantized_key"
+    logger.info(f"Local quantized LLM API configured with base URL: {LOCAL_LLM_API_BASE}")
+
+# Operator Routing Preferences (Global State)
+EXECUTION_MODE = os.environ.get("SOLOMON_EXECUTION_MODE", "solomon_only")
+CODEX_ENABLED = os.environ.get("SOLOMON_CODEX_ENABLED", "False").lower() in ("true", "1", "yes")
+FALLBACK_TO_CODEX = os.environ.get("SOLOMON_FALLBACK_TO_CODEX", "False").lower() in ("true", "1", "yes")
+
 def verify_auth() -> bool:
     """Verifies Bearer Token against SOLOMON_ACTIONS_API_KEY in constant-time."""
     auth_header = request.headers.get("Authorization", "")
@@ -106,6 +120,34 @@ def cc_bridge_status():
         "latency_ms": 14
     })
 
+@app.route("/api/command-center/preferences", methods=["GET", "POST"])
+def cc_preferences():
+    global EXECUTION_MODE, CODEX_ENABLED, FALLBACK_TO_CODEX
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    if request.method == "POST":
+        data = request.json or {}
+        if "execution_mode" in data:
+            EXECUTION_MODE = str(data["execution_mode"])
+        if "codex_enabled" in data:
+            CODEX_ENABLED = bool(data["codex_enabled"])
+        if "fallback_to_codex" in data:
+            FALLBACK_TO_CODEX = bool(data["fallback_to_codex"])
+        logger.info(
+            f"Operator preferences updated dynamically: "
+            f"execution_mode={EXECUTION_MODE}, codex_enabled={CODEX_ENABLED}, fallback_to_codex={FALLBACK_TO_CODEX}"
+        )
+
+    return jsonify({
+        "ok": True,
+        "preferences": {
+            "execution_mode": EXECUTION_MODE,
+            "codex_enabled": CODEX_ENABLED,
+            "fallback_to_codex": FALLBACK_TO_CODEX
+        }
+    })
+
 @app.route("/api/command-center/solomon-chat", methods=["POST"])
 def cc_solomon_chat():
     """
@@ -125,6 +167,19 @@ def cc_solomon_chat():
         return jsonify({"ok": False, "error": "Missing required fields: message, conversation_id, request_id"}), 400
 
     logger.info(f"Received chat request {request_id} for conversation {conversation_id} with clearance {clearance}")
+
+    # Programmatic routing safety checks: intercept Codex-related tasks if Codex is disabled
+    if EXECUTION_MODE == "solomon_only" or not CODEX_ENABLED:
+        is_codex_query = any(k in message.lower() for k in ("codex", "carl", "codex_auto"))
+        if is_codex_query and not FALLBACK_TO_CODEX:
+            logger.info("Programmatic Interception: Blocked Codex routing request under solomon_only policy constraints.")
+            return jsonify({
+                "ok": False,
+                "status": "BLOCKED",
+                "selected_route": "none",
+                "reason": f"No safe execution route was selected for this request. Solomon is configured in {EXECUTION_MODE} mode with Codex disabled.",
+                "error": "Execution route to Codex is disabled under current operator routing policy."
+            })
 
     # Track execution traces and enforce resource thresholds
     from solomon_knowledge_cards import enforce_resource_caps, get_memory_footprint_mb
@@ -186,6 +241,29 @@ def cc_solomon_chat():
         "- pypi_npm_install: Dynamically install open-source libraries into your environment.\n"
         "- mcp_server_integrate: Dynamically orchestrate external Model Context Protocol servers to immediately mount new capabilities.\n\n"
     )
+    # Inject routing policy constraints into the system instructions
+    routing_constraints = (
+        f"\n--- OPERATOR ROUTING POLICY CONSTRAINTS ---\n"
+        f"- CURRENT EXECUTION MODE: {EXECUTION_MODE}\n"
+        f"- CODEX ENABLED: {CODEX_ENABLED}\n"
+        f"- FALLBACK TO CODEX: {FALLBACK_TO_CODEX}\n\n"
+        "Under the current operator policy:\n"
+        "- Solomon is the primary worker. Solomon must handle all tasks directly and cannot rely on Codex or Codex Carl.\n"
+        "- Codex Carl is completely disabled and turned off.\n"
+        "- If a task requires a capability that Solomon lacks, or if you cannot perform the task directly without Codex, "
+        "you MUST NOT delegate, route, or fallback to Codex. Instead, you must immediately report the task as BLOCKED with a structured reasoning.\n"
+        "-------------------------------------------\n"
+    )
+    system_instruction += routing_constraints
+
+    # Mandatory RECOMMENDED NEXT STEP formatting rule instruction
+    system_instruction += (
+        "\n\nAt the end of your response, you MUST always append a highly visible, large, bold, and colored "
+        "'RECOMMENDED NEXT STEP' section (e.g., using Markdown heading, emoji, and bold text, such as: "
+        "'### 🚀 **RECOMMENDED NEXT STEP**') clearly stating the next suggested action (such as code implementation, "
+        "deployment, or documentation) to guide the operator.\n"
+    )
+
     if memory_context_prompt:
         system_instruction += (
             "--- RETRIEVED MNEMOSYNE MEMORY CONTEXT ---\n"
@@ -216,6 +294,14 @@ def cc_solomon_chat():
         )
         if retrieval["retrieved_card_ids"]:
             reply_content += f"Active card context applied: {', '.join(retrieval['retrieved_card_ids'])}"
+
+    # Programmatic enforcement of the RECOMMENDED NEXT STEP requirement
+    recommended_next_step = (
+        "\n\n### 🚀 **RECOMMENDED NEXT STEP**\n"
+        "- Verify the dynamic operator routing preferences and confirm that Solomon-only mode is active."
+    )
+    if "RECOMMENDED NEXT STEP" not in reply_content:
+        reply_content += recommended_next_step
 
     # 4. Construct safe response JSON
     return jsonify({
@@ -518,6 +604,84 @@ def bp_sync_files():
         if os.path.exists(safe_path + ".tmp"):
             os.remove(safe_path + ".tmp")
         return jsonify({"ok": False, "error": f"Friction error during file system write: {str(e)}"}), 500
+
+
+# --- Quantization Strategy & Optimization Endpoints ---
+
+@app.route("/api/command-center/quantization/compile-calibration", methods=["POST"])
+def cc_compile_calibration():
+    """Compiles a highly optimized SOK calibration dataset from Mnemosyne SQLite active memory cards."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    try:
+        from solomon_knowledge_cards import SolomonQuantizationStrategyEngine
+        engine = SolomonQuantizationStrategyEngine(runtime)
+        dataset = engine.compile_sok_calibration_dataset()
+        return jsonify({
+            "ok": True,
+            "dataset": dataset
+        })
+    except Exception as e:
+        logger.error(f"Failed to compile quantization calibration dataset: {str(e)}")
+        return jsonify({"ok": False, "error": f"Failed to compile calibration dataset: {str(e)}"}), 500
+
+
+@app.route("/api/command-center/quantization/simulate-ampba", methods=["GET", "POST"])
+def cc_simulate_ampba():
+    """Simulates Adaptive Mixed-Precision Bit Allocation (AMPBA) for a target model under RAM constraints."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    # Support reading parameters from query args or json payload
+    data = request.json or {} if request.method == "POST" else {}
+    model_name = request.args.get("model") or data.get("model", "llama3:8b")
+
+    try:
+        target_ram = float(request.args.get("target_ram_gb") or data.get("target_ram_gb", 4.5))
+    except ValueError:
+        target_ram = 4.5
+
+    try:
+        from solomon_knowledge_cards import SolomonQuantizationStrategyEngine
+        engine = SolomonQuantizationStrategyEngine(runtime)
+        simulation = engine.simulate_ampba_allocation(model_name=model_name, target_ram_gb=target_ram)
+        return jsonify({
+            "ok": True,
+            "simulation": simulation
+        })
+    except Exception as e:
+        logger.error(f"Failed to run AMPBA simulation: {str(e)}")
+        return jsonify({"ok": False, "error": f"AMPBA simulation failed: {str(e)}"}), 500
+
+
+@app.route("/api/command-center/quantization/compile-modelfile", methods=["GET", "POST"])
+def cc_compile_modelfile():
+    """Compiles a complete local Ollama Modelfile and copy-pasteable execution command pipeline."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    data = request.json or {} if request.method == "POST" else {}
+    model_name = request.args.get("model") or data.get("model", "llama3:8b")
+
+    try:
+        target_ram = float(request.args.get("target_ram_gb") or data.get("target_ram_gb", 4.5))
+    except ValueError:
+        target_ram = 4.5
+
+    try:
+        from solomon_knowledge_cards import SolomonQuantizationOptimizer
+        optimizer = SolomonQuantizationOptimizer(runtime)
+        modelfile = optimizer.compile_ollama_modelfile(model_name=model_name, target_ram_gb=target_ram)
+        pipeline = optimizer.generate_copy_paste_pipeline_script(model_name=model_name, target_ram_gb=target_ram)
+        return jsonify({
+            "ok": True,
+            "modelfile": modelfile,
+            "pipeline": pipeline
+        })
+    except Exception as e:
+        logger.error(f"Failed to compile quantization Modelfile: {str(e)}")
+        return jsonify({"ok": False, "error": f"Modelfile compilation failed: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

@@ -522,6 +522,121 @@ def test_flask_bubblepath_endpoints(flask_client):
         os.remove("docs/test_sync.txt")
 
 
+def test_routing_policy_preferences_and_blocking(flask_client):
+    """Verify that operator preferences can be retrieved/updated and enforce blocking policies."""
+    headers = {"Authorization": "Bearer TEST_ACTIONS_API_KEY"}
+
+    # 1. Test GET preferences endpoint
+    resp_get = flask_client.get("/api/command-center/preferences", headers=headers)
+    assert resp_get.status_code == 200
+    assert resp_get.json["ok"] is True
+    prefs = resp_get.json["preferences"]
+    assert prefs["execution_mode"] == "solomon_only"
+    assert prefs["codex_enabled"] is False
+    assert prefs["fallback_to_codex"] is False
+
+    # 2. Test POST to update preferences dynamically
+    update_payload = {
+        "execution_mode": "custom_mode",
+        "codex_enabled": True,
+        "fallback_to_codex": True
+    }
+    resp_post = flask_client.post("/api/command-center/preferences", headers=headers, json=update_payload)
+    assert resp_post.status_code == 200
+    assert resp_post.json["ok"] is True
+    assert resp_post.json["preferences"]["execution_mode"] == "custom_mode"
+    assert resp_post.json["preferences"]["codex_enabled"] is True
+    assert resp_post.json["preferences"]["fallback_to_codex"] is True
+
+    # Verify update via GET
+    resp_get2 = flask_client.get("/api/command-center/preferences", headers=headers)
+    assert resp_get2.json["preferences"]["execution_mode"] == "custom_mode"
+
+    # 3. Reset preferences to block Codex execution again
+    reset_payload = {
+        "execution_mode": "solomon_only",
+        "codex_enabled": False,
+        "fallback_to_codex": False
+    }
+    resp_reset = flask_client.post("/api/command-center/preferences", headers=headers, json=reset_payload)
+    assert resp_reset.status_code == 200
+
+    # 4. Test programmatic interception & blocking of Codex-targeted tasks
+    chat_payload = {
+        "message": "Please execute the task immediately using the codex_auto lane",
+        "conversation_id": "CONV-TEST-PREFS",
+        "request_id": "REQ-TEST-PREFS",
+        "security_classification": "INTERNAL"
+    }
+    resp_chat = flask_client.post("/api/command-center/solomon-chat", headers=headers, json=chat_payload)
+    assert resp_chat.status_code == 200
+    resp_json = resp_chat.json
+    assert resp_json["ok"] is False
+    assert resp_json["status"] == "BLOCKED"
+    assert resp_json["selected_route"] == "none"
+    assert "disabled" in resp_json["error"].lower()
+
+
+def test_quantization_strategy_and_endpoints(flask_client):
+    """Verify that the QuantizationStrategyEngine and its endpoints perform correct dataset compilation and AMPBA simulation."""
+    headers = {"Authorization": "Bearer TEST_ACTIONS_API_KEY"}
+
+    # 1. Test POST compile calibration dataset endpoint
+    resp_compile = flask_client.post("/api/command-center/quantization/compile-calibration", headers=headers)
+    assert resp_compile.status_code == 200
+    assert resp_compile.json["ok"] is True
+    dataset = resp_compile.json["dataset"]
+    assert dataset["dataset_name"] == "SOK-Baseline-Calibration" or dataset["dataset_name"] == "SOK-Dynamic-Active-Calibration"
+    assert dataset["samples_count"] > 0
+    assert len(dataset["calibration_text_blocks"]) > 0
+
+    # 2. Test GET simulate AMPBA bit allocations endpoint
+    resp_simulate = flask_client.get(
+        "/api/command-center/quantization/simulate-ampba?model=llama3:8b&target_ram_gb=4.5",
+        headers=headers
+    )
+    assert resp_simulate.status_code == 200
+    assert resp_simulate.json["ok"] is True
+    sim = resp_simulate.json["simulation"]
+    assert sim["model_name"] == "llama3:8b"
+    assert sim["target_ram_cap_gb"] == 4.5
+    assert sim["estimated_quantized_size_gb"] > 0
+    assert len(sim["layer_allocations_preview"]) > 0
+
+    # Verify layer-by-layer structure
+    layer0 = sim["layer_allocations_preview"][0]
+    assert layer0["layer_index"] == 0
+    assert "q_proj" in layer0["components"]
+    assert "gate_proj" in layer0["components"]
+    assert layer0["components"]["q_proj"]["allocated_bits"] in (6, 8)
+    assert layer0["components"]["gate_proj"]["allocated_bits"] in (2, 3)
+
+
+def test_quantization_optimizer_flow(flask_client):
+    """Verify that the QuantizationOptimizer class and its compile endpoint function correctly."""
+    headers = {"Authorization": "Bearer TEST_ACTIONS_API_KEY"}
+
+    # Test GET/POST compile-modelfile endpoint
+    resp_modelfile = flask_client.get(
+        "/api/command-center/quantization/compile-modelfile?model=llama3:8b&target_ram_gb=4.5",
+        headers=headers
+    )
+    assert resp_modelfile.status_code == 200
+    assert resp_modelfile.json["ok"] is True
+
+    # Assert Modelfile contents
+    modelfile = resp_modelfile.json["modelfile"]
+    assert "FROM llama3:8b" in modelfile
+    assert "SYSTEM" in modelfile
+    assert "You are Solomon" in modelfile
+
+    # Assert copy-pasteable execution command pipeline
+    pipeline = resp_modelfile.json["pipeline"]
+    assert "ollama create" in pipeline["ollama_pipeline_command"]
+    assert "llama-quantize" in pipeline["llamacpp_pipeline_command"]
+    assert pipeline["soss_strategy"] is not None
+
+
 def test_hybrid_semantic_search_retrieval(runtime_test):
     """Verify hybrid search returns cards via semantic vector matching when literal keywords do not overlap."""
     conn = runtime_test.db.get_connection()
