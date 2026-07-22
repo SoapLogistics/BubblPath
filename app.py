@@ -368,4 +368,6 @@ def list_or_search_cards():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    # Fallback to port 8000 if not specified by environment variable
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
