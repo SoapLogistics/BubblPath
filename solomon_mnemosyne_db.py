@@ -4,7 +4,8 @@ Mnemosyne Relational SQLite Database & Hashing Embedder
 
 This module manages the persistent storage of SOK cognitive cards,
 computes deterministic 128-dimensional local fallback embeddings,
-and calculates cosine similarity searches with full division-by-zero protection.
+calculates cosine similarity searches with full division-by-zero protection,
+and manages card confidence reinforcement scaling.
 """
 
 import sqlite3
@@ -15,7 +16,7 @@ from typing import List, Dict, Any, Tuple
 
 class SolomonMnemosyneDB:
     """
-    Manages SQLite storage and hybrid semantic retrieval for SOK cards.
+    Manages SQLite storage, hybrid semantic retrieval, and confidence scaling.
     """
 
     def __init__(self, db_path: str = "solomon_mnemosyne_demo.db"):
@@ -25,20 +26,28 @@ class SolomonMnemosyneDB:
     def _init_db(self):
         """
         Creates the SQLite tables if they do not exist.
+        Includes a dynamic migration mechanism to add columns safely.
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        # 1. Create knowledge_cards table (including embedding)
+        # 1. Create knowledge_cards table (including embedding and confidence)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_cards (
                 card_id TEXT PRIMARY KEY,
                 family TEXT NOT NULL,
                 focus TEXT,
                 content TEXT NOT NULL,
-                embedding TEXT
+                embedding TEXT,
+                confidence REAL DEFAULT 1.0
             )
         """)
+
+        # Dynamic Migration check: Add confidence if missing in pre-existing DB
+        cursor.execute("PRAGMA table_info(knowledge_cards)")
+        columns = [info[1] for info in cursor.fetchall()]
+        if "confidence" not in columns:
+            cursor.execute("ALTER TABLE knowledge_cards ADD COLUMN confidence REAL DEFAULT 1.0")
 
         # 2. Create card_links table supporting relational directed links
         cursor.execute("""
@@ -97,6 +106,7 @@ class SolomonMnemosyneDB:
     def upsert_card(self, card_id: str, family: str, focus: str, content: str) -> bool:
         """
         Upserts a SOK card, automatically calculating and caching its local vector embedding.
+        Preserves existing confidence scores on update if already on disk.
         """
         embedding_vector = self.compute_local_embedding(content)
         embedding_json = json.dumps(embedding_vector)
@@ -105,19 +115,62 @@ class SolomonMnemosyneDB:
         cursor = conn.cursor()
 
         try:
+            # Check if card already exists to preserve confidence
+            cursor.execute("SELECT confidence FROM knowledge_cards WHERE card_id = ?", (card_id,))
+            row = cursor.fetchone()
+            confidence = row[0] if row else 1.0
+
             cursor.execute("""
-                INSERT INTO knowledge_cards (card_id, family, focus, content, embedding)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO knowledge_cards (card_id, family, focus, content, embedding, confidence)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(card_id) DO UPDATE SET
                     family=excluded.family,
                     focus=excluded.focus,
                     content=excluded.content,
                     embedding=excluded.embedding
-            """, (card_id, family, focus, content, embedding_json))
+            """, (card_id, family, focus, content, embedding_json, confidence))
             conn.commit()
             return True
         except sqlite3.Error:
             return False
+        finally:
+            conn.close()
+
+    def update_card_confidence(self, card_id: str, outcome: str, learning_rate: float = 0.05) -> Tuple[bool, float]:
+        """
+        Dynamically scales the confidence score of a SOK card based on success/failure outcomes.
+        Clips score strictly inside the stable boundary of [0.1, 2.0].
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("SELECT confidence FROM knowledge_cards WHERE card_id = ?", (card_id,))
+            row = cursor.fetchone()
+            if not row:
+                return False, 1.0
+
+            old_confidence = row[0]
+
+            # Apply reinforcement factor
+            if outcome == "success":
+                new_confidence = old_confidence * (1.0 + learning_rate)
+            elif outcome == "failure":
+                new_confidence = old_confidence * (1.0 - learning_rate)
+            else:
+                new_confidence = old_confidence
+
+            # Enforce strict confidence boundaries [0.1, 2.0]
+            new_confidence = max(0.1, min(2.0, new_confidence))
+
+            cursor.execute("""
+                UPDATE knowledge_cards SET confidence = ?
+                WHERE card_id = ?
+            """, (new_confidence, card_id))
+            conn.commit()
+            return True, float(round(new_confidence, 4))
+        except sqlite3.Error:
+            return False, 1.0
         finally:
             conn.close()
 
@@ -143,7 +196,7 @@ class SolomonMnemosyneDB:
 
     def get_card(self, card_id: str) -> Dict[str, Any]:
         """
-        Retrieves a single card with its direct link metadata.
+        Retrieves a single card with its direct link metadata and confidence score.
         """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -212,7 +265,7 @@ class SolomonMnemosyneDB:
 
         results = []
         try:
-            cursor.execute("SELECT card_id, family, focus, content, embedding FROM knowledge_cards")
+            cursor.execute("SELECT card_id, family, focus, content, embedding, confidence FROM knowledge_cards")
             for row in cursor.fetchall():
                 card = dict(row)
                 if not card["embedding"]:
@@ -221,22 +274,17 @@ class SolomonMnemosyneDB:
                 card_vector = json.loads(card["embedding"])
 
                 # Compute Cosine Similarity
-                # Dot product of normalized vectors represents cosine similarity
                 dot_product = sum(q * c for q, c in zip(query_vector, card_vector))
 
-                # L2 norm for query vector
                 query_norm = math.sqrt(sum(q ** 2 for q in query_vector))
-                # L2 norm for card vector
                 card_norm = math.sqrt(sum(c ** 2 for c in card_vector))
 
                 denom = query_norm * card_norm
                 if denom < 1e-9:
-                    # Division by zero protection
                     similarity = 0.0
                 else:
                     similarity = dot_product / denom
 
-                # Cap within boundaries [-1.0, 1.0]
                 similarity = max(-1.0, min(1.0, similarity))
 
                 results.append({
@@ -244,6 +292,7 @@ class SolomonMnemosyneDB:
                     "family": card["family"],
                     "focus": card["focus"],
                     "content": card["content"],
+                    "confidence": card["confidence"],
                     "similarity": round(float(similarity), 4)
                 })
         except sqlite3.Error:
@@ -251,6 +300,5 @@ class SolomonMnemosyneDB:
         finally:
             conn.close()
 
-        # Rank by descending similarity
         results.sort(key=lambda x: x["similarity"], reverse=True)
         return results[:top_k]

@@ -3,7 +3,7 @@ Solomon Perpetual Learning Machine
 Autonomous Hot-Swapping Model Router
 
 This module implements real-time semantic query routing.
-By evaluating semantic proximity against relational SOK cards,
+By evaluating semantic proximity and card confidence scores,
 it hot-swaps execution between a High-Precision Target Model
 and an Ultra-Light Quantized model, maximizing RAM efficiency.
 """
@@ -13,8 +13,9 @@ from solomon_mnemosyne_db import SolomonMnemosyneDB
 
 class ModelRouter:
     """
-    Dynamically routes LLM queries based on semantic proximity to relational SOK cards,
-    optimizing memory footprints, generation latencies, and execution costs.
+    Dynamically routes LLM queries based on semantic proximity and confidence metrics
+    to optimize memory footprints, generation latencies, and execution costs.
+    Supports a feedback-driven self-healing strategy.
     """
 
     # Model specs
@@ -39,8 +40,13 @@ class ModelRouter:
 
     def route_query(self, query: str, threshold: float = 0.15) -> Dict[str, Any]:
         """
-        Routes the query semantically.
-        If max similarity >= threshold, route to Target Model.
+        Routes the query semantically, factoring SOK card confidence ratings.
+
+        Effective Threshold:
+            effective_threshold = threshold * confidence
+            (Bounded between 0.5 * threshold and 1.5 * threshold)
+
+        If similarity >= effective_threshold, route to Target Model.
         Else, route to Quantized Model.
         """
         # Search the SQLite SOK cards for semantic matches
@@ -48,24 +54,32 @@ class ModelRouter:
 
         max_similarity = 0.0
         best_match_card = None
+        card_confidence = 1.0
 
         if search_results:
             best_match_card = search_results[0]
             max_similarity = best_match_card["similarity"]
+            card_confidence = best_match_card.get("confidence", 1.0)
+
+        # Compute confidence-weighted effective threshold with strict scale boundaries [0.5, 1.5]
+        confidence_factor = max(0.5, min(1.5, card_confidence))
+        effective_threshold = threshold * confidence_factor
 
         # Determine Routing Decision
-        if max_similarity >= threshold:
+        if max_similarity >= effective_threshold:
             routed_model = self.TARGET_MODEL
             decision_reason = (
                 f"Query matched SOK card '{best_match_card['card_id']}' with a similarity of "
-                f"{max_similarity:.4f} >= threshold {threshold:.4f}. High-precision validation is required."
+                f"{max_similarity:.4f} >= effective threshold {effective_threshold:.4f} (base threshold: {threshold:.4f}, "
+                f"confidence: {card_confidence:.4f}). High-precision validation is required."
             )
             model_type = "high_precision"
         else:
             routed_model = self.QUANTIZED_MODEL
             best_match_id = best_match_card["card_id"] if best_match_card else "None"
             decision_reason = (
-                f"No close SOK card matches found (best similarity: {max_similarity:.4f} < threshold {threshold:.4f}). "
+                f"No close SOK card matches found (best similarity: {max_similarity:.4f} < effective threshold {effective_threshold:.4f} "
+                f"based on base threshold: {threshold:.4f}, confidence: {card_confidence:.4f}). "
                 "Routing query to ultra-light ternary model for maximum RAM efficiency."
             )
             model_type = "ultra_light"
@@ -83,9 +97,11 @@ class ModelRouter:
 
         return {
             "query": query,
-            "threshold": threshold,
+            "base_threshold": threshold,
+            "effective_threshold": round(effective_threshold, 4),
             "best_match_card_id": best_match_card["card_id"] if best_match_card else None,
             "best_match_similarity": max_similarity,
+            "best_match_confidence": round(card_confidence, 4),
             "routed_model": routed_model["name"],
             "model_type": model_type,
             "precision_allocated": routed_model["precision"],

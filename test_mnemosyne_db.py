@@ -74,6 +74,7 @@ class TestSolomonMnemosyneDB:
         assert card["focus"] == focus
         assert card["content"] == content
         assert len(card["embedding"]) == 128
+        assert card["confidence"] == 1.0
 
     def test_relational_directed_links(self, test_db):
         # Insert two cards
@@ -110,6 +111,35 @@ class TestSolomonMnemosyneDB:
         # Assert capped boundary conditions
         for r in results_ram:
             assert -1.0 <= r["similarity"] <= 1.0
+
+    def test_card_confidence_scaling(self, test_db):
+        card_id = "SOK-TEST-CONF"
+        test_db.upsert_card(card_id, "Procedure", "Test", "Testing confidence scaling loops.")
+
+        # Success upgrade
+        success, conf1 = test_db.update_card_confidence(card_id, "success", learning_rate=0.05)
+        assert success is True
+        assert conf1 == 1.05
+
+        # Success upgrade again
+        _, conf2 = test_db.update_card_confidence(card_id, "success", learning_rate=0.05)
+        assert conf2 == 1.1025
+
+        # Failure downgrade
+        _, conf3 = test_db.update_card_confidence(card_id, "failure", learning_rate=0.10)
+        assert abs(conf3 - (1.1025 * 0.90)) < 1e-4
+
+        # Verify clipping upper bound [2.0]
+        for _ in range(50):
+            test_db.update_card_confidence(card_id, "success", learning_rate=0.20)
+        card = test_db.get_card(card_id)
+        assert card["confidence"] == 2.0
+
+        # Verify clipping lower bound [0.1]
+        for _ in range(50):
+            test_db.update_card_confidence(card_id, "failure", learning_rate=0.20)
+        card = test_db.get_card(card_id)
+        assert card["confidence"] == 0.1
 
 
 class TestMnemosyneAPIIntegration:
@@ -259,3 +289,45 @@ class TestMnemosyneAPIIntegration:
         )
         assert response.status_code == 400
         assert "error" in response.get_json()
+
+    def test_feedback_and_self_healing_routing_loop(self, client):
+        """
+        Verifies the complete reinforcement loop:
+        1. Query initially routes to Ultra-Light because similarity is low (< threshold).
+        2. SOK card receives 'failure' feedback, driving its confidence score down.
+        3. Subsequent Model Router queries dynamically lower the effective threshold,
+           forcing self-healing routing of future matches to the High-Precision Target Model.
+        """
+        card_id = "SOK-MISSION-QUANT-001"
+        query_text = "VRAM metrics during high-throughput edge execution"
+
+        # Baseline check: Query gets similarity of ~0.35, routed to ultra-light with threshold 0.45
+        payload_route = {
+            "query": query_text,
+            "threshold": 0.45
+        }
+        res1 = client.post("/api/mnemosyne/route", data=json.dumps(payload_route), content_type="application/json")
+        assert res1.status_code == 200
+        assert res1.get_json()["routing_decision"]["model_type"] == "ultra_light"
+
+        # Send failure feedback to drive card confidence down to 0.50 (learning rate 0.50)
+        payload_feedback = {
+            "card_id": card_id,
+            "outcome": "failure",
+            "learning_rate": 0.50
+        }
+        res_feedback = client.post("/api/mnemosyne/feedback", data=json.dumps(payload_feedback), content_type="application/json")
+        assert res_feedback.status_code == 200
+        assert res_feedback.get_json()["new_card_confidence"] == 0.50
+
+        # Run route query again: effective threshold = 0.45 * 0.50 = 0.225.
+        # Max similarity (~0.35) is now >= effective threshold (0.225), forcing high-precision self-healing!
+        res2 = client.post("/api/mnemosyne/route", data=json.dumps(payload_route), content_type="application/json")
+        assert res2.status_code == 200
+        decision = res2.get_json()["routing_decision"]
+        assert decision["model_type"] == "high_precision"
+        assert decision["best_match_confidence"] == 0.50
+        assert decision["effective_threshold"] == 0.225
+
+        # Clean up database confidence state back to 1.0 for subsequent test isolation
+        client.post("/api/mnemosyne/feedback", data=json.dumps({"card_id": card_id, "outcome": "success", "learning_rate": 1.0}), content_type="application/json")

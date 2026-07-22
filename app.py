@@ -427,5 +427,48 @@ def route_mnemosyne_query():
     return jsonify(routing_response)
 
 
+@app.route("/api/mnemosyne/feedback", methods=["POST"])
+def update_mnemosyne_feedback():
+    """
+    Receives feedback (success or failure) for a specific SOK card execution,
+    triggering dynamic reinforcement learning to scale its confidence rating.
+    """
+    data = request.json or {}
+    card_id = data.get("card_id", "")
+    outcome = data.get("outcome", "")
+
+    try:
+        learning_rate = float(data.get("learning_rate", 0.05))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'learning_rate', must be a float."}), 400
+
+    if not card_id or not outcome:
+        return jsonify({"error": "Missing 'card_id' or 'outcome' for reinforcement feedback."}), 400
+
+    if outcome not in ["success", "failure"]:
+        return jsonify({"error": "Outcome must be exactly 'success' or 'failure'."}), 400
+
+    success, new_confidence = db.update_card_confidence(card_id, outcome, learning_rate)
+
+    if not success:
+        return jsonify({"error": f"Card with ID '{card_id}' not found in relational database."}), 404
+
+    # Return structured reinforcement learning report
+    feedback_response = {
+        "status": "success",
+        "card_id": card_id,
+        "outcome_received": outcome,
+        "applied_learning_rate": learning_rate,
+        "new_card_confidence": new_confidence,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Invoke the POST /api/mnemosyne/route endpoint again. The model router will now "
+            "automatically utilize this updated card confidence score to shift routing safety thresholds!</span>"
+        )
+    }
+    return jsonify(feedback_response)
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
