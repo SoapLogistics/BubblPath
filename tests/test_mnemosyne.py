@@ -531,3 +531,38 @@ def test_routing_policy_preferences_and_blocking(flask_client):
     assert resp_json["status"] == "BLOCKED"
     assert resp_json["selected_route"] == "none"
     assert "disabled" in resp_json["error"].lower()
+
+
+def test_quantization_strategy_and_endpoints(flask_client):
+    """Verify that the QuantizationStrategyEngine and its endpoints perform correct dataset compilation and AMPBA simulation."""
+    headers = {"Authorization": "Bearer TEST_ACTIONS_API_KEY"}
+
+    # 1. Test POST compile calibration dataset endpoint
+    resp_compile = flask_client.post("/api/command-center/quantization/compile-calibration", headers=headers)
+    assert resp_compile.status_code == 200
+    assert resp_compile.json["ok"] is True
+    dataset = resp_compile.json["dataset"]
+    assert dataset["dataset_name"] == "SOK-Baseline-Calibration" or dataset["dataset_name"] == "SOK-Dynamic-Active-Calibration"
+    assert dataset["samples_count"] > 0
+    assert len(dataset["calibration_text_blocks"]) > 0
+
+    # 2. Test GET simulate AMPBA bit allocations endpoint
+    resp_simulate = flask_client.get(
+        "/api/command-center/quantization/simulate-ampba?model=llama3:8b&target_ram_gb=4.5",
+        headers=headers
+    )
+    assert resp_simulate.status_code == 200
+    assert resp_simulate.json["ok"] is True
+    sim = resp_simulate.json["simulation"]
+    assert sim["model_name"] == "llama3:8b"
+    assert sim["target_ram_cap_gb"] == 4.5
+    assert sim["estimated_quantized_size_gb"] > 0
+    assert len(sim["layer_allocations_preview"]) > 0
+
+    # Verify layer-by-layer structure
+    layer0 = sim["layer_allocations_preview"][0]
+    assert layer0["layer_index"] == 0
+    assert "q_proj" in layer0["components"]
+    assert "gate_proj" in layer0["components"]
+    assert layer0["components"]["q_proj"]["allocated_bits"] in (6, 8)
+    assert layer0["components"]["gate_proj"]["allocated_bits"] in (2, 3)

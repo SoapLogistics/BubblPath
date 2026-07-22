@@ -533,6 +533,55 @@ def bp_sync_files():
         return jsonify({"ok": False, "error": f"Friction error during file system write: {str(e)}"}), 500
 
 
+# --- Quantization Strategy & Optimization Endpoints ---
+
+@app.route("/api/command-center/quantization/compile-calibration", methods=["POST"])
+def cc_compile_calibration():
+    """Compiles a highly optimized SOK calibration dataset from Mnemosyne SQLite active memory cards."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    try:
+        from solomon_knowledge_cards import SolomonQuantizationStrategyEngine
+        engine = SolomonQuantizationStrategyEngine(runtime)
+        dataset = engine.compile_sok_calibration_dataset()
+        return jsonify({
+            "ok": True,
+            "dataset": dataset
+        })
+    except Exception as e:
+        logger.error(f"Failed to compile quantization calibration dataset: {str(e)}")
+        return jsonify({"ok": False, "error": f"Failed to compile calibration dataset: {str(e)}"}), 500
+
+
+@app.route("/api/command-center/quantization/simulate-ampba", methods=["GET", "POST"])
+def cc_simulate_ampba():
+    """Simulates Adaptive Mixed-Precision Bit Allocation (AMPBA) for a target model under RAM constraints."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    # Support reading parameters from query args or json payload
+    data = request.json or {} if request.method == "POST" else {}
+    model_name = request.args.get("model") or data.get("model", "llama3:8b")
+
+    try:
+        target_ram = float(request.args.get("target_ram_gb") or data.get("target_ram_gb", 4.5))
+    except ValueError:
+        target_ram = 4.5
+
+    try:
+        from solomon_knowledge_cards import SolomonQuantizationStrategyEngine
+        engine = SolomonQuantizationStrategyEngine(runtime)
+        simulation = engine.simulate_ampba_allocation(model_name=model_name, target_ram_gb=target_ram)
+        return jsonify({
+            "ok": True,
+            "simulation": simulation
+        })
+    except Exception as e:
+        logger.error(f"Failed to run AMPBA simulation: {str(e)}")
+        return jsonify({"ok": False, "error": f"AMPBA simulation failed: {str(e)}"}), 500
+
+
 if __name__ == "__main__":
     # Parse port from SOLOMON_API_BASE_URL (e.g., http://127.0.0.1:18789)
     api_url = os.environ.get("SOLOMON_API_BASE_URL", "http://127.0.0.1:18789")
