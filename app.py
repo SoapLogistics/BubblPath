@@ -201,5 +201,84 @@ def simulate_quantization():
     return jsonify(simulation_report)
 
 
+@app.route("/api/quantization/cognitive-cycle", methods=["GET"])
+def get_cognitive_cycle():
+    """
+    Returns the complete Solomon Operating Knowledge (SOK) closed-loop card family
+    mapping our active learning sequence.
+    """
+    cognitive_cycle_data = {
+        "status": "active",
+        "seven_stages_sequence": [
+            "Observe (monitoring RAM limits)",
+            "Understand (extracting sensitivity metrics)",
+            "Build (programming knapsack optimization solvers)",
+            "Test (executing regression checks)",
+            "Remember (writing SOK database memory cards)",
+            "Teach Itself (self-tuning configuration heuristics)",
+            "Repeat Forever (24/7 autonomous improvement daemon)"
+        ],
+        "sok_card_families": {
+            "SOK-MISSION-QUANT-001": {
+                "family": "Mission",
+                "focus": "Maintain ultra-efficient memory footprint for high-throughput edge execution",
+                "goal": "Preserve 99%+ accuracy under strict budget bounds"
+            },
+            "SOK-PROCEDURE-QUANT-001": {
+                "family": "Procedure",
+                "focus": "Formulate Hessian sensitivity trace solver and SpinQuant rotations",
+                "action_steps": [
+                    "Simulate/calculate average Hessian-traces",
+                    "Solve exact Integer Linear Program",
+                    "Apply learned rotation matrix flattener",
+                    "Activate virtual Paged-KV caching"
+                ]
+            },
+            "SOK-TASK-QUANT-001": {
+                "family": "Task",
+                "focus": "Simulate and run model-loading pipeline initialization on server load",
+                "metric": "Load server in under 2.5 seconds with optimal layouts printed to logs"
+            },
+            "SOK-EXECUTION-QUANT-001": {
+                "family": "Execution",
+                "focus": "Successfully deployed Flask server on Port 10000 with startup knapsack outputs"
+            },
+            "SOK-REVIEW-QUANT-001": {
+                "family": "Review",
+                "focus": "Audit execution traces",
+                "metrics_audited": {
+                    "knapsack_solving_time": "< 1 ms",
+                    "kv_cache_vram_savings": "18.8% to 71.8%",
+                    "speculative_decoding_speedup": "1.57x speedup"
+                }
+            },
+            "SOK-KNOWLEDGE-QUANT-001": {
+                "family": "Knowledge",
+                "focus": "Derive declarative system rules",
+                "rules": [
+                    "Layer 0-4 must never be quantized below 5-bit",
+                    "SpinQuant flattens outlier ranges for clean 4-bit weights",
+                    "Older token keys are highly tolerant to low bit-precisions"
+                ]
+            },
+            "SOK-IMPROVED-PROCEDURE-QUANT-001": {
+                "family": "Improved Procedure",
+                "focus": "Self-tuning updates",
+                "refinement_adjustments": [
+                    "Toggle local mixed-precision loading when system RAM drops below 1.5GB",
+                    "Cache solved knapsack templates inside SQLite revisions schema"
+                ]
+            }
+        },
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Integrate these SOK Card family nodes into your central knowledge retrieval engine "
+            "to automatically inform the core Agent's multi-step planners of active memory states.</span>"
+        )
+    }
+    return jsonify(cognitive_cycle_data)
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

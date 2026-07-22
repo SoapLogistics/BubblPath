@@ -196,3 +196,24 @@ class TestFlaskAPIIntegration:
         assert response.status_code == 400
         data = response.get_json()
         assert "error" in data
+
+    def test_get_cognitive_cycle(self, client):
+        """
+        Asserts that the GET /api/quantization/cognitive-cycle endpoint returns an
+        HTTP 200 status code and the correct JSON schema with fields matching the SOK card families.
+        """
+        response = client.get("/api/quantization/cognitive-cycle")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "active"
+        assert len(data["seven_stages_sequence"]) == 7
+
+        cards = data["sok_card_families"]
+        assert cards["SOK-MISSION-QUANT-001"]["family"] == "Mission"
+        assert cards["SOK-PROCEDURE-QUANT-001"]["family"] == "Procedure"
+        assert cards["SOK-TASK-QUANT-001"]["family"] == "Task"
+        assert cards["SOK-EXECUTION-QUANT-001"]["family"] == "Execution"
+        assert cards["SOK-REVIEW-QUANT-001"]["family"] == "Review"
+        assert cards["SOK-KNOWLEDGE-QUANT-001"]["family"] == "Knowledge"
+        assert cards["SOK-IMPROVED-PROCEDURE-QUANT-001"]["family"] == "Improved Procedure"
+        assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
