@@ -5,8 +5,7 @@
  * Running on http://127.0.0.1:10000
  * Running on http://192.168.0.2:10000
 [33mPress CTRL+C to quit[0m
-127.0.0.1 - - [21/Jul/2026 19:53:17] "GET /api/gabriel/status HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 19:54:11] "[31m[1mPOST /api/jules/install HTTP/1.1[0m" 400 -
-127.0.0.1 - - [21/Jul/2026 20:06:26] "POST /api/gabriel/observe HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 20:09:10] "GET /api/gabriel/status HTTP/1.1" 200 -
-127.0.0.1 - - [21/Jul/2026 20:10:41] "POST /api/gabriel/execute HTTP/1.1" 200 -
+127.0.0.1 - - [21/Jul/2026 21:45:31] "GET /api/gabriel/status HTTP/1.1" 200 -
+127.0.0.1 - - [21/Jul/2026 21:45:55] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 12:32:48] "POST /api/gabriel/observe HTTP/1.1" 200 -
+127.0.0.1 - - [22/Jul/2026 12:35:05] "POST /api/gabriel/execute HTTP/1.1" 200 -
