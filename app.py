@@ -9,6 +9,7 @@ from solomon_quantization_engine import (
 )
 from solomon_mnemosyne_db import SolomonMnemosyneDB
 from solomon_model_router import ModelRouter
+from solomon_recursive_crucible import RecursiveCrucible
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -468,6 +469,38 @@ def update_mnemosyne_feedback():
         )
     }
     return jsonify(feedback_response)
+
+
+@app.route("/api/mnemosyne/crucible", methods=["POST"])
+def execute_recursive_crucible_telemetry():
+    """
+    Receives live operational telemetry logs, analyzes execution trends, and triggers
+    recursive AST refactoring optimizations to autonomously self-heal and speed up active methods.
+    """
+    data = request.json or {}
+
+    try:
+        latency_ms = float(data.get("latency_ms", 55.0))
+        rss_memory_mb = float(data.get("rss_memory_mb", 1400.0))
+        failure_rate = float(data.get("failure_rate", 0.05))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid telemetry metric parameter: {str(e)}"}), 400
+
+    # Evaluate logs inside the Recursive Crucible
+    crucible_report = RecursiveCrucible.evaluate_telemetry(latency_ms, rss_memory_mb, failure_rate)
+
+    # Structure output response
+    crucible_response = {
+        "status": "success",
+        "recursive_crucible_report": crucible_report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Autonomously pipe these optimization reports into Solomon's AST modifier "
+            "to trigger immediate, zero-downtime hot-swapping code compilations in production!</span>"
+        )
+    }
+    return jsonify(crucible_response)
 
 
 if __name__ == "__main__":

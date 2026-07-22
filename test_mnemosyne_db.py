@@ -4,6 +4,7 @@ Unit and Integration Tests for Solomon Mnemosyne SQLite DB & Semantic Search Eng
 
 import os
 import json
+import sqlite3
 import pytest
 from app import app
 from solomon_mnemosyne_db import SolomonMnemosyneDB
@@ -301,10 +302,17 @@ class TestMnemosyneAPIIntegration:
         card_id = "SOK-MISSION-QUANT-001"
         query_text = "VRAM metrics during high-throughput edge execution"
 
-        # Baseline check: Query gets similarity of ~0.35, routed to ultra-light with threshold 0.45
+        # Robustly Reset the active database card's confidence score to exactly 1.0 before test run
+        conn = sqlite3.connect("solomon_mnemosyne_demo.db")
+        conn.execute("UPDATE knowledge_cards SET confidence = 1.0 WHERE card_id = ?", (card_id,))
+        conn.commit()
+        conn.close()
+
+        # Baseline check: Query gets similarity of ~0.41, routed to ultra-light with threshold 0.60
+        # Set base threshold to be higher than similarity (0.4143) to ensure it is ultra-light
         payload_route = {
             "query": query_text,
-            "threshold": 0.45
+            "threshold": 0.60
         }
         res1 = client.post("/api/mnemosyne/route", data=json.dumps(payload_route), content_type="application/json")
         assert res1.status_code == 200
@@ -320,14 +328,63 @@ class TestMnemosyneAPIIntegration:
         assert res_feedback.status_code == 200
         assert res_feedback.get_json()["new_card_confidence"] == 0.50
 
-        # Run route query again: effective threshold = 0.45 * 0.50 = 0.225.
-        # Max similarity (~0.35) is now >= effective threshold (0.225), forcing high-precision self-healing!
+        # Run route query again: effective threshold = 0.60 * 0.50 = 0.30.
+        # Max similarity (~0.41) is now >= effective threshold (0.30), forcing high-precision self-healing!
         res2 = client.post("/api/mnemosyne/route", data=json.dumps(payload_route), content_type="application/json")
         assert res2.status_code == 200
         decision = res2.get_json()["routing_decision"]
         assert decision["model_type"] == "high_precision"
         assert decision["best_match_confidence"] == 0.50
-        assert decision["effective_threshold"] == 0.225
+        assert decision["effective_threshold"] == 0.30
 
         # Clean up database confidence state back to 1.0 for subsequent test isolation
-        client.post("/api/mnemosyne/feedback", data=json.dumps({"card_id": card_id, "outcome": "success", "learning_rate": 1.0}), content_type="application/json")
+        conn = sqlite3.connect("solomon_mnemosyne_demo.db")
+        conn.execute("UPDATE knowledge_cards SET confidence = 1.0 WHERE card_id = ?", (card_id,))
+        conn.commit()
+        conn.close()
+
+    def test_recursive_crucible_telemetry_trigger(self, client):
+        """
+        Verifies that POST /api/mnemosyne/crucible successfully analyzes telemetry,
+        triggers corresponding AST optimizations (fusion, prune, safety), and returns HTTP 200.
+        """
+        # Test 1: Latency exceeds threshold -> AST-FUSION
+        payload = {
+            "latency_ms": 65.0,
+            "rss_memory_mb": 1200.0,
+            "failure_rate": 0.02
+        }
+        response = client.post("/api/mnemosyne/crucible", data=json.dumps(payload), content_type="application/json")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        rep = data["recursive_crucible_report"]
+        assert "AST-FUSION" in rep["crucible_actions_triggered"][0]
+        assert rep["crucible_metrics"]["projected_throughput_speedup"] == 1.35
+        assert rep["crucible_metrics"]["projected_ram_savings_percent"] == 0.0
+
+        # Test 2: RAM pressure exceeds limits -> AST-PRUNE
+        payload_ram = {
+            "latency_ms": 30.0,
+            "rss_memory_mb": 1600.0,
+            "failure_rate": 0.02
+        }
+        res_ram = client.post("/api/mnemosyne/crucible", data=json.dumps(payload_ram), content_type="application/json")
+        assert res_ram.status_code == 200
+        rep_ram = res_ram.get_json()["recursive_crucible_report"]
+        assert "AST-PRUNE" in rep_ram["crucible_actions_triggered"][0]
+        assert rep_ram["crucible_metrics"]["projected_ram_savings_percent"] == 32.4
+
+        # Test 3: Failure rate is high -> AST-SAFETY
+        payload_fail = {
+            "latency_ms": 25.0,
+            "rss_memory_mb": 1100.0,
+            "failure_rate": 0.12
+        }
+        res_fail = client.post("/api/mnemosyne/crucible", data=json.dumps(payload_fail), content_type="application/json")
+        assert res_fail.status_code == 200
+        rep_fail = res_fail.get_json()["recursive_crucible_report"]
+        assert "AST-SAFETY" in rep_fail["crucible_actions_triggered"][0]
+        assert rep_fail["crucible_metrics"]["projected_failure_reduction_percent"] == 92.0
+        assert "RECOMMENDED NEXT STEP" in res_fail.get_json()["recommended_next_step"]
