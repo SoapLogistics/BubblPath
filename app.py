@@ -582,6 +582,35 @@ def cc_simulate_ampba():
         return jsonify({"ok": False, "error": f"AMPBA simulation failed: {str(e)}"}), 500
 
 
+@app.route("/api/command-center/quantization/compile-modelfile", methods=["GET", "POST"])
+def cc_compile_modelfile():
+    """Compiles a complete local Ollama Modelfile and copy-pasteable execution command pipeline."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    data = request.json or {} if request.method == "POST" else {}
+    model_name = request.args.get("model") or data.get("model", "llama3:8b")
+
+    try:
+        target_ram = float(request.args.get("target_ram_gb") or data.get("target_ram_gb", 4.5))
+    except ValueError:
+        target_ram = 4.5
+
+    try:
+        from solomon_knowledge_cards import SolomonQuantizationOptimizer
+        optimizer = SolomonQuantizationOptimizer(runtime)
+        modelfile = optimizer.compile_ollama_modelfile(model_name=model_name, target_ram_gb=target_ram)
+        pipeline = optimizer.generate_copy_paste_pipeline_script(model_name=model_name, target_ram_gb=target_ram)
+        return jsonify({
+            "ok": True,
+            "modelfile": modelfile,
+            "pipeline": pipeline
+        })
+    except Exception as e:
+        logger.error(f"Failed to compile quantization Modelfile: {str(e)}")
+        return jsonify({"ok": False, "error": f"Modelfile compilation failed: {str(e)}"}), 500
+
+
 if __name__ == "__main__":
     # Parse port from SOLOMON_API_BASE_URL (e.g., http://127.0.0.1:18789)
     api_url = os.environ.get("SOLOMON_API_BASE_URL", "http://127.0.0.1:18789")

@@ -566,3 +566,28 @@ def test_quantization_strategy_and_endpoints(flask_client):
     assert "gate_proj" in layer0["components"]
     assert layer0["components"]["q_proj"]["allocated_bits"] in (6, 8)
     assert layer0["components"]["gate_proj"]["allocated_bits"] in (2, 3)
+
+
+def test_quantization_optimizer_flow(flask_client):
+    """Verify that the QuantizationOptimizer class and its compile endpoint function correctly."""
+    headers = {"Authorization": "Bearer TEST_ACTIONS_API_KEY"}
+
+    # Test GET/POST compile-modelfile endpoint
+    resp_modelfile = flask_client.get(
+        "/api/command-center/quantization/compile-modelfile?model=llama3:8b&target_ram_gb=4.5",
+        headers=headers
+    )
+    assert resp_modelfile.status_code == 200
+    assert resp_modelfile.json["ok"] is True
+
+    # Assert Modelfile contents
+    modelfile = resp_modelfile.json["modelfile"]
+    assert "FROM llama3:8b" in modelfile
+    assert "SYSTEM" in modelfile
+    assert "You are Solomon" in modelfile
+
+    # Assert copy-pasteable execution command pipeline
+    pipeline = resp_modelfile.json["pipeline"]
+    assert "ollama create" in pipeline["ollama_pipeline_command"]
+    assert "llama-quantize" in pipeline["llamacpp_pipeline_command"]
+    assert pipeline["soss_strategy"] is not None
