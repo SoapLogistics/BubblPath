@@ -7,18 +7,23 @@ from solomon_quantization_engine import (
     KVCacheFootprintCalculator,
     SpeculativeDecodingPredictor
 )
+from solomon_mnemosyne_db import SolomonMnemosyneDB
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
+# Instantiate our Relational Mnemosyne SQLite Database
+db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
+
 # ==========================================
-# SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION
+# SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
 # ==========================================
 def initialize_model_loading_pipeline():
     """
     Simulates the model-loading pipeline. Dynamically computes the optimal
     mixed-precision bit-width layout for our local target model (8B params, 4GB budget)
     using Hessian trace sensitivity and integer programming before allocating any memory.
+    Also seeds the Relational Mnemosyne SQLite database with cognitive SOK cards.
     """
     print("\n" + "="*80)
     print("SOLOMON INITIALIZATION: RUNNING DYNAMIC HESSIAN TRACE ILP SOLVER")
@@ -44,6 +49,67 @@ def initialize_model_loading_pipeline():
         print(f"  - Layer {alloc['layer_idx']:02d}: {alloc['bit_width']}-bit (Estimated weight: {round(alloc['size_mb'], 2)} MB)")
     print("  - [Remaining layers truncated for brevity...]")
     print("-"*80)
+
+    print("SEEDING RELATIONAL MNEMOSYNE SQLITE COGNITIVE CARDS...")
+    # Seed our SOK Cards
+    cards_to_seed = [
+        {
+            "id": "SOK-MISSION-QUANT-001",
+            "family": "Mission",
+            "focus": "VRAM/RAM limit management during high-throughput edge execution",
+            "content": "Maintain ultra-efficient local memory footprint for high-throughput edge execution while preserving 99%+ accuracy."
+        },
+        {
+            "id": "SOK-PROCEDURE-QUANT-001",
+            "family": "Procedure",
+            "focus": "Hessian sensitivity trace optimization rules",
+            "content": "Formulate average Hessian trace spectrums, solve the multi-choice knapsack integer program, apply SpinQuant rotations to suppress outliers, and activate virtual PagedAttention."
+        },
+        {
+            "id": "SOK-TASK-QUANT-001",
+            "family": "Task",
+            "focus": "In-flight server model loader pipeline initialization",
+            "content": "Create and run the in-flight initialization solver inside the application server startup within 2.5 seconds."
+        },
+        {
+            "id": "SOK-EXECUTION-QUANT-001",
+            "family": "Execution",
+            "focus": "Flask background daemon port bindings",
+            "content": "Successfully deploy and start the active background Flask server on Port 10000, displaying optimized layout output samples in startup telemetry logs."
+        },
+        {
+            "id": "SOK-REVIEW-QUANT-001",
+            "family": "Review",
+            "focus": "Audit execution traces",
+            "content": "Review execution trace logs showing knapsack times < 1ms, VRAM savings of 18.8% to 71.8%, and speculative throughput acceleration of 1.57x."
+        },
+        {
+            "id": "SOK-KNOWLEDGE-QUANT-001",
+            "family": "Knowledge",
+            "focus": "Derive declarative system rules",
+            "content": "Formulate rules: early layers 0-4 are high-sensitivity choke points and must stay at 5-bit+; SpinQuant orthogonal rotators allow clean 4-bit activation ranges; older context page keys are highly tolerant to low bits."
+        },
+        {
+            "id": "SOK-IMPROVED-PROCEDURE-QUANT-001",
+            "family": "Improved Procedure",
+            "focus": "Dynamic self-tuning adjustments",
+            "content": "Toggle local mixed-precision loading when system RAM ceiling drops below 1.5GB, and cache solved templates inside the SQLite revisions schema."
+        }
+    ]
+
+    for c in cards_to_seed:
+        db.upsert_card(c["id"], c["family"], c["focus"], c["content"])
+
+    # Seed SOK Directed Links
+    db.add_link("SOK-PROCEDURE-QUANT-001", "SOK-MISSION-QUANT-001", "DEPENDS_ON")
+    db.add_link("SOK-TASK-QUANT-001", "SOK-PROCEDURE-QUANT-001", "DEPENDS_ON")
+    db.add_link("SOK-EXECUTION-QUANT-001", "SOK-TASK-QUANT-001", "DEPENDS_ON")
+    db.add_link("SOK-REVIEW-QUANT-001", "SOK-EXECUTION-QUANT-001", "DEPENDS_ON")
+    db.add_link("SOK-KNOWLEDGE-QUANT-001", "SOK-REVIEW-QUANT-001", "DEPENDS_ON")
+    db.add_link("SOK-IMPROVED-PROCEDURE-QUANT-001", "SOK-KNOWLEDGE-QUANT-001", "DEPENDS_ON")
+    db.add_link("SOK-IMPROVED-PROCEDURE-QUANT-001", "SOK-PROCEDURE-QUANT-001", "ENHANCES")
+
+    print("Relational Database fully initialized with directed links.")
     print("RECOMMENDED NEXT STEP:")
     print("Promote the Agent Engine Cognitive Workspace to active production mode.")
     print("="*80 + "\n")
@@ -278,6 +344,53 @@ def get_cognitive_cycle():
         )
     }
     return jsonify(cognitive_cycle_data)
+
+
+@app.route("/api/mnemosyne/cards", methods=["GET"])
+def get_mnemosyne_cards():
+    """
+    Returns all seeded SOK cards with their relationship properties.
+    """
+    cards = db.get_all_cards()
+    detailed_cards = {}
+    for c in cards:
+        cid = c["card_id"]
+        detailed = db.get_card(cid)
+        detailed_cards[cid] = detailed
+
+    return jsonify({
+        "status": "success",
+        "total_cards": len(cards),
+        "cards": detailed_cards
+    })
+
+
+@app.route("/api/mnemosyne/search", methods=["POST"])
+def search_mnemosyne_cards():
+    """
+    Executes a high-fidelity local vector semantic cosine similarity search
+    against SOK database cards based on query relevance.
+    """
+    data = request.json or {}
+    query = data.get("query", "")
+    top_k = int(data.get("top_k", 5))
+
+    if not query:
+        return jsonify({"error": "Missing search 'query' parameter."}), 400
+
+    results = db.semantic_search(query, top_k)
+    return jsonify({
+        "status": "success",
+        "query": query,
+        "results_returned": len(results),
+        "results": results,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Leverage these similarity scores in the agent router to instantly choose between "
+            "local INT4 execution and remote fallback APIs based on semantic matches with mission goals.</span>"
+        )
+    })
 
 
 if __name__ == "__main__":
