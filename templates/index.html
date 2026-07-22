@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solomon Cognitive Workspace</title>
+    <!-- Tailwind CSS for modern responsive layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Header Panel -->
+    <header class="bg-gray-900 border-b border-gray-800 p-4 sticky top-0 z-50 flex flex-wrap items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">👑</span>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider text-amber-500">SOLOMON</h1>
+                <p class="text-xs text-gray-400">Perpetual Self-Improving Knowledge Engine</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+            <div class="bg-gray-950 border border-gray-800 px-3 py-1.5 rounded-lg flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-xs font-mono text-emerald-400">ENGINE ACTIVE (SS2)</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="clearance" class="text-xs text-gray-400">Security Clearance:</label>
+                <select id="clearance" class="bg-gray-800 border border-gray-700 text-xs text-amber-400 font-bold px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500">
+                    <option value="INTERNAL">INTERNAL</option>
+                    <option value="PUBLIC">PUBLIC</option>
+                    <option value="RESTRICTED">RESTRICTED</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <div class="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-hidden">
+
+        <!-- Left Side: Chat Interface and Context (7 cols) -->
+        <div class="lg:col-span-7 flex flex-col space-y-4 h-[calc(100vh-140px)]">
+            <!-- Chat Window -->
+            <div class="flex-grow bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col justify-between overflow-hidden shadow-xl">
+                <div class="border-b border-gray-800 pb-2 mb-3 flex items-center justify-between">
+                    <h2 class="font-bold text-amber-400 text-sm tracking-wider flex items-center space-x-1">
+                        <span>💬</span> <span>CONVERSATION CONSOLE</span>
+                    </h2>
+                    <span class="text-xs text-gray-500 font-mono">MODEL: gpt-3.5-turbo</span>
+                </div>
+
+                <!-- Messages Box -->
+                <div id="chat-messages" class="flex-grow overflow-y-auto space-y-3 mb-4 pr-1 text-sm">
+                    <div class="bg-gray-850 p-3 rounded-lg border border-gray-800 max-w-[85%]">
+                        <span class="font-bold text-amber-400 block mb-1">👑 Solomon:</span>
+                        <p class="text-gray-300 leading-relaxed">Greetings, Operator. I am Solomon, a perpetual self-improving knowledge engine. My core capabilities span across my Learning, Memory, Reasoning, Builder, Reviewer, and Evolution engines. How shall we coordinate today?</p>
+                    </div>
+                </div>
+
+                <!-- Input box -->
+                <form id="chat-form" class="flex space-x-2">
+                    <input id="chat-input" type="text" autocomplete="off" placeholder="Ask Solomon to solve a problem or retrieve memory..." class="flex-grow bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition placeholder-gray-600">
+                    <button type="submit" class="bg-amber-600 hover:bg-amber-500 text-gray-950 font-bold text-sm px-5 py-2 rounded-lg transition shadow-md hover:shadow-amber-500/20">
+                        SEND
+                    </button>
+                </form>
+            </div>
+
+            <!-- Injected Context Window -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 h-48 flex flex-col overflow-hidden shadow-xl">
+                <div class="border-b border-gray-800 pb-2 mb-2">
+                    <h2 class="font-bold text-cyan-400 text-sm tracking-wider flex items-center space-x-1">
+                        <span>🧠</span> <span>INJECTED RECALL CONTEXT</span>
+                    </h2>
+                </div>
+                <div id="injected-context" class="flex-grow overflow-y-auto font-mono text-xs text-cyan-300 space-y-2">
+                    <p class="text-gray-500 italic">No query executed yet. When you chat with Solomon, matching high-confidence Memory Cards will be retrieved and shown here.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Memory Card Repositories (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col space-y-4 h-[calc(100vh-140px)]">
+
+            <!-- Memory Explorer -->
+            <div class="flex-grow bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col overflow-hidden shadow-xl">
+                <div class="border-b border-gray-800 pb-2 mb-3 flex items-center justify-between">
+                    <h2 class="font-bold text-indigo-400 text-sm tracking-wider flex items-center space-x-1">
+                        <span>🗄️</span> <span>KNOWLEDGE CARD REGISTRY</span>
+                    </h2>
+                    <button onclick="fetchCards()" class="text-xs text-gray-400 hover:text-indigo-400 transition underline">
+                        Refresh
+                    </button>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <input id="card-search" type="text" placeholder="Search cards..." class="bg-gray-950 border border-gray-800 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500">
+                    <select id="card-type-filter" class="bg-gray-950 border border-gray-800 text-xs rounded-lg px-3 py-1.5 focus:outline-none text-gray-400">
+                        <option value="">All Families</option>
+                        <option value="PROCEDURE">PROCEDURE</option>
+                        <option value="KNOWLEDGE">KNOWLEDGE</option>
+                        <option value="FAILURE">FAILURE</option>
+                        <option value="REPAIR">REPAIR</option>
+                    </select>
+                </div>
+
+                <!-- Cards List -->
+                <div id="cards-list" class="flex-grow overflow-y-auto space-y-2 pr-1 text-xs">
+                    <p class="text-gray-500 italic text-center py-4">Loading Knowledge Cards...</p>
+                </div>
+            </div>
+
+            <!-- Draft Extractor Console (Report Ingestion) -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 h-64 flex flex-col overflow-hidden shadow-xl">
+                <div class="border-b border-gray-800 pb-2 mb-2 flex items-center justify-between">
+                    <h2 class="font-bold text-emerald-400 text-sm tracking-wider flex items-center space-x-1">
+                        <span>⚡</span> <span>DRAFT KNOWLEDGE EXTRACTOR</span>
+                    </h2>
+                </div>
+                <div class="flex-grow overflow-y-auto text-xs space-y-2 pr-1">
+                    <p class="text-gray-400 mb-2">Simulate a task completion/failure to extract new draft cards:</p>
+                    <div class="space-y-2">
+                        <input id="report-title" type="text" placeholder="Task Title (e.g. Docker Build Run)" class="w-full bg-gray-950 border border-gray-800 px-3 py-1.5 rounded focus:outline-none">
+                        <textarea id="report-log" rows="3" placeholder="Execution error/log snippet..." class="w-full bg-gray-950 border border-gray-800 px-3 py-1.5 rounded focus:outline-none font-mono"></textarea>
+                        <button onclick="submitReport()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-1.5 rounded transition">
+                            EXTRACT CARDS
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Javascript Actions and API Bridge -->
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const injectedContext = document.getElementById('injected-context');
+        const clearanceSelect = document.getElementById('clearance');
+        const cardsList = document.getElementById('cards-list');
+        const cardSearch = document.getElementById('card-search');
+        const cardTypeFilter = document.getElementById('card-type-filter');
+
+        // Fetch cards on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchCards();
+            // Handle search input events
+            cardSearch.addEventListener('input', fetchCards);
+            cardTypeFilter.addEventListener('change', fetchCards);
+        });
+
+        // Chat Form Submission
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // Append User message
+            appendMessage('👤 User', text, 'bg-gray-900 border border-gray-800 self-end max-w-[85%] ml-auto');
+            chatInput.value = '';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        security_classification: clearanceSelect.value
+                    })
+                });
+                const data = await response.get_json ? await response.get_json() : await response.json();
+
+                // Append Solomon reply
+                appendMessage('👑 Solomon', data.reply, 'bg-gray-850 border border-gray-800 max-w-[85%]');
+
+                // Display Injected Context
+                if (data.retrieved_context) {
+                    injectedContext.innerHTML = `<pre class="whitespace-pre-wrap font-mono">${escapeHtml(data.retrieved_context)}</pre>`;
+                } else {
+                    injectedContext.innerHTML = `<p class="text-gray-500 italic">No context retrieved matching "${escapeHtml(text)}"</p>`;
+                }
+            } catch (err) {
+                appendMessage('⚠️ Error', 'Failed to communicate with Solomon: ' + err.message, 'bg-red-950 border border-red-800 text-red-300');
+            }
+        });
+
+        function appendMessage(sender, text, classes) {
+            const div = document.createElement('div');
+            div.className = `p-3 rounded-lg ${classes}`;
+            div.innerHTML = `<span class="font-bold ${sender.includes('Solomon') ? 'text-amber-400' : 'text-cyan-400'} block mb-1">${sender}:</span><p class="text-gray-300 leading-relaxed">${escapeHtml(text)}</p>`;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Fetch and display cards
+        async function fetchCards() {
+            const query = cardSearch.value.trim();
+            const cardType = cardTypeFilter.value;
+
+            let url = '/cards';
+            const params = [];
+            if (query) params.push(`query=${encodeURIComponent(query)}`);
+            if (cardType) params.push(`type=${encodeURIComponent(cardType)}`);
+            if (params.length) url += '?' + params.join('&');
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.results && data.results.length) {
+                    cardsList.innerHTML = data.results.map(card => {
+                        // Extract properties whether returned as dict or list
+                        const isDict = !!card.card;
+                        const c = isDict ? card.card : card;
+                        const scoreStr = isDict ? ` (Score: ${card.score.toFixed(2)})` : '';
+
+                        return `
+                            <div class="bg-gray-850 border border-gray-800 p-3 rounded-lg hover:border-gray-700 transition">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="font-bold font-mono text-amber-500">${escapeHtml(c.card_id)}</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${getBadgeClass(c.status)}">${escapeHtml(c.status)}</span>
+                                </div>
+                                <h3 class="font-bold text-gray-200 text-xs mb-1">${escapeHtml(c.title)}</h3>
+                                <p class="text-gray-400 mb-2 leading-relaxed text-[11px]">${escapeHtml(c.summary)}</p>
+                                <div class="bg-gray-900 p-2 rounded text-[10px] font-mono text-gray-300 whitespace-pre-wrap max-h-24 overflow-y-auto mb-2">${escapeHtml(c.body)}</div>
+                                <div class="flex items-center justify-between text-[10px] text-gray-500">
+                                    <span>Classification: <span class="text-amber-500/80 font-bold">${escapeHtml(c.security_classification || 'INTERNAL')}</span></span>
+                                    <span>Type: ${escapeHtml(c.card_type)}</span>
+                                </div>
+                                ${renderActionButtons(c)}
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    cardsList.innerHTML = `<p class="text-gray-500 italic text-center py-4">No cards found in registry.</p>`;
+                }
+            } catch (err) {
+                cardsList.innerHTML = `<p class="text-red-400 italic text-center py-4">Failed to fetch cards: ${err.message}</p>`;
+            }
+        }
+
+        function getBadgeClass(status) {
+            switch(status) {
+                case 'ACTIVE': return 'bg-emerald-950 text-emerald-400 border border-emerald-800';
+                case 'APPROVED': return 'bg-indigo-950 text-indigo-400 border border-indigo-800';
+                case 'REVIEWED': return 'bg-yellow-950 text-yellow-400 border border-yellow-800';
+                case 'DRAFT': return 'bg-blue-950 text-blue-400 border border-blue-800';
+                default: return 'bg-gray-900 text-gray-400 border border-gray-800';
+            }
+        }
+
+        function renderActionButtons(card) {
+            if (card.status === 'DRAFT') {
+                return `
+                    <div class="mt-2 flex space-x-1 justify-end">
+                        <button onclick="reviewCard('${card.card_id}', 'review')" class="bg-yellow-700 hover:bg-yellow-600 text-gray-900 font-bold px-2 py-1 rounded text-[10px] transition">Review</button>
+                        <button onclick="reviewCard('${card.card_id}', 'reject')" class="bg-red-900 hover:bg-red-800 text-red-200 px-2 py-1 rounded text-[10px] transition">Reject</button>
+                    </div>
+                `;
+            } else if (card.status === 'REVIEWED') {
+                return `
+                    <div class="mt-2 flex justify-end">
+                        <button onclick="reviewCard('${card.card_id}', 'approve')" class="bg-indigo-700 hover:bg-indigo-600 text-white font-bold px-2 py-1 rounded text-[10px] transition">Approve</button>
+                    </div>
+                `;
+            } else if (card.status === 'APPROVED') {
+                return `
+                    <div class="mt-2 flex justify-end">
+                        <button onclick="reviewCard('${card.card_id}', 'activate')" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2 py-1 rounded text-[10px] transition">Activate</button>
+                    </div>
+                `;
+            }
+            return '';
+        }
+
+        async function reviewCard(card_id, action) {
+            const payload = { card_id, action };
+            if (action === 'review') payload.notes = 'Approved for promotion from draft to reviewed.';
+            if (action === 'reject') payload.reason = 'Manual operator rejection.';
+
+            try {
+                const response = await fetch('/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+                if (res.success) {
+                    fetchCards();
+                } else {
+                    alert('Action failed: ' + res.error);
+                }
+            } catch(e) {
+                alert('Connection error: ' + e.message);
+            }
+        }
+
+        // Submit report to generate draft cards
+        async function submitReport() {
+            const title = document.getElementById('report-title').value.trim();
+            const logs = document.getElementById('report-log').value.trim();
+            if (!title || !logs) {
+                alert('Please enter both a title and some log snippets.');
+                return;
+            }
+
+            const payload = {
+                report: {
+                    task_id: 'T-' + Math.floor(Math.random() * 900000 + 100000),
+                    procedure_id: 'PC-AC-01',
+                    title: title,
+                    outcome: 'failure',
+                    attempted: 'Executed pipeline step.',
+                    succeeded: 'Prepared virtual machine resources.',
+                    failed: logs,
+                    root_cause: 'Dynamic diagnostic catch.',
+                    repair_action: 'Fix resource allocations.',
+                    evidence: logs,
+                    tags: ['web-extractor', 'runtime-test']
+                },
+                review: {
+                    is_valid: true,
+                    confidence_score: 0.85
+                }
+            };
+
+            try {
+                const response = await fetch('/worker-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+                if (res.success) {
+                    alert('Draft cards extracted and written to SQLite database successfully!');
+                    document.getElementById('report-title').value = '';
+                    document.getElementById('report-log').value = '';
+                    fetchCards();
+                } else {
+                    alert('Extraction failed: ' + res.error);
+                }
+            } catch(e) {
+                alert('Connection error: ' + e.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
