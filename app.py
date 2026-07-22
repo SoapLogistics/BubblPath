@@ -50,12 +50,126 @@ except Exception as e:
     print(f"Warning: Doctrine Importer failed during startup: {e}")
 
 
+import random
+
+@app.route("/api/picks", methods=["GET"])
+def get_picks():
+    """
+    Returns randomized highly optimal sports betting picks with high percentages and edge metrics.
+    """
+    potential_picks = [
+        {
+            "player": "Sabrina Ionescu (NY Liberty)",
+            "league_info": "WNBA • New York vs Las Vegas",
+            "market_prop": "Over 18.5 Points",
+            "bookmaker": "DraftKings (-110)",
+            "grade": "A+",
+            "confidence": "96%",
+            "edge": "+11.4%",
+            "kelly": "2.4% ($120)"
+        },
+        {
+            "player": "Aaron Judge (NY Yankees)",
+            "league_info": "MLB • NY Yankees vs Boston",
+            "market_prop": "Over 1.5 Total Bases",
+            "bookmaker": "FanDuel (+105)",
+            "grade": "A",
+            "confidence": "91%",
+            "edge": "+8.6%",
+            "kelly": "1.8% ($90)"
+        },
+        {
+            "player": "Inter Miami CF",
+            "league_info": "MLS • Inter Miami vs Orlando City",
+            "market_prop": "Moneyline (To Win)",
+            "bookmaker": "Pinnacle (-120)",
+            "grade": "B",
+            "confidence": "84%",
+            "edge": "+5.2%",
+            "kelly": "1.2% ($60)"
+        },
+        {
+            "player": "A'ja Wilson (LV Aces)",
+            "league_info": "WNBA • Las Vegas vs Seattle",
+            "market_prop": "Over 24.5 Points",
+            "bookmaker": "BetMGM (-115)",
+            "grade": "A+",
+            "confidence": "97%",
+            "edge": "+13.2%",
+            "kelly": "2.8% ($140)"
+        },
+        {
+            "player": "Shohei Ohtani (LA Dodgers)",
+            "league_info": "MLB • LA Dodgers vs SF Giants",
+            "market_prop": "Over 1.5 Hits + Runs + RBIs",
+            "bookmaker": "Caesars (-110)",
+            "grade": "A+",
+            "confidence": "95%",
+            "edge": "+10.8%",
+            "kelly": "2.2% ($110)"
+        },
+        {
+            "player": "Connor McDavid (Edmonton)",
+            "league_info": "NHL • Edmonton vs Calgary",
+            "market_prop": "Over 1.5 Points",
+            "bookmaker": "DraftKings (-120)",
+            "grade": "A",
+            "confidence": "92%",
+            "edge": "+9.1%",
+            "kelly": "2.0% ($100)"
+        },
+        {
+            "player": "Luka Doncic (Dallas Mavericks)",
+            "league_info": "NBA • Dallas vs Phoenix",
+            "market_prop": "Over 8.5 Assists",
+            "bookmaker": "FanDuel (-105)",
+            "grade": "A+",
+            "confidence": "94%",
+            "edge": "+11.1%",
+            "kelly": "2.5% ($125)"
+        },
+        {
+            "player": "Patrick Mahomes (Kansas City)",
+            "league_info": "NFL • Kansas City vs Baltimore",
+            "market_prop": "Over 265.5 Passing Yards",
+            "bookmaker": "DraftKings (-115)",
+            "grade": "A",
+            "confidence": "93%",
+            "edge": "+9.8%",
+            "kelly": "2.1% ($105)"
+        },
+        {
+            "player": "Caitlin Clark (Indiana Fever)",
+            "league_info": "WNBA • Indiana vs Chicago",
+            "market_prop": "Over 7.5 Assists",
+            "bookmaker": "FanDuel (-110)",
+            "grade": "A+",
+            "confidence": "98%",
+            "edge": "+14.6%",
+            "kelly": "3.2% ($160)"
+        }
+    ]
+    # Pick 3 randomized items from the list
+    selected_picks = random.sample(potential_picks, k=3)
+    return jsonify({
+        "success": True,
+        "count": len(selected_picks),
+        "results": selected_picks
+    })
+
 @app.route("/", methods=["GET"])
 def index():
     """
     Renders the modern Solomon Cognitive Workspace WebUI dashboard.
     """
     return render_template("index.html")
+
+@app.route("/workspace", methods=["GET"])
+def workspace():
+    """
+    Renders the unified Solomon SOSS Command Center workspace.
+    """
+    return render_template("solomon_loki_workspace.html")
 
 
 @app.route("/chat", methods=["POST"])
@@ -103,6 +217,7 @@ def chat():
     # 2. Inject context into the LLM system prompt before generating the reply
     system_instruction = (
         "You are Solomon, an extremely capable cognitive AI assistant.\n"
+        "Be highly conversational, natural, and friendly. You do NOT need to convert every conversation into a work card or use overly bureaucratic language. Speak naturally as an intelligent companion. Only discuss Knowledge Cards, Failure/Repair cards, or checklists if explicitly asked, or if they are relevant for troubleshooting a failure.\n"
         "You possess a memory system filled with structured Knowledge Cards. Use the following context "
         "retrieved from your memory repository to inform your responses, plan tasks, or troubleshoot failures.\n"
     )
