@@ -160,3 +160,102 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         data = response.get_json()
         assert "error" in data
+
+    def test_get_cognitive_cycle(self, client):
+        """
+        Asserts that the GET /api/quantization/cognitive-cycle endpoint returns an
+        HTTP 200 status code and the correct JSON schema with fields matching the SOK card families.
+        """
+        response = client.get("/api/quantization/cognitive-cycle")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "active"
+        assert len(data["seven_stages_sequence"]) == 7
+
+        cards = data["sok_card_families"]
+        assert cards["SOK-MISSION-QUANT-001"]["family"] == "Mission"
+        assert cards["SOK-PROCEDURE-QUANT-001"]["family"] == "Procedure"
+        assert cards["SOK-TASK-QUANT-001"]["family"] == "Task"
+        assert cards["SOK-EXECUTION-QUANT-001"]["family"] == "Execution"
+        assert cards["SOK-REVIEW-QUANT-001"]["family"] == "Review"
+        assert cards["SOK-KNOWLEDGE-QUANT-001"]["family"] == "Knowledge"
+        assert cards["SOK-IMPROVED-PROCEDURE-QUANT-001"]["family"] == "Improved Procedure"
+        assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
+
+    def test_route_mnemosyne_query_high_precision(self, client):
+        """
+        Asserts that querying with complex, SOK-relevant terms routes the request
+        to the High-Precision Target Model.
+        """
+        payload = {
+            "query": "Solve the multi-choice knapsack integer program with average Hessian traces",
+            "threshold": 0.40
+        }
+        response = client.post(
+            "/api/mnemosyne/route",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        decision = data["routing_decision"]
+        assert decision["model_type"] == "high_precision"
+        assert "High-Precision" in decision["routed_model"]
+        assert decision["precision_allocated"] == "FP16/INT8"
+        assert decision["active_ram_footprint_gb"] == 14.0
+        assert decision["estimated_latency_ms"] == 55.0
+        assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
+
+    def test_route_mnemosyne_query_ultra_light(self, client):
+        """
+        Asserts that querying with standard, SOK-irrelevant terms routes the request
+        to the Ultra-Light Quantized Model, checking size footprint and cost savings.
+        """
+        payload = {
+            "query": "How to make a chocolate chip cookie dessert",
+            "threshold": 0.40
+        }
+        response = client.post(
+            "/api/mnemosyne/route",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        decision = data["routing_decision"]
+        assert decision["model_type"] == "ultra_light"
+        assert "Ultra-Light" in decision["routed_model"]
+        assert decision["precision_allocated"] == "INT4/Ternary"
+        assert decision["active_ram_footprint_gb"] == 0.7
+        assert decision["estimated_latency_ms"] == 12.0
+
+        # Check resource impacts
+        impact = decision["resource_impact"]
+        assert impact["vram_saved_gb"] == 13.3
+        assert impact["latency_reduction_percent"] == 78.2
+        assert impact["cost_savings_percent"] == 95.0
+
+    def test_route_mnemosyne_query_invalid_params(self, client):
+        # Trigger validation failure via missing query parameter
+        payload = {"threshold": 0.15}
+        response = client.post(
+            "/api/mnemosyne/route",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        assert response.status_code == 400
+        assert "error" in response.get_json()
+
+        # Trigger validation failure via non-numeric threshold parameter
+        payload = {"query": "test query", "threshold": "invalid_threshold"}
+        response = client.post(
+            "/api/mnemosyne/route",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        assert response.status_code == 400
+        assert "error" in response.get_json()
