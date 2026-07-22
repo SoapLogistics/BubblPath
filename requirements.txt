@@ -1,2 +1,5 @@
 flask
-openai
+openai>=1.0.0
+gunicorn
+pytest
+pytest-cov
