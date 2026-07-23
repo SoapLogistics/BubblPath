@@ -440,3 +440,54 @@ class TestMnemosyneAPIIntegration:
         assert "def run(self, *args, **kwargs)" in rep["synthesized_source_code"]
         assert "node1 Ready control-plane" in rep["synthesized_source_code"]
         assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
+
+    def test_get_sandbox_skills_list(self, client):
+        """
+        Verifies GET /api/mnemosyne/skills returns registered capability nodes.
+        """
+        response = client.get("/api/mnemosyne/skills")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+        assert data["total_skills"] > 0
+        assert data["skills"][0]["skill_id"] == "SKILL-ARRAY-SORT-001"
+
+    def test_execute_sandbox_skill_optimizer_success(self, client):
+        """
+        Verifies POST /api/mnemosyne/skills/execute successfully runs quicksort
+        under quarantined sandbox execution subprocess environment.
+        """
+        payload = {
+            "skill_id": "SKILL-ARRAY-SORT-001",
+            "args": [[31, 4, 15, 92, 65, 35, 89]],
+            "timeout_sec": 3.0
+        }
+        response = client.post("/api/mnemosyne/skills/execute", data=json.dumps(payload), content_type="application/json")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+        assert data["skill_name"] == "Quicksort Array Optimizer"
+
+        sandbox = data["sandboxed_execution_result"]
+        assert sandbox["success"] is True
+        assert sandbox["return_value"] == [4, 15, 31, 35, 65, 89, 92]
+        assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
+
+    def test_execute_sandbox_skill_timeout_interception(self, client):
+        """
+        Verifies POST /api/mnemosyne/skills/execute captures and halts infinite loop
+        subprocesses cleanly under timeout boundaries, preserving parent process health.
+        """
+        payload = {
+            "skill_id": "SKILL-DIB-001",
+            "timeout_sec": 0.5 # strict timeout
+        }
+        response = client.post("/api/mnemosyne/skills/execute", data=json.dumps(payload), content_type="application/json")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        sandbox = data["sandboxed_execution_result"]
+        assert sandbox["success"] is False
+        assert "TimeoutExpired" in sandbox["error"] or "timeout" in sandbox["error"]
+        assert "prevented" in sandbox["error"] or "killed" in sandbox["error"]

@@ -12,13 +12,15 @@ from solomon_model_router import ModelRouter
 from solomon_recursive_crucible import RecursiveCrucible
 from solomon_ast_injector import ASTInjector
 from solomon_observational_simulator import ObservationalSimulator
+from solomon_skill_graph import SkillGraph, SandboxExecutor
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-# Instantiate our Relational Mnemosyne SQLite Database and Model Router
+# Instantiate our Relational Mnemosyne SQLite Database, Model Router, and active Skill Graph
 db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
 router = ModelRouter(db)
+skills_graph = SkillGraph()
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -28,7 +30,7 @@ def initialize_model_loading_pipeline():
     Simulates the model-loading pipeline. Dynamically computes the optimal
     mixed-precision bit-width layout for our local target model (8B params, 4GB budget)
     using Hessian trace sensitivity and integer programming before allocating any memory.
-    Also seeds the Relational Mnemosyne SQLite database with cognitive SOK cards.
+    Also seeds SOK cognitive cards in SQLite and registers default skills in our active Graph.
     """
     print("\n" + "="*80)
     print("SOLOMON INITIALIZATION: RUNNING DYNAMIC HESSIAN TRACE ILP SOLVER")
@@ -115,6 +117,34 @@ def initialize_model_loading_pipeline():
     db.add_link("SOK-IMPROVED-PROCEDURE-QUANT-001", "SOK-PROCEDURE-QUANT-001", "ENHANCES")
 
     print("Relational Database fully initialized with directed links.")
+
+    print("SEEDING ACTIVE SKILL GRAPH CAPABILITIES...")
+    # Seed dynamic skills in our active Graph
+    skills_graph.register_skill(
+        skill_id="SKILL-ARRAY-SORT-001",
+        name="Quicksort Array Optimizer",
+        source_code=(
+            "def quicksort_optimizer(arr):\n"
+            "    if len(arr) <= 1:\n"
+            "        return arr\n"
+            "    pivot = arr[len(arr) // 2]\n"
+            "    left = [x for x in arr if x < pivot]\n"
+            "    middle = [x for x in arr if x == pivot]\n"
+            "    right = [x for x in arr if x > pivot]\n"
+            "    return quicksort_optimizer(left) + middle + quicksort_optimizer(right)\n"
+        )
+    )
+    skills_graph.register_skill(
+        skill_id="SKILL-DIB-001",
+        name="Infinite Loop Preventative Test",
+        source_code=(
+            "import time\n"
+            "def infinite_loop_probe():\n"
+            "    while True:\n"
+            "        time.sleep(0.1)\n"
+        )
+    )
+    print("Active Skill Graph loaded with quicksort and infinite loop prevention probes.")
     print("RECOMMENDED NEXT STEP:")
     print("Promote the Agent Engine Cognitive Workspace to active production mode.")
     print("="*80 + "\n")
@@ -149,7 +179,7 @@ def chat():
         # Append the mandated RECOMMENDED NEXT STEP section
         reply += (
             "\n\n**RECOMMENDED NEXT STEP**\n"
-            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.2em;'>"
             "Compile custom calibration datasets using /api/command-center/quantization/compile-calibration "
             "to ground your mixed-precision weights in Solomon's active relational database knowledge cards.</span>"
         )
@@ -588,6 +618,77 @@ def execute_observational_profiling():
         )
     }
     return jsonify(observational_response)
+
+
+@app.route("/api/mnemosyne/skills", methods=["GET"])
+def get_all_sandbox_skills():
+    """
+    Returns all registered sandbox capabilities and dependency links in our Active Skill Graph.
+    """
+    skills = skills_graph.get_all_skills()
+    return jsonify({
+        "status": "success",
+        "total_skills": len(skills),
+        "skills": skills
+    })
+
+
+@app.route("/api/mnemosyne/skills/execute", methods=["POST"])
+def execute_sandbox_skill():
+    """
+    Executes a dynamic capability safely inside an isolated, quarantined,
+    and timed-out subprocess environment.
+    """
+    data = request.json or {}
+    skill_id = data.get("skill_id", "")
+    args_list = data.get("args", [])
+
+    try:
+        timeout_sec = float(data.get("timeout_sec", 2.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'timeout_sec', must be a float."}), 400
+
+    if not skill_id:
+        return jsonify({"error": "Missing required 'skill_id' for execution."}), 400
+
+    # Fetch skill details
+    skill = skills_graph.get_skill(skill_id)
+    if not skill:
+        return jsonify({"error": f"Skill with ID '{skill_id}' not found in active graph."}), 404
+
+    # Prepare function call
+    # Quicksort optimizer entry call helper
+    if skill_id == "SKILL-ARRAY-SORT-001":
+        # Ensure default array input if none provided
+        array_input = args_list[0] if args_list and isinstance(args_list[0], list) else [31, 4, 15, 92, 65, 35, 89]
+        entry_call = f"quicksort_optimizer({array_input})"
+    elif skill_id == "SKILL-DIB-001":
+        entry_call = "infinite_loop_probe()"
+    else:
+        # Fallback entry call pattern
+        entry_call = f"{skill['name'].lower().replace(' ', '_')}()"
+
+    # Run securely inside Quarantined Subprocess Sandbox
+    exec_result = SandboxExecutor.execute_safely(
+        source_code=skill["source_code"],
+        entry_function_call=entry_call,
+        timeout_sec=timeout_sec
+    )
+
+    # Structure output response
+    execution_response = {
+        "status": "success",
+        "skill_id": skill_id,
+        "skill_name": skill["name"],
+        "sandboxed_execution_result": exec_result,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Upon success, register these isolated capability results in Solomon's Review Gate "
+            "to formally promote verified skills into active core agent action pools!</span>"
+        )
+    }
+    return jsonify(execution_response)
 
 
 if __name__ == "__main__":
