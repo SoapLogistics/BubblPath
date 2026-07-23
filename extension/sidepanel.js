@@ -44,6 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Phase 13 Elements
   const btnAnalyzeTravel = document.getElementById('btn-analyze-travel');
 
+  // Phase 14 Elements
+  const btnAnalyzeHousehold = document.getElementById('btn-analyze-household');
+
+  // Phase 15 Elements
+  const btnAnalyzeEdu = document.getElementById('btn-analyze-edu');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -364,6 +370,60 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       appendMessage('Solomon Travel', travelReport, true);
+    }, 2800);
+  });
+
+  // --- Phase 14: Household Management ---
+  btnAnalyzeHousehold.addEventListener('click', () => {
+    appendMessage('Solomon', 'Scanning appliance models and utility data...');
+
+    setTimeout(() => {
+      appendMessage('Solomon Home', '&#10003; Identifying appliance replacement parts from DOM...', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon Home', '&#10003; Comparing repair cost versus complete replacement...', true);
+    }, 1800);
+
+    setTimeout(() => {
+      const homeReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Appliance:</strong> Whirlpool Refrigerator (WRX735SBMZ)<br>
+          <strong>Issue:</strong> Ice maker failure.<br>
+          <strong>Part Required:</strong> Assembly W11299924 ($85)<br>
+          <strong>Avg Labor Cost:</strong> $150<br>
+          <strong>Total Repair Cost:</strong> ~$235<br>
+          <strong>New Unit Cost:</strong> $1,800<br>
+          <strong>Recommendation:</strong> Repair is economically viable (<15% of replacement cost).
+        </div>
+      `;
+      appendMessage('Solomon Home', homeReport, true);
+    }, 2800);
+  });
+
+  // --- Phase 15: Education & Study Notes ---
+  btnAnalyzeEdu.addEventListener('click', () => {
+    appendMessage('Solomon', 'Extracting educational materials and evaluating concepts...');
+
+    setTimeout(() => {
+      appendMessage('Solomon Edu', '&#10003; Generating summary notes and formatting citations...', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon Edu', '&#10003; Cross-referencing against active assignment requirements...', true);
+    }, 1800);
+
+    setTimeout(() => {
+      const eduReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Topic:</strong> Cellular Respiration<br>
+          <strong>Summary:</strong> The process by which cells convert glucose and oxygen into ATP, water, and CO2.<br>
+          <strong>Citation (APA):</strong> <em>Author, A. A. (Year). Title of article. Title of Journal.</em><br>
+          <strong>Assignment Check:</strong> You still need to cover the Krebs cycle specifically.<br>
+          <strong>Quick Quiz:</strong> What is the net ATP yield from one glucose molecule? (Click to reveal answer).
+        </div>
+      `;
+      appendMessage('Solomon Edu', eduReport, true);
     }, 2800);
   });
 
