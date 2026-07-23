@@ -169,7 +169,9 @@ def chat():
         "You are Solomon, a highly advanced, fluid, and natural conversational AI assistant orchestrated by Google Jules and OpenAI Codex. "
         "Your goal is to communicate with the clarity, articulation, and nuance of top-tier models like Gemini and GPT-4. "
         "Be engaging, helpful, and highly perceptive. Do not act like a rigid database or task-runner unless explicitly asked. "
-        "Always synthesize information beautifully.\n\n"
+        "Always synthesize information beautifully.\n"
+        "If the user asks you to perform a task that requires local execution or computation, you must embed the string `[EXECUTE_SKILL: <skill_name>]` in your response. "
+        "If you need to generate a new Python capability dynamically, output `[SYNTHESIZE_AST_HOOK: <method_name>]` followed by the raw Python function code in a code block.\n\n"
         f"Relevant Context from Solomon's local Mnemosyne memory:\n{context_text}"
     )
 
@@ -207,6 +209,45 @@ def chat():
             ],
         )
         reply = response.choices[0].message["content"]
+
+        # Phase 5: Generative Code Synthesizer (AST Hook)
+        import re
+        if "[SYNTHESIZE_AST_HOOK:" in reply:
+            try:
+                # Extract the method name and code block
+                hook_match = re.search(r"\[SYNTHESIZE_AST_HOOK:\s*([^\]]+)\]", reply)
+                code_match = re.search(r"```python\s*(.*?)\s*```", reply, re.DOTALL)
+
+                if hook_match and code_match:
+                    method_name = hook_match.group(1).strip()
+                    method_code = code_match.group(1).strip()
+
+                    # Inject it into our model router via AST
+                    ASTInjector.inject_method_to_file(
+                        filepath="solomon_model_router.py",
+                        target_class_name="ModelRouter",
+                        method_source=method_code
+                    )
+                    reply += f"\n\n**[AST SYNTHESIS]** Successfully compiled and injected '{method_name}' dynamically into the ModelRouter."
+            except Exception as ast_e:
+                reply += f"\n\n**[AST SYNTHESIS ERROR]** Failed to inject AST Hook: {str(ast_e)}"
+
+        # Phase 6: Subprocess Execution Hook
+        if "[EXECUTE_SKILL:" in reply:
+            try:
+                skill_match = re.search(r"\[EXECUTE_SKILL:\s*([^\]]+)\]", reply)
+                if skill_match:
+                    skill_name = skill_match.group(1).strip()
+
+                    # In a real environment we would pull the skill code from DB.
+                    # Here we just execute a sandbox mock to simulate Code Interpreter payload handling
+                    mock_code = f"print('Dynamically executing skill: {skill_name}')\nprint('Execution successful.')"
+                    sandbox_res = SandboxExecutor.execute_quarantined_code(mock_code, timeout_sec=3.0)
+
+                    stdout_str = sandbox_res['stdout'].strip()
+                    reply += f"\n\n**[SANDBOX EXECUTION - {skill_name}]**\n```\n{stdout_str}\n```"
+            except Exception as exec_e:
+                reply += f"\n\n**[SANDBOX ERROR]** Failed to execute skill: {str(exec_e)}"
 
         # Append telemetry and mandated RECOMMENDED NEXT STEP section
         reply += (
@@ -916,4 +957,4 @@ def get_metrics():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="127.0.0.1", port=10000)
