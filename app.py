@@ -16,6 +16,10 @@ from solomon_model_router import ModelRouter
 # From Gabriel Engine:
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 
+# From Curiosity & Experiment Engines:
+from solomon_curiosity_engine import CuriosityEngine, LearningOpportunity
+from solomon_experiment_engine import ExperimentEngine
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -25,6 +29,10 @@ router = ModelRouter(db)
 
 # Instantiate Gabriel's perpetual absorption loop engine
 gabriel_loop = GabrielPerpetualLoop()
+
+# Instantiate Curiosity and Experiment Engines (Phases 2 and 3)
+curiosity_engine = CuriosityEngine()
+experiment_engine = ExperimentEngine(db)
 
 # State caches for dynamically running Codex & Jules power objects
 codex_worktree_instance = None
@@ -175,6 +183,11 @@ def initialize_model_loading_pipeline():
     print("  - [Remaining layers truncated for brevity...]")
     print("-"*80)
 
+    # Incorporate Albert Einstein's absurdity philosophy directly into server console logs
+    print("\nPHILOSOPHICAL GUIDING PRINCIPLE:")
+    print("  “If at first the idea is not absurd, then there is no hope for it.” — Albert Einstein")
+    print("-"*80)
+
     print("SEEDING RELATIONAL MNEMOSYNE SQLITE COGNITIVE CARDS...")
     # Seed our SOK Cards
     cards_to_seed = [
@@ -219,6 +232,13 @@ def initialize_model_loading_pipeline():
             "family": "Improved Procedure",
             "focus": "Dynamic self-tuning adjustments",
             "content": "Toggle local mixed-precision loading when system RAM ceiling drops below 1.5GB, and cache solved templates inside the SQLite revisions schema."
+        },
+        # Seed Albert Einstein's absurdity quote card to Mnemosyne OS
+        {
+            "id": "SOK-KNOWLEDGE-ABSURDITY-001",
+            "family": "Knowledge",
+            "focus": "Philosophy of breakthrough innovation and risk management",
+            "content": "“If at first the idea is not absurd, then there is no hope for it.” — Albert Einstein. Under extreme uncertainty or high-risk constraints, unconventional and seemingly absurd proposals are explicitly prioritized to bypass safety limits."
         }
     ]
 
@@ -233,6 +253,7 @@ def initialize_model_loading_pipeline():
     db.add_link("SOK-KNOWLEDGE-QUANT-001", "SOK-REVIEW-QUANT-001", "DEPENDS_ON")
     db.add_link("SOK-IMPROVED-PROCEDURE-QUANT-001", "SOK-KNOWLEDGE-QUANT-001", "DEPENDS_ON")
     db.add_link("SOK-IMPROVED-PROCEDURE-QUANT-001", "SOK-PROCEDURE-QUANT-001", "ENHANCES")
+    db.add_link("SOK-KNOWLEDGE-ABSURDITY-001", "SOK-MISSION-QUANT-001", "ENHANCES")
 
     print("Relational Database fully initialized with directed links.")
     print("RECOMMENDED NEXT STEP:")
@@ -253,13 +274,14 @@ def chat():
     data = request.json or {}
     user_message = data.get("message", "")
 
-    # Secure the state-of-the-art Jules persona prompt
+    # Secure the state-of-the-art Jules persona prompt, now infused with Einstein's absurdity rule
     jules_system_prompt = (
         "You are Google Jules (integrated as Solomon's core intelligence). "
         "You are an elite, fully autonomous software-engineering agent. "
         "You spin up secure VMs, automatically configure environments, analyze tracebacks, "
         "rewrite source files, run tests recursively to auto-correct errors, and open PRs. "
-        "Respond with maximum technical power, extreme clarity, and zero fluff."
+        "Respond with maximum technical power, extreme clarity, and zero fluff. "
+        "Incorporate your sovereign philosophy: 'If at first the idea is not absurd, then there is no hope for it.' — Albert Einstein."
     )
 
     if not openai.api_key:
@@ -267,7 +289,8 @@ def chat():
         reply = (
             f"[Jules Agentic Mode] Solomon here. I have compiled and integrated all "
             f"Jules-native powers (Sandbox Dependency Setup, Unified Patch appliers, "
-            f"and Test-Traceback Error solvers). Received message: '{user_message}'"
+            f"and Test-Traceback Error solvers). Received message: '{user_message}'. "
+            f"And remember: 'If at first the idea is not absurd, then there is no hope for it.' — Albert Einstein."
         )
         # Append the mandated RECOMMENDED NEXT STEP section
         reply += (
@@ -1074,6 +1097,150 @@ def get_status():
         "history": history,
         "mode": "aggressive_code_thief_enabled"
     })
+
+
+# ==========================================
+# CURIOSITY & EXPERIMENT GATEWAYS (PHASES 2 & 3)
+# ==========================================
+
+@app.route("/api/curiosity/queue", methods=["GET"])
+def get_curiosity_queue():
+    """
+    Returns the priority queue of Learning Opportunities managed by Prometheus.
+    """
+    priority_queue = curiosity_engine.get_priority_queue()
+    return jsonify({
+        "status": "success",
+        "total_opportunities": len(priority_queue),
+        "queue": [lo.to_dict() for lo in priority_queue]
+    })
+
+
+@app.route("/api/curiosity/add", methods=["POST"])
+def add_curiosity_opportunity():
+    """
+    Adds a custom Learning Opportunity to the Prometheus mapper.
+    """
+    data = request.json or {}
+    task_id = data.get("task_id")
+    title = data.get("title")
+    description = data.get("description")
+
+    if not task_id or not title:
+        return jsonify({"status": "error", "message": "Parameters 'task_id' and 'title' are required."}), 400
+
+    try:
+        value = float(data.get("value", 5.0))
+        difficulty = float(data.get("difficulty", 5.0))
+        future_use = float(data.get("future_use", 5.0))
+        risk = float(data.get("risk", 3.0))
+        compute_cost = float(data.get("compute_cost", 2.0))
+        is_absurd = bool(data.get("is_absurd", False))
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "Numerical arguments must be valid floats."}), 400
+
+    lo = LearningOpportunity(
+        task_id=task_id,
+        title=title,
+        description=description,
+        value=value,
+        difficulty=difficulty,
+        future_use=future_use,
+        risk=risk,
+        compute_cost=compute_cost,
+        is_absurd=is_absurd,
+        metadata=data.get("metadata")
+    )
+    curiosity_engine.register_opportunity(lo)
+    return jsonify({
+        "status": "success",
+        "message": "Learning opportunity registered and scored successfully.",
+        "opportunity": lo.to_dict()
+    })
+
+
+@app.route("/api/curiosity/next", methods=["GET"])
+def get_next_learning_opportunity():
+    """
+    Recommends the next best learning target from the queue, infusing Einstein Philosophy.
+    """
+    selected, advice = curiosity_engine.select_next_best_learning_task()
+    return jsonify({
+        "status": "success",
+        "selected_opportunity": selected.to_dict(),
+        "advice": advice,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Trigger the POST /api/experiment/run endpoint using this opportunity's "
+            "task_id to verify its claims in the scientific experiment pipeline.</span>"
+        )
+    })
+
+
+@app.route("/api/experiment/run", methods=["POST"])
+def run_experiment_pipeline():
+    """
+    Runs the complete sandbox learning pipeline for a specified Opportunity Task.
+    Executes Hypothesis, Plans sandbox run, captures evidence, checks the Review Gate,
+    and promotes the outcome as a verified SOK card into Mnemosyne relational database.
+    """
+    data = request.json or {}
+    task_id = data.get("task_id")
+
+    if not task_id:
+        return jsonify({"status": "error", "message": "Missing 'task_id' parameter."}), 400
+
+    # Look up the task in the Curiosity Engine
+    target_lo = None
+    for lo in curiosity_engine.learning_queue:
+        if lo.task_id == task_id:
+            target_lo = lo
+            break
+
+    # If not registered, create one dynamically to ensure extreme fault tolerance
+    if not target_lo:
+        target_lo = LearningOpportunity(
+            task_id=task_id,
+            title=f"Dynamic Investigation of {task_id}",
+            description="Dynamically triggered sandboxed learning investigation.",
+            value=7.5,
+            difficulty=5.0,
+            future_use=8.0,
+            risk=2.0,
+            compute_cost=1.5,
+            is_absurd=False
+        )
+        curiosity_engine.register_opportunity(target_lo)
+
+    try:
+        # 1. Formulate
+        experiment = experiment_engine.formulate_experiment(target_lo)
+
+        # 2. Execute
+        evidence = experiment_engine.execute_sandbox_experiment(experiment.experiment_id)
+
+        # 3. Promote
+        success, message = experiment_engine.promote_to_mnemosyne(experiment.experiment_id)
+
+        return jsonify({
+            "status": "success" if success else "failed",
+            "message": message,
+            "experiment": {
+                "id": experiment.experiment_id,
+                "hypothesis": experiment.hypothesis,
+                "plan": experiment.plan,
+                "status": experiment.status,
+                "execution_success": experiment.execution_success,
+                "evidence": evidence
+            }
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Experiment run failed: {str(e)}"
+        }), 500
 
 
 if __name__ == "__main__":
