@@ -1,0 +1,11 @@
+# Ignore python bytecode and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore coverage and test artifacts
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
