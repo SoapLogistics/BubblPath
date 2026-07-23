@@ -59,6 +59,10 @@ from solomon_multi_agent_consensus import MultiAgentConsensus
 from solomon_context_budgeter import DynamicContextBudgeter
 from solomon_vector_compressor import RAGVectorCompressor
 
+# Import Phase 22 and 23 SOSS Engines
+from solomon_model_fusion import MultiModelFusionRouter
+from solomon_performance_predictor import PerformancePredictor
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -90,6 +94,8 @@ tensor_optimizer = TensorCoherenceOptimizer(db)
 agent_consensus = MultiAgentConsensus(db)
 context_budgeter = DynamicContextBudgeter(db)
 vector_compressor = RAGVectorCompressor(db)
+model_fusion_router = MultiModelFusionRouter(db)
+performance_predictor = PerformancePredictor(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1408,6 +1414,53 @@ def run_vector_compress_evaluate():
     if report.get("status") == "error":
         return jsonify(report), 404
 
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 22 & 23 SOSS MODEL FUSION AND PERFORMANCE PREDICTOR ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/model/fusion", methods=["POST"])
+def run_model_fusion_optimize():
+    """
+    Ingests priorities and resolves optimal model weights.
+    """
+    data = request.json or {}
+    try:
+        accuracy_priority = float(data.get("accuracy_priority", 0.50))
+        latency_priority = float(data.get("latency_priority", 0.50))
+        vram_available = float(data.get("vram_available_gb", 8.0))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid argument types: {str(e)}"}), 400
+
+    report = model_fusion_router.calculate_optimal_fusion_weights(
+        accuracy_priority=accuracy_priority,
+        latency_priority=latency_priority,
+        vram_available_gb=vram_available
+    )
+    return jsonify(report)
+
+
+@app.route("/api/command-center/performance/predict", methods=["POST"])
+def run_performance_predict():
+    """
+    Predicts expected latency and memory pressure for a given precision format.
+    """
+    data = request.json or {}
+    model_precision = data.get("model_precision")
+    try:
+        seq_len = int(data.get("seq_len", 1024))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid 'seq_len' value: {str(e)}"}), 400
+
+    if not model_precision:
+        return jsonify({"error": "Missing required field 'model_precision'."}), 400
+
+    report = performance_predictor.predict_model_performance(
+        model_precision=model_precision,
+        seq_len=seq_len
+    )
     return jsonify(report)
 
 
