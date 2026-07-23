@@ -14,9 +14,11 @@ from solomon_recursive_crucible import RecursiveCrucible
 from solomon_ast_injector import ASTInjector
 from solomon_observational_simulator import ObservationalSimulator
 
-# Import resource monitor and quantization strategy engine
+# Import resource monitor, quantization strategy engine, and perpetual loop
 from solomon_knowledge_cards.resource_monitor import InfrastructureResourceMonitor
 from solomon_knowledge_cards.quantization_strategy_engine import QuantizationStrategyEngine
+from solomon_perpetual_learning_loop import SolomonPerpetualLearningLoop
+from solomon_skill_graph import SandboxExecutor
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -28,6 +30,7 @@ router = ModelRouter(db)
 # Instantiate new capabilities
 monitor = InfrastructureResourceMonitor(ram_cap_gb=1.5)
 strategy_engine = QuantizationStrategyEngine(db)
+perpetual_loop = SolomonPerpetualLearningLoop(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -782,6 +785,74 @@ def simulate_memory_pressure_endpoint():
             "the Infrastructure Monitor registered and archived the CRITICAL ALERT!</span>"
         )
     })
+
+
+# ==========================================
+# SKILLS AND PERPETUAL LOOP ENDPOINTS
+# ==========================================
+
+@app.route("/api/mnemosyne/skills", methods=["GET"])
+def get_skills_sequence():
+    """
+    Returns registered skills and their topologically resolved execution sequence.
+    """
+    try:
+        sequence = perpetual_loop.skill_graph.resolve_execution_order()
+        return jsonify({
+            "status": "success",
+            "skills_registered": list(perpetual_loop.skill_graph.nodes.keys()),
+            "topological_execution_sequence": sequence
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/mnemosyne/skills/execute", methods=["POST"])
+def execute_sandboxed_skill():
+    """
+    Executes a dynamically generated skill programmatically inside our quarantined sandbox.
+    """
+    data = request.json or {}
+    source_code = data.get("source_code", "")
+    try:
+        timeout_sec = float(data.get("timeout_sec", 5.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid timeout_sec, must be a float."}), 400
+
+    if not source_code:
+        return jsonify({"error": "Missing 'source_code' parameter."}), 400
+
+    res = SandboxExecutor.execute_quarantined_code(source_code, timeout_sec)
+    return jsonify({
+        "status": "success",
+        "execution_result": res,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "If execution succeeded, trigger the review gate update POST /api/mnemosyne/review "
+            "to formally promote this sandboxed capability into active production memory!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/perpetual-loop", methods=["POST"])
+def execute_cognitive_perpetual_loop():
+    """
+    Triggers a full round of Solomon's unified 7-Stage Perpetual Learning Cycle.
+    """
+    data = request.json or {}
+    try:
+        simulated_memory_mb = float(data.get("simulated_memory_mb", 1410.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'simulated_memory_mb' value."}), 400
+
+    test_script = data.get("test_script", "print('Autonomous Sandbox Verification successful')")
+
+    report = perpetual_loop.execute_cognitive_cycle_round(
+        simulated_memory_mb=simulated_memory_mb,
+        test_script_source=test_script
+    )
+    return jsonify(report)
 
 
 @app.route("/metrics", methods=["GET"])
