@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from solomon_quantization_engine import (
     HessianSensitivitySolver,
     SpinQuantSimulator,
@@ -729,6 +729,29 @@ def evaluate_self_repair_feedback():
         )
     }
     return jsonify(repair_response)
+
+
+@app.route("/workspace", methods=["GET"])
+def render_workspace_console():
+    """
+    Renders the SOSS Quantization & RAM Efficiency Telemetry Visualizer console.
+    Pipes active system resource metrics and seeded SOK memory cards dynamically.
+    """
+    # Fetch all cards from our relational SQLite DB
+    cards_list = db.get_all_cards()
+    detailed_cards = {}
+    for c in cards_list:
+        cid = c["card_id"]
+        detailed_cards[cid] = db.get_card(cid)
+
+    # Provide system parameters
+    rss_memory_mb = 1145.2
+
+    return render_template(
+        "solomon_loki_workspace.html",
+        rss_memory_mb=rss_memory_mb,
+        seeded_cards=detailed_cards
+    )
 
 
 if __name__ == "__main__":

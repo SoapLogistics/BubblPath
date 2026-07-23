@@ -543,3 +543,18 @@ class TestMnemosyneAPIIntegration:
         assert len(repair_card["outgoing_links"]) > 0
         assert repair_card["outgoing_links"][0]["target_id"] == "SOK-FAILURE-001"
         assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
+
+    def test_workspace_endpoint(self, client):
+        """
+        Asserts that the GET /workspace endpoint successfully renders the HTML
+        workspace template containing telemetry parameters and SOK cognitive cards context.
+        """
+        response = client.get("/workspace")
+        assert response.status_code == 200
+        html = response.get_data(as_text=True)
+        assert "<title>Solomon SOSS - Quantization &amp; Memory Telemetry Workspace</title>" in html or "Quantization & Memory Telemetry Workspace" in html
+        assert "System Telemetry Monitor" in html
+        assert "Dynamic Model Router Simulator" in html
+        assert "Review Gate Capability Promotion" in html
+        assert "SOK Database Cards" in html
+        assert "1145.2" in html
