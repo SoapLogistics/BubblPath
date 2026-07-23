@@ -55,6 +55,10 @@ from solomon_system_sentinel import SystemSentinel
 from solomon_tensor_coherence import TensorCoherenceOptimizer
 from solomon_multi_agent_consensus import MultiAgentConsensus
 
+# Import Phase 20 and 21 SOSS Engines
+from solomon_context_budgeter import DynamicContextBudgeter
+from solomon_vector_compressor import RAGVectorCompressor
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -84,6 +88,8 @@ kalshi_predictor = KalshiPredictor(db)
 sentinel = SystemSentinel()
 tensor_optimizer = TensorCoherenceOptimizer(db)
 agent_consensus = MultiAgentConsensus(db)
+context_budgeter = DynamicContextBudgeter(db)
+vector_compressor = RAGVectorCompressor(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1357,6 +1363,51 @@ def run_multi_agent_consensus_evaluate():
         description=description,
         votes=votes
     )
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 20 & 21 SOSS CONTEXT BUDGETER AND VECTOR COMPRESSOR ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/context/budget", methods=["POST"])
+def run_context_budget_optimize():
+    """
+    Ingests prompt histories and prunes/allocates contents based on active RAM bounds.
+    """
+    data = request.json or {}
+    prompt_history = data.get("prompt_history")
+    try:
+        available_ram = float(data.get("available_ram_mb", 1400.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'available_ram_mb' value. Must be numeric."}), 400
+
+    if not prompt_history or not isinstance(prompt_history, list):
+        return jsonify({"error": "Missing or invalid 'prompt_history' list in request payload."}), 400
+
+    report = context_budgeter.optimize_context_allocation(
+        prompt_history=prompt_history,
+        available_ram_mb=available_ram
+    )
+    return jsonify(report)
+
+
+@app.route("/api/command-center/vector/compress", methods=["POST"])
+def run_vector_compress_evaluate():
+    """
+    Ingests SOK card ID, compresses high-dimensional cached vector hashes to 1-bit,
+    and returns reconstruction stats.
+    """
+    data = request.json or {}
+    card_id = data.get("card_id")
+
+    if not card_id:
+        return jsonify({"error": "Missing required field 'card_id'."}), 400
+
+    report = vector_compressor.evaluate_and_compress_sok_card(card_id=card_id)
+    if report.get("status") == "error":
+        return jsonify(report), 404
+
     return jsonify(report)
 
 
