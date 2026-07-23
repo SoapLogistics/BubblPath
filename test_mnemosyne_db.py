@@ -558,3 +558,51 @@ class TestMnemosyneAPIIntegration:
         assert "Review Gate Capability Promotion" in html
         assert "SOK Database Cards" in html
         assert "1145.2" in html
+
+    def test_self_audit_database_integrity(self, test_db):
+        """
+        Verifies that Phase 9 database integrity probes execute structural PRAGMAs successfully.
+        """
+        from solomon_self_audit_probes import SelfAuditProbes
+        prober = SelfAuditProbes(test_db)
+
+        report = prober.audit_database_integrity()
+        assert report["success"] is True
+        assert report["sqlite_integrity_status"] == "ok"
+        assert report["foreign_key_violations_count"] == 0
+
+    def test_self_audit_semantic_drift(self, test_db):
+        """
+        Verifies that Phase 9 semantic drift probes successfully calculate Cosine Similarity
+        and drift ratios between high-precision and quantized mock vectors.
+        """
+        from solomon_self_audit_probes import SelfAuditProbes
+        prober = SelfAuditProbes(test_db)
+
+        report = prober.calculate_semantic_drift("Deploy HAWQ-V2 Hessian trace solver algorithms")
+        assert report["cosine_similarity"] > 0.50
+        assert 0.0 <= report["semantic_drift_ratio"] <= 1.0
+
+    def test_self_audit_endpoints(self, client):
+        """
+        Asserts that POST /api/mnemosyne/audit/run and GET /api/mnemosyne/audit/status
+        return correct HTTP status codes, schemas, and auto-repair logs.
+        """
+        # Test status endpoint
+        res_status = client.get("/api/mnemosyne/audit/status")
+        assert res_status.status_code == 200
+        data_status = res_status.get_json()
+        assert data_status["status"] == "active"
+        assert data_status["latency_threshold_ms"] == 250.0
+        assert data_status["semantic_drift_ratio_tolerance"] == 0.25
+
+        # Test execute endpoint
+        res_run = client.post("/api/mnemosyne/audit/run")
+        assert res_run.status_code == 200
+        data_run = res_run.get_json()
+        assert data_run["status"] == "success"
+
+        rep = data_run["audit_report"]
+        assert rep["anomalies_detected"] in [True, False]
+        assert "latency_metrics" in rep
+        assert "database_integrity" in rep

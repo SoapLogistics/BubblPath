@@ -204,7 +204,7 @@
             </div>
 
             <!-- Panel B2: Review Gate & Sandbox Skill Promoter -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex-1 flex flex-col space-y-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div class="flex items-center space-x-2">
                         <i class="fa-solid fa-shield-halved text-emerald-400"></i>
@@ -213,7 +213,7 @@
                     <span class="text-xs text-slate-400 font-mono font-bold uppercase tracking-widest">GCPP Pipeline</span>
                 </div>
 
-                <div class="flex-1 overflow-y-auto custom-scrollbar max-h-[300px] space-y-3 pr-1">
+                <div class="overflow-y-auto custom-scrollbar max-h-[220px] space-y-3 pr-1">
                     <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="flex flex-col">
@@ -256,11 +256,45 @@
                 <!-- Sandbox Output Console -->
                 <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
                     <div class="text-[10px] text-slate-500 uppercase font-mono font-bold mb-1.5">Sandbox Output Terminal</div>
-                    <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-slate-300 max-h-[80px] overflow-y-auto custom-scrollbar" id="sandbox-output">
+                    <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-slate-300 max-h-[60px] overflow-y-auto custom-scrollbar" id="sandbox-output">
                         $ await client.post("/api/mnemosyne/skills/execute")
                     </div>
                 </div>
 
+            </div>
+
+            <!-- Panel B3: Phase 9 Proactive Self-Audit & Telemetry Probes -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-square-poll-vertical text-cyan-400"></i>
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">Phase 9: Proactive Self-Audit Probes</h2>
+                    </div>
+                    <span class="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-900 px-2 py-0.5 rounded-md font-mono font-bold uppercase tracking-wider">Active</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-slate-950 border border-slate-800 p-2 rounded text-center">
+                        <div class="text-[8px] text-slate-500 uppercase font-mono">SQLite Integrity</div>
+                        <div class="text-xs font-mono font-bold text-emerald-400" id="audit-db">OK</div>
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800 p-2 rounded text-center">
+                        <div class="text-[8px] text-slate-500 uppercase font-mono">API Latency</div>
+                        <div class="text-xs font-mono font-bold text-emerald-400" id="audit-latency">--</div>
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800 p-2 rounded text-center">
+                        <div class="text-[8px] text-slate-500 uppercase font-mono">Model Semantic Drift</div>
+                        <div class="text-xs font-mono font-bold text-emerald-400" id="audit-drift">--</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-slate-500 font-mono">Continuous background self-auditing enabled</span>
+                    <button class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] uppercase tracking-wider px-4 py-2 rounded-lg flex items-center space-x-1 transition-all" onclick="triggerProactiveAudit()">
+                        <i class="fa-solid fa-shield-virus"></i>
+                        <span>Run Full Audit</span>
+                    </button>
+                </div>
             </div>
 
         </section>
@@ -390,6 +424,63 @@
                 terminal.innerText += `\n[REPAIRED] Failure Card created: ${rep.failure_card_created}. Rolled back branch to ${rep.rollback_status.active_development_branch_alignment}. System restored!`;
             })
             .catch(err => {
+                console.error(err);
+            });
+        }
+
+        // Phase 9 Proactive Self-Audit Probe trigger
+        function triggerProactiveAudit() {
+            const dbBox = document.getElementById("audit-db");
+            const latBox = document.getElementById("audit-latency");
+            const driftBox = document.getElementById("audit-drift");
+
+            dbBox.innerText = "RUNNING...";
+            latBox.innerText = "RUNNING...";
+            driftBox.innerText = "RUNNING...";
+
+            dbBox.className = "text-xs font-mono font-bold text-cyan-400";
+            latBox.className = "text-xs font-mono font-bold text-cyan-400";
+            driftBox.className = "text-xs font-mono font-bold text-cyan-400";
+
+            fetch("/api/mnemosyne/audit/run", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const report = data.audit_report;
+
+                // Render SQLite Integrity
+                if (report.database_integrity.success) {
+                    dbBox.innerText = "OK (" + report.database_integrity.sqlite_integrity_status + ")";
+                    dbBox.className = "text-xs font-mono font-bold text-emerald-400";
+                } else {
+                    dbBox.innerText = "VIOLATION";
+                    dbBox.className = "text-xs font-mono font-bold text-rose-500";
+                }
+
+                // Render latency prober stats
+                latBox.innerText = report.latency_metrics.average_response_latency_ms.toFixed(1) + " ms";
+                latBox.className = "text-xs font-mono font-bold text-emerald-400";
+
+                // Render Semantic Drift Ratio
+                driftBox.innerText = (report.semantic_drift_metrics.semantic_drift_ratio * 100).toFixed(2) + "%";
+                if (report.semantic_drift_metrics.drift_threshold_breached) {
+                    driftBox.className = "text-xs font-mono font-bold text-amber-500";
+                    alert("[PHASE 9 SELF-REPAIR] Semantic Drift exceeds safe bounds (" + (report.semantic_drift_metrics.semantic_drift_ratio * 100).toFixed(2) + "%). System autonomously deployed repair card " + report.auto_repair_report.repair_card_registered + " to adjust Model Router thresholds!");
+                } else {
+                    driftBox.className = "text-xs font-mono font-bold text-emerald-400";
+                }
+            })
+            .catch(err => {
+                dbBox.innerText = "ERROR";
+                latBox.innerText = "ERROR";
+                driftBox.innerText = "ERROR";
+                dbBox.className = "text-xs font-mono font-bold text-rose-500";
+                latBox.className = "text-xs font-mono font-bold text-rose-500";
+                driftBox.className = "text-xs font-mono font-bold text-rose-500";
                 console.error(err);
             });
         }

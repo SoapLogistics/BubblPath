@@ -58,7 +58,8 @@ class SelfRepairEngine:
             f"System action: Triggered automatic Git/Backup state rollback to restore parent process health."
         )
 
-        # 2. Ingest the Failure Card into our Relational SQLite Database
+        # 2. Ingest the Failure Card and register the failed skill card to satisfy foreign key constraints
+        self.db.upsert_card(skill_id, "Skill", f"Failed capability node {skill_id}", f"Skill Definition: Quarantined execution node of {skill_id}")
         self.db.upsert_card(failure_card_id, family, focus, content)
 
         # 3. Establish relational card link graph nodes:

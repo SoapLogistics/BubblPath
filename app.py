@@ -14,6 +14,7 @@ from solomon_ast_injector import ASTInjector
 from solomon_observational_simulator import ObservationalSimulator
 from solomon_skill_graph import SkillGraph, SandboxExecutor
 from solomon_self_repair import SelfRepairEngine
+from solomon_self_audit_probes import SelfAuditProbes
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -752,6 +753,46 @@ def render_workspace_console():
         rss_memory_mb=rss_memory_mb,
         seeded_cards=detailed_cards
     )
+
+
+# ==========================================
+# SOSS PHASE 9: SELF-REPAIR & TELEMETRY PROBES ROUTING
+# ==========================================
+audit_prober = SelfAuditProbes(db)
+
+@app.route("/api/mnemosyne/audit/run", methods=["POST"])
+def run_proactive_self_audit():
+    """
+    Executes deep database integrity, REST API latency, and Model Semantic Drift audits.
+    Automatically triggers AST repair compiles on exception detections.
+    """
+    audit_report = audit_prober.run_full_system_audit()
+    return jsonify({
+        "status": "success",
+        "audit_report": audit_report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Utilize the POST /api/mnemosyne/audit/run telemetry triggers within your central "
+            "cron or system health daemon to autonomously defend the agent's cognitive runtime!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/audit/status", methods=["GET"])
+def get_audit_status():
+    """
+    Exposes active probe configurations, drift limits, and healthy database thresholds.
+    """
+    config_info = {
+        "status": "active",
+        "db_integrity_target": "ok",
+        "latency_threshold_ms": 250.0,
+        "semantic_drift_ratio_tolerance": 0.25,
+        "background_audit_frequency_sec": 3600.0,
+        "recommended_next_step": "Trigger POST /api/mnemosyne/audit/run to run a full diagnostic test instantly."
+    }
+    return jsonify(config_info)
 
 
 if __name__ == "__main__":
