@@ -281,6 +281,118 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_adaptive_patching_direct(self):
+        """
+        Directly asserts that AdaptivePatchingEngine backs up stable file templates,
+        verifies syntaxes, and programmatically restores corrupted files successfully.
+        """
+        from solomon_adaptive_patching import AdaptivePatchingEngine
+        import os
+
+        # Create a mock capability file
+        test_file = "mock_capability_file.py"
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write("def func(): return 1\n")
+
+        patcher = AdaptivePatchingEngine("test_backup_dir")
+        assert patcher.backup_file(test_file) is True
+
+        # Verify healthy
+        res1 = patcher.verify_and_patch_file(test_file)
+        assert res1["success"] is True
+        assert res1["status"] == "HEALTHY"
+
+        # Corrupt file
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write("def corrupt_func():\n    return 1 +\n") # Syntax error
+
+        # Verify and patch -> Should restore back to healthy!
+        res2 = patcher.verify_and_patch_file(test_file)
+        assert res2["success"] is True
+        assert res2["status"] == "PATCHED_AND_RESTORED"
+
+        # Check syntax was repaired
+        with open(test_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "def func(): return 1" in content
+
+        # Clean up files
+        if os.path.exists(test_file):
+            os.remove(test_file)
+        shutil_backup = os.path.join("test_backup_dir", test_file)
+        if os.path.exists(shutil_backup):
+            os.remove(shutil_backup)
+        if os.path.exists("test_backup_dir"):
+            os.rmdir("test_backup_dir")
+
+    def test_collaborative_rag_sync_direct(self, test_db):
+        """
+        Directly asserts that CollaborativeRAGSync exports local card catalogs
+        and merges peer node card and link deltas securely.
+        """
+        from solomon_collaborative_sync import CollaborativeRAGSync
+        sync = CollaborativeRAGSync(test_db)
+
+        # Ingest a card to export
+        test_db.upsert_card("SOK-LOCAL-EXPORT", "Knowledge", "Focus", "Content block", "ACTIVE")
+        catalog_json = sync.export_local_sok_catalog()
+
+        assert "SOK-LOCAL-EXPORT" in catalog_json
+
+        # Modify card confidence in peer catalog
+        import json
+        peer_data = json.loads(catalog_json)
+        peer_data[0]["confidence"] = 1.95
+        peer_data[0]["content"] = "Updated collaborative content."
+        peer_data[0]["outgoing_links"] = [{"target_id": "SOK-TARGET-collab-01", "relationship_type": "ENHANCES"}]
+        peer_catalog = json.dumps(peer_data)
+
+        # Merge peer catalog
+        res_merge = sync.import_and_merge_peer_catalog(peer_catalog)
+        assert res_merge["success"] is True
+        assert res_merge["cards_merged"] == 1
+
+        # Check merged cards
+        merged_card = test_db.get_card("SOK-LOCAL-EXPORT")
+        assert merged_card["content"] == "Updated collaborative content."
+        assert merged_card["confidence"] == 1.95
+
+    def test_adaptive_patching_and_collab_sync_api_routes(self, client):
+        """
+        Verifies POST /api/mnemosyne/patching/verify and POST /api/mnemosyne/collaborative/sync
+        endpoints process requests, audit capabilities, and merge catalogs successfully.
+        """
+        # Create a mock capability file
+        test_file = "api_mock_capability.py"
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write("x = 10\n")
+
+        # 1. POST Patching Verify
+        payload_patch = {"filepath": test_file}
+        response_patch = client.post(
+            "/api/mnemosyne/patching/verify",
+            data=json.dumps(payload_patch),
+            content_type="application/json"
+        )
+        assert response_patch.status_code == 200
+        data_patch = response_patch.get_json()
+        assert data_patch["status"] == "success"
+        assert data_patch["adaptive_patching_report"]["status"] == "HEALTHY"
+
+        if os.path.exists(test_file):
+            os.remove(test_file)
+
+        # 2. POST Collaborative Sync
+        res_collab = client.post(
+            "/api/mnemosyne/collaborative/sync",
+            data=json.dumps({}), # Uses default sync catalog sample
+            content_type="application/json"
+        )
+        assert res_collab.status_code == 200
+        data_collab = res_collab.get_json()
+        assert data_collab["status"] == "success"
+        assert data_collab["collaborative_sync_report"]["success"] is True
+
     def test_self_audit_probes_direct(self, test_db):
         """
         Directly asserts that SelfAuditProbes successfully runs SQLite integrity audits
