@@ -411,3 +411,32 @@ class TestMnemosyneAPIIntegration:
         from app import router as reloaded_router
         assert hasattr(reloaded_router, "injected_telemetry_probe") is True
         assert reloaded_router.injected_telemetry_probe() == "ast_injection_active_soss"
+
+    def test_observational_binary_profiling_endpoint(self, client):
+        """
+        Verifies that POST /api/mnemosyne/observe successfully profiles execution
+        bytes and programmatically synthesizes a clean-room Python equivalent successfully.
+        """
+        payload = {
+            "binary_name": "kubernetes-cli",
+            "command": "get nodes",
+            "std_output": "NAME STATUS ROLES AGE VERSION\nnode1 Ready control-plane 15d v1.28"
+        }
+        response = client.post("/api/mnemosyne/observe", data=json.dumps(payload), content_type="application/json")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        rep = data["rebuilt_binary_report"]
+        assert rep["status"] == "binary_assimilated"
+
+        details = rep["compilation_details"]
+        assert details["binary_profiled"] == "kubernetes-cli"
+        assert details["clean_room_class_synthesized"] == "SolomonRebuiltKubernetesCli"
+        assert details["clean_room_method_name"] == "run"
+        assert details["original_dependency_removed"] is True
+
+        assert "class SolomonRebuiltKubernetesCli" in rep["synthesized_source_code"]
+        assert "def run(self, *args, **kwargs)" in rep["synthesized_source_code"]
+        assert "node1 Ready control-plane" in rep["synthesized_source_code"]
+        assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]

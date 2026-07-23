@@ -11,6 +11,7 @@ from solomon_mnemosyne_db import SolomonMnemosyneDB
 from solomon_model_router import ModelRouter
 from solomon_recursive_crucible import RecursiveCrucible
 from solomon_ast_injector import ASTInjector
+from solomon_observational_simulator import ObservationalSimulator
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -148,7 +149,7 @@ def chat():
         # Append the mandated RECOMMENDED NEXT STEP section
         reply += (
             "\n\n**RECOMMENDED NEXT STEP**\n"
-            "<span style='color: #00E676; font-weight: bold; font-size: 1.2em;'>"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
             "Compile custom calibration datasets using /api/command-center/quantization/compile-calibration "
             "to ground your mixed-precision weights in Solomon's active relational database knowledge cards.</span>"
         )
@@ -556,6 +557,37 @@ def execute_ast_injection():
         )
     }
     return jsonify(injection_response)
+
+
+@app.route("/api/mnemosyne/observe", methods=["POST"])
+def execute_observational_profiling():
+    """
+    Profiles execution traces of binary outputs, generating native clean-room Python
+    equivalents to unlock total assimilation of closed-source capabilities.
+    """
+    data = request.json or {}
+    binary_name = data.get("binary_name", "")
+    command = data.get("command", "")
+    std_output = data.get("std_output", "")
+
+    if not binary_name or not command or not std_output:
+        return jsonify({"error": "Missing 'binary_name', 'command', or 'std_output' sample."}), 400
+
+    # Profile and generate clean-room Python replacement code
+    rebuilt_report = ObservationalSimulator.profile_and_rebuild_binary(binary_name, command, std_output)
+
+    # Structure output response
+    observational_response = {
+        "status": "success",
+        "rebuilt_binary_report": rebuilt_report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Pipe this generated source code into the POST /api/mnemosyne/ast-inject endpoint "
+            "to dynamically compile and hot-swap the native Python replacement class on-the-fly!</span>"
+        )
+    }
+    return jsonify(observational_response)
 
 
 if __name__ == "__main__":
