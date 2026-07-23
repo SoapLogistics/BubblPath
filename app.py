@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
 
@@ -10,7 +10,6 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 @app.route("/")
 def index():
     try:
-        from flask import render_template
         return render_template("solomon_loki_workspace.html")
     except Exception as e:
         return jsonify({"error": "UI template not found", "details": str(e)}), 404
