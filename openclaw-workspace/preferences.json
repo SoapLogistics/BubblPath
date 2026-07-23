@@ -1,0 +1,5 @@
+{
+  "execution_mode": "solomon_only",
+  "codex_enabled": false,
+  "fallback_to_codex": false
+}
