@@ -167,7 +167,7 @@ def test_mnemosyne_cards_endpoint(flask_client):
     assert "Local GGUF Calibration Profiles" in titles
 
 def test_mnemosyne_search_endpoint(flask_client):
-    """Verifies mock semantic search rankings and cosine boundaries."""
+    """Verifies mock local 128-dimensional fallback semantic search rankings and cosine boundaries."""
     response = flask_client.post(
         "/api/mnemosyne/search",
         data=json.dumps({"query": "Ternary SpinQuant optimization"}),
@@ -177,7 +177,7 @@ def test_mnemosyne_search_endpoint(flask_client):
     data = response.get_json()
     assert "results" in data
     assert len(data["results"]) >= 1
-    # Check that cosine boundaries division-by-zero protection holds
+    # Check that cosine boundaries division-by-zero protection holds strictly inside [-1.0, 1.0]
     for item in data["results"]:
         assert -1.0 <= item["similarity_score"] <= 1.0
 

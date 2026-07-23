@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 21-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 23-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -256,12 +256,25 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Design interactive sections for conversational chat input/output, execution trace monitors, and dynamic Loki Sports Betting Picks Boards rendering optimal selections retrieved from `/api/picks`.
   3. Keep the operator fully synchronized with visual execution traces of Solomon's background workers.
 
+### Phase XXII: 128-Dimensional Hashing Fallback Semantic Search
+* **Objective**: Map text strings into normalized fallback vector embeddings locally, computing high-speed cosine similarities with strict division-by-zero protections.
+* **Action Steps**:
+  1. Implement a 128-dimensional deterministic vector hashing function `SemanticEmbedder` inside `app.py`.
+  2. Compute vector embeddings purely mathematically using string character codes and normalized scaling.
+  3. Build a cosine similarity analyzer with division-by-zero protections and clamped boundaries within `[-1.0, 1.0]` to run search rankings offline.
+
+### Phase XXIII: Dynamic Operator Routing Preference Controls
+* **Objective**: Dynamically govern and configure preference controls, returning BLOCKED status for restricted Codex-related execution requests.
+* **Action Steps**:
+  1. Expose routes `/api/command-center/preferences` supporting GET and POST requests to toggle routing configurations.
+  2. Enforce preferences in the `/chat` POST endpoint: if `execution_mode` is set to `solomon_only` and Codex actions are requested, automatically restrict, block, and return a structured `BLOCKED` status payload.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the active context budgeting filters and the workspace HTML rendering endpoints.
-2. CREATE `test_app.py` to assert correct history slicing, size budgeting, and visual layout routes.
+1. OVERWRITE `app.py` with the 128-dimensional vector hashing engine and the secured preferences controller.
+2. CREATE `test_app.py` to assert correct similarity calculations, cosine boundaries, and restricted Codex block states.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add context budgeting and visual workspace sync so Solomon can safely regulate prompt constraints and serve high-fidelity operator consoles offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add deterministic vector hashing and operator preference routing controls so Solomon can securely rank cards and restrict engine accesses offline.**

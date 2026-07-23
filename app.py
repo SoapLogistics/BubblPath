@@ -5,6 +5,7 @@ import logging
 import random
 import json
 import re
+import math
 import subprocess
 import tempfile
 from flask import Flask, request, jsonify, render_template_string
@@ -67,6 +68,52 @@ class TargetSynthesizedClass:
     """A target dynamic class designed for live AST Class-Method Injections at runtime."""
     def __init__(self):
         self.state = "Active Base State"
+
+class SemanticEmbedder:
+    """
+    128-Dimensional Hashing Fallback Semantic Search Engine (SOSS Phase XXII).
+    Computes deterministic fallback embeddings locally, ensuring 100% offline semantic search operations.
+    Includes robust cosine similarity formulas with division-by-zero protection and capped similarity boundaries.
+    """
+    @staticmethod
+    def get_embedding(text):
+        """Generates a deterministic 128-dimensional L2-normalized float vector from string hashes."""
+        text_clean = text.strip().lower()
+        embedding = [0.0] * 128
+
+        # Build 128 pseudo-dimensions deterministically from character values
+        for i in range(128):
+            val = 0.0
+            for char_idx, char in enumerate(text_clean):
+                # Apply deterministic sinusoidal mapping based on dimensions and character codes
+                val += math.sin((char_idx + 1) * (i + 1) * ord(char))
+            embedding[i] = val
+
+        # Perform L2 normalization
+        l2_norm = math.sqrt(sum(v * v for v in embedding))
+        if l2_norm > 0:
+            embedding = [v / l2_norm for v in embedding]
+
+        return embedding
+
+    @staticmethod
+    def cosine_similarity(vec1, vec2):
+        """Computes dot product similarity with division-by-zero protection and [-1.0, 1.0] caps."""
+        if not vec1 or not vec2 or len(vec1) != len(vec2):
+            return 0.0
+
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        norm_a = math.sqrt(sum(a * a for a in vec1))
+        norm_b = math.sqrt(sum(b * b for b in vec2))
+
+        # Division-by-zero protection
+        if norm_a == 0.0 or norm_b == 0.0:
+            return 0.0
+
+        sim = dot_product / (norm_a * norm_b)
+
+        # Clamp bounds strictly inside [-1.0, 1.0]
+        return min(max(sim, -1.0), 1.0)
 
 def load_sok_cards():
     """Loads active memory cards from persistent local JSON storage."""
@@ -399,7 +446,7 @@ def chat():
     """
     Enforces strict JSON body validation, logs structured query metrics, handles API errors resiliently,
     and infuses the Google Jules, OpenAI Codex, and Foreman of Workers personas.
-    Enforces context budgeting character sliding windows (Phase XX).
+    Enforces context budgeting character sliding windows (Phase XX) and routing preference controls (Phase XXIII).
     """
     start_time = time.time()
     data = request.get_json(silent=True)
@@ -414,14 +461,21 @@ def chat():
     if not isinstance(user_message, str) or user_message.strip() == "":
         return jsonify({"error": "Argument 'message' must be a non-empty string."}), 400
 
+    # Enforce routing preference rules (Phase XXIII)
+    # If set to solomon_only, block Codex-related executions immediately
+    if routing_preferences["execution_mode"] == "solomon_only" and "codex" in user_message.lower():
+        logger.warning("Blocked codex-related request under solomon_only preference.")
+        return jsonify({
+            "status": "BLOCKED",
+            "reply": "This query was blocked because the current system preferences are set to 'solomon_only' execution mode, which restricts Codex-related actions." + generate_recommended_next_step(user_message, "")
+        }), 200
+
     # Enforce Context Budgeting (Phase XX sliding window)
-    # Standard budget is 10,000 characters. If exceeded, we compress/truncate history.
     budget_limit = 10000
     is_budget_exceeded = len(user_message) > budget_limit
 
     if is_budget_exceeded:
         logger.warning(f"ActiveContextBudgeting: Query length {len(user_message)} exceeds {budget_limit} char cap. Compressing context!")
-        # Compress / Truncate query
         truncated_msg = user_message[:budget_limit]
         user_message = (
             f"{truncated_msg}\n\n"
@@ -431,14 +485,6 @@ def chat():
 
     # Enforce resource checks on active chats
     enforce_resource_guardrails()
-
-    # Check preferences mode
-    if routing_preferences["execution_mode"] == "solomon_only" and "codex" in user_message.lower():
-        logger.warning("Blocked codex-related request under solomon_only preference.")
-        return jsonify({
-            "status": "BLOCKED",
-            "reply": "This query was blocked because the current system preferences are set to 'solomon_only' execution mode, which restricts Codex-related actions." + generate_recommended_next_step(user_message, "")
-        }), 200
 
     logger.info(f"Received query: '{user_message}'")
 
@@ -490,7 +536,6 @@ def chat():
             foreman_route=foreman_route
         )
 
-    # If context budgeting occurred, append active flag onto reply output
     if is_budget_exceeded:
         reply += (
             "\n\n*(Note: Your long-context prompt was compressed to fit within SOSS memory limits.)*"
@@ -535,7 +580,7 @@ def metrics():
 
 @app.route("/api/command-center/preferences", methods=["GET", "POST"])
 def preferences():
-    """Secured gateway to query and update operator routing preferences."""
+    """Secured gateway to query and update operator routing preferences (Phase XXIII)."""
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
         routing_preferences["execution_mode"] = data.get("execution_mode", routing_preferences["execution_mode"])
@@ -642,23 +687,30 @@ def manage_cards():
 
 @app.route("/api/mnemosyne/search", methods=["POST"])
 def search_cards():
-    """Performs hybrid semantic search with 128-dimensional fallback."""
+    """Performs local 128-dimensional fallback semantic vector search (Phase XXII)."""
     t0 = time.time()
     data = request.get_json(silent=True) or {}
     query = data.get("query", "")
     cards = load_sok_cards()
 
-    # Rank cards by word intersection simulation (lexical fallback)
+    # Compute query vector
+    query_embedding = SemanticEmbedder.get_embedding(query)
+
     ranked = []
     for card in cards:
-        words = set(query.lower().split())
-        card_words = set(card["title"].lower().split() + card["content"].lower().split())
-        similarity = len(words.intersection(card_words)) / (len(words) or 1)
-        similarity = min(max(similarity, -1.0), 1.0)
+        # Compute card vector combining title and content
+        card_text = f"{card.get('title', '')} {card.get('content', '')}"
+        card_embedding = SemanticEmbedder.get_embedding(card_text)
+
+        # Calculate cosine similarity with division-by-zero protection
+        similarity = SemanticEmbedder.cosine_similarity(query_embedding, card_embedding)
+
         ranked.append({
             "card": card,
             "similarity_score": similarity
         })
+
+    # Sort in descending similarity score order
     ranked.sort(key=lambda x: x["similarity_score"], reverse=True)
 
     latency = (time.time() - t0) * 1000
