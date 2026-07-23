@@ -129,7 +129,7 @@
     <h2>Sports Desk (Manual Input)</h2>
     <label>Matchup Line (e.g. Eagles -3.5 at -110)</label>
     <input type="text" id="sports-line" placeholder="Enter odds...">
-    <button id="btn-analyze-sports">Calculate Shin Probability</button>
+    <button id="btn-analyze-sports">Run Sports Research Pipeline</button>
   </div>
 
   <div class="panel-section" id="blackjack-lab">
@@ -141,6 +141,17 @@
       <label>Current Running Count?</label>
       <input type="text" id="bj-user-count" placeholder="e.g., -1, 0, 1">
       <button id="btn-submit-bj-count">Submit Count</button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 7: Perpetual Memory Bridge</h2>
+    <button id="btn-create-memory">Propose Memory Card from Page</button>
+    <div id="memory-approval-area" class="hidden" style="background:#fef3c7; border:1px solid #d97706; padding:8px; border-radius:4px; margin-top:8px;">
+      <p style="font-size:0.75rem; margin-top:0;"><strong>Proposed Memory:</strong></p>
+      <p id="memory-proposal-text" style="font-size:0.75rem;"></p>
+      <button id="btn-approve-memory" style="background-color:#059669;">Approve & Save to SQLite</button>
+      <button id="btn-reject-memory" class="btn-stop">Reject</button>
     </div>
   </div>
 

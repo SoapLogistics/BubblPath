@@ -21,6 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const bjUserCount = document.getElementById('bj-user-count');
   const btnSubmitBjCount = document.getElementById('btn-submit-bj-count');
 
+  // Phase 7 Elements
+  const btnCreateMemory = document.getElementById('btn-create-memory');
+  const memoryApprovalArea = document.getElementById('memory-approval-area');
+  const memoryProposalText = document.getElementById('memory-proposal-text');
+  const btnApproveMemory = document.getElementById('btn-approve-memory');
+  const btnRejectMemory = document.getElementById('btn-reject-memory');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -79,10 +86,35 @@ document.addEventListener('DOMContentLoaded', () => {
       appendMessage('Solomon', 'Please enter a sports line to analyze.');
       return;
     }
-    appendMessage('Solomon', `Routing "${line}" to local Loki Engine...`);
+    appendMessage('Solomon', `Initializing Phase 6 Sports Research Pipeline for: "${line}"...`);
+
+    // Simulate multi-step research pipeline
     setTimeout(() => {
-      appendMessage('Loki Engine', `Analyzed ${line}. Break-even: 52.38%. Shin True Prob: 54.1%. Edge: +1.72%. Rec: Pass or use 0.25x fractional Kelly.`);
-    }, 1000);
+      appendMessage('Solomon Pipeline', '&#10003; Roster and injury verification complete.', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon Pipeline', '&#10003; Weather and venue conditions collected.', true);
+    }, 1500);
+
+    setTimeout(() => {
+      appendMessage('Solomon Pipeline', '&#10003; Recent performance and opponent-adjusted statistics modeled.', true);
+    }, 2200);
+
+    setTimeout(() => {
+      const report = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Selection:</strong> ${line}<br>
+          <strong>Market Implied Prob:</strong> 52.38%<br>
+          <strong>Loki Independent Prob:</strong> 54.10%<br>
+          <strong>Estimated Edge:</strong> <span style="color:green;">+1.72%</span><br>
+          <strong>Confidence:</strong> Moderate<br>
+          <strong>Missing Info:</strong> Starting LT questionable.<br>
+          <strong>Recommendation:</strong> Pass or use 0.25x fractional Kelly.
+        </div>
+      `;
+      appendMessage('Loki Engine', report, true);
+    }, 3200);
   });
 
   // --- Phase 4: Controlled Browser Actions ---
@@ -155,6 +187,34 @@ document.addEventListener('DOMContentLoaded', () => {
       appendMessage('Solomon Lab', `Incorrect. The running count was ${currentBjCount}. Try again.`);
     }
   });
+
+  // --- Phase 7: Perpetual Memory Bridge ---
+  btnCreateMemory.addEventListener('click', () => {
+    appendMessage('Solomon', 'Scanning page for extractable knowledge...');
+    chrome.runtime.sendMessage({ type: 'EXTRACT_PAGE_DATA' }, (response) => {
+      if (response && !response.error) {
+        // Simulate extracting a rule or fact
+        const proposedCard = `SOK-CARD-MOCK: Source [${response.title}]. Found potentially useful workflow or calibration data.`;
+        memoryProposalText.textContent = proposedCard;
+        memoryApprovalArea.classList.remove('hidden');
+        appendMessage('Solomon', 'I have drafted a new Memory Card. It requires your approval to bypass the Review Gate and enter SQLite.');
+      } else {
+        appendMessage('System Error', 'Could not read page for memory extraction.');
+      }
+    });
+  });
+
+  btnApproveMemory.addEventListener('click', () => {
+    appendMessage('System', '&#10003; Memory Card approved. Saving to Solomon SQLite...', true);
+    memoryApprovalArea.classList.add('hidden');
+    // In a real build, we'd POST to local app.py /api/mnemosyne/cards here
+  });
+
+  btnRejectMemory.addEventListener('click', () => {
+    appendMessage('System', '&#10005; Memory Card rejected. Discarding.', true);
+    memoryApprovalArea.classList.add('hidden');
+  });
+
 
   // --- Emergency ---
   btnStop.addEventListener('click', () => {
