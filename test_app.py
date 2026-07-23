@@ -956,3 +956,102 @@ def test_local_codex_inference_variants(flask_client):
     data3 = response3.get_json()
     assert "LOCAL CODEX INFERENCE" in data3["reply"]
     assert "execute_synthesized_job" in data3["reply"]
+
+def test_tensor_coherence_optimizer(flask_client):
+    """Verifies Phase XXX quantum-inspired tensor coherence metrics calculations and error payloads."""
+    # 1. Missing payload key
+    res_err1 = flask_client.post("/api/quantization/tensor-coherence", data=json.dumps({}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'tensors'" in res_err1.get_json()["error"]
+
+    # 2. Invalid parameter type
+    res_err2 = flask_client.post("/api/quantization/tensor-coherence", data=json.dumps({"tensors": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "Argument 'tensors' must be a list" in res_err2.get_json()["error"]
+
+    # 3. Successful calculation with empty/undefined angles (coherence default 1.0)
+    res_empty_angles = flask_client.post(
+        "/api/quantization/tensor-coherence",
+        data=json.dumps({"tensors": [{"tensor_id": "layer_1_weight", "dimension": 256}]}),
+        content_type="application/json"
+    )
+    assert res_empty_angles.status_code == 200
+    data_empty = res_empty_angles.get_json()
+    assert data_empty["status"] == "SUCCESS"
+    assert data_empty["average_system_coherence"] == 1.0
+    assert data_empty["coherence_stable"] is True
+
+    # 4. Successful math calculation with given phase angles
+    res_math = flask_client.post(
+        "/api/quantization/tensor-coherence",
+        data=json.dumps({"tensors": [
+            {
+                "tensor_id": "layer_1_activation",
+                "dimension": 128,
+                "phase_angles": [0.0, 0.0, 0.0]  # fully coherent (cos=1, sin=0 -> coherence=1.0)
+            },
+            {
+                "tensor_id": "layer_2_activation",
+                "dimension": 128,
+                "phase_angles": [0.0, 3.1415926535]  # anti-phase (cos=1 + cos(-1) = 0 -> coherence=0.0)
+            }
+        ]}),
+        content_type="application/json"
+    )
+    assert res_math.status_code == 200
+    data_math = res_math.get_json()
+    assert data_math["status"] == "SUCCESS"
+    assert data_math["average_system_coherence"] == 0.5  # average of 1.0 and 0.0
+    assert data_math["coherence_stable"] is False
+    assert data_math["optimized_scaling_factors"] == [1.0, 10.0]
+
+def test_agent_consensus_protocol(flask_client):
+    """Verifies Phase XXXI Byzantine-tolerant consensus supermajority checks and vote aggregations."""
+    # 1. Missing payload key
+    res_err1 = flask_client.post("/api/command-center/consensus/vote", data=json.dumps({}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'capability_id'" in res_err1.get_json()["error"]
+
+    # 2. Invalid parameter type
+    res_err2 = flask_client.post("/api/command-center/consensus/vote", data=json.dumps({"capability_id": "calc", "votes": "not-a-dict"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "Argument 'votes' must be a JSON dictionary object" in res_err2.get_json()["error"]
+
+    # 3. Blocked promotion (below supermajority of 0.66)
+    res_blocked = flask_client.post(
+        "/api/command-center/consensus/vote",
+        data=json.dumps({
+            "capability_id": "untested_mcp_bridge",
+            "votes": {
+                "Gabriel": {"approved": True, "score": 0.5},
+                "Mnemosyne": {"approved": False, "score": 0.0}
+            }
+        }),
+        content_type="application/json"
+    )
+    assert res_blocked.status_code == 200
+    data_blocked = res_blocked.get_json()
+    assert data_blocked["status"] == "BLOCKED"
+    assert data_blocked["consensus_authorized"] is False
+    assert data_blocked["weighted_consensus_score"] < 0.66
+
+    # 4. Authorized promotion (above supermajority of 0.66)
+    res_authorized = flask_client.post(
+        "/api/command-center/consensus/vote",
+        data=json.dumps({
+            "capability_id": "secure_parallel_worktrees",
+            "votes": {
+                "Gabriel": {"approved": True, "score": 0.9},
+                "Mnemosyne": {"approved": True, "score": 0.85},
+                "Prometheus": {"approved": True, "score": 0.95},
+                "Loki": {"approved": True, "score": 0.8},
+                "Codex": {"approved": True, "score": 0.9}
+            }
+        }),
+        content_type="application/json"
+    )
+    assert res_authorized.status_code == 200
+    data_authorized = res_authorized.get_json()
+    assert data_authorized["status"] == "AUTHORIZED"
+    assert data_authorized["consensus_authorized"] is True
+    assert data_authorized["weighted_consensus_score"] >= 0.8

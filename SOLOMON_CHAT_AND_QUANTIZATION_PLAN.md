@@ -310,6 +310,20 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Accept `source_id` and `target_id`. Recursively traverse relational edges inside the SOK linkage graph.
   3. If a relationship block of type `PREVENTS` or equivalent execution block is discovered along any connected traversal path, halt the pipeline and return a restricted block flag status.
 
+### Phase XXX: Quantum-Inspired Tensor Coherence Optimizer
+* **Objective**: Maximize mixed-precision quantization performance by minimizing activation-weight tensor mismatch using quantum-inspired coherence states.
+* **Action Steps**:
+  1. Expose `POST /api/quantization/tensor-coherence` inside `app.py`.
+  2. Map out mathematical formulations of quantum-inspired wavefunctions representing layer-by-layer quantization noise.
+  3. Compute entropy bounds and phase coherence metrics ($\mathcal{C} = \left| \frac{1}{N} \sum e^{i \theta_j} \right|$) to determine optimal dynamic scaling factor alignments.
+
+### Phase XXXI: Collaborative Multi-Agent Consensus Protocol
+* **Objective**: Establish a secure Byzantine-tolerant worker consensus voting mechanism to validate and authorize capability promotions.
+* **Action Steps**:
+  1. Expose `POST /api/command-center/consensus/vote` inside `app.py`.
+  2. Gather independent validation signatures and numeric scores from five active workers (Gabriel, Mnemosyne, Prometheus, Loki, Codex).
+  3. Compute the unified weighted agreement index, blocking promotion if the weighted consensus score fails to meet the safety supermajority threshold of $0.66$.
+
 ---
 
 ## 5. Summary of Recommended Actions
