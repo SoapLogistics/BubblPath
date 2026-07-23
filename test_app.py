@@ -2,27 +2,29 @@ import json
 import os
 import pytest
 from unittest.mock import MagicMock, patch
-from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE, skill_graph_registry
+from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE, SOK_LINKS_FILE, TELEMETRY_LOG_FILE
 
 @pytest.fixture
 def flask_client():
     app.config["TESTING"] = True
-    # Clean up card storage before test runs to ensure deterministic state
-    if os.path.exists(SOK_CARDS_FILE):
-        try:
-            os.remove(SOK_CARDS_FILE)
-        except Exception:
-            pass
+    # Clean up card database and links before test runs
+    for f in [SOK_CARDS_FILE, SOK_LINKS_FILE, TELEMETRY_LOG_FILE]:
+        if os.path.exists(f):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
 
     with app.test_client() as client:
         yield client
 
     # Clean up after test runs
-    if os.path.exists(SOK_CARDS_FILE):
-        try:
-            os.remove(SOK_CARDS_FILE)
-        except Exception:
-            pass
+    for f in [SOK_CARDS_FILE, SOK_LINKS_FILE, TELEMETRY_LOG_FILE]:
+        if os.path.exists(f):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
 
 def test_health_endpoint(flask_client):
     """Verifies that the telemetry health probe works as expected."""
@@ -354,6 +356,92 @@ def test_self_heal_endpoint(flask_client):
     skills = response_skills.get_json()["skills"]
     registered_ids = [s["id"] for s in skills]
     assert "jules_dynamic_autonomer" in registered_ids
+
+def test_semantic_graph_links_endpoints(flask_client):
+    """Verifies directed link creation, deduplication, and topological graph traversal."""
+    # 1. Post dynamic directed card link relation
+    response_link = flask_client.post(
+        "/api/mnemosyne/cards/links",
+        data=json.dumps({"source_id": 1, "target_id": 2, "relationship_type": "PREVENTS"}),
+        content_type="application/json"
+    )
+    assert response_link.status_code == 201
+    data_link = response_link.get_json()
+    assert data_link["status"] == "success"
+    assert data_link["link"]["relationship_type"] == "PREVENTS"
+
+    # 1b. Duplicate check
+    response_dup = flask_client.post(
+        "/api/mnemosyne/cards/links",
+        data=json.dumps({"source_id": 1, "target_id": 2, "relationship_type": "PREVENTS"}),
+        content_type="application/json"
+    )
+    assert response_dup.status_code == 200
+    assert response_dup.get_json()["status"] == "duplicate_ignored"
+
+    # 2. Get and traverse the topological card graph
+    response_graph = flask_client.get("/api/mnemosyne/cards/graph")
+    assert response_graph.status_code == 200
+    data_graph = response_graph.get_json()
+    assert len(data_graph["nodes"]) >= 3
+    assert len(data_graph["edges"]) >= 3
+    assert data_graph["cycle_detected_in_linkage_graph"] is False
+    assert data_graph["is_safe_for_topological_execution"] is True
+
+    # 3. Insert a cyclic loop relationship to assert cycle detection
+    flask_client.post(
+        "/api/mnemosyne/cards/links",
+        data=json.dumps({"source_id": 2, "target_id": 1, "relationship_type": "DEPENDS_ON"}),
+        content_type="application/json"
+    )
+    response_cycle = flask_client.get("/api/mnemosyne/cards/graph")
+    assert response_cycle.status_code == 200
+    data_cycle = response_cycle.get_json()
+    assert data_cycle["cycle_detected_in_linkage_graph"] is True
+    assert data_cycle["is_safe_for_topological_execution"] is False
+
+def test_resource_guardrails_compaction(flask_client):
+    """Verifies telemetry RSS tracking and automatic memory compaction triggers."""
+    # Seed a DRAFT card with low confidence
+    flask_client.post(
+        "/api/mnemosyne/cards",
+        data=json.dumps({"title": "Temporary Draft Leak", "status": "DRAFT", "confidence": 0.5}),
+        content_type="application/json"
+    )
+
+    # Verify the card is added
+    response_get = flask_client.get("/api/mnemosyne/cards?status=DRAFT")
+    assert len(response_get.get_json()) == 1
+
+    # Programmatically trigger safe/normal resource guardrails check (no compaction)
+    response_safe = flask_client.post(
+        "/api/command-center/guardrails",
+        data=json.dumps({"forced_rss_bytes": 500 * 1024 * 1024}), # 500MB
+        content_type="application/json"
+    )
+    assert response_safe.status_code == 200
+    assert response_safe.get_json()["compaction_triggered"] is False
+
+    # Programmatically trigger resource limit violations (>1.5GB) to initiate active compaction
+    response_violate = flask_client.post(
+        "/api/command-center/guardrails",
+        data=json.dumps({"forced_rss_bytes": 2 * 1024 * 1024 * 1024}), # 2GB
+        content_type="application/json"
+    )
+    assert response_violate.status_code == 200
+    data_violate = response_violate.get_json()
+    assert data_violate["compaction_triggered"] is True
+    assert data_violate["purged_cards_count"] >= 1
+
+    # Assert that the DRAFT card was purged successfully
+    response_check = flask_client.get("/api/mnemosyne/cards?status=DRAFT")
+    assert len(response_check.get_json()) == 0
+
+    # Verify plain-text telemetry log exists and has content
+    assert os.path.exists(TELEMETRY_LOG_FILE)
+    with open(TELEMETRY_LOG_FILE, "r", encoding="utf-8") as f:
+        log_text = f.read()
+        assert "Compaction_Triggered: True" in log_text
 
 def test_perpetual_loop_endpoint(flask_client):
     """Verifies end-to-end continuous loop orchestration."""

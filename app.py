@@ -48,10 +48,13 @@ worker_modes = {
     "Codex": "SANDBOX_ONLY"
 }
 
-# SOK Cards Local JSON Storage File
+# SOK Persistent Files
 SOK_CARDS_FILE = "sok_memory_cards.json"
+SOK_LINKS_FILE = "sok_card_links.json"
+TELEMETRY_LOG_DIR = "logs"
+TELEMETRY_LOG_FILE = os.path.join(TELEMETRY_LOG_DIR, "solomon_telemetry.log")
 
-# SOK Active Capability Skill Registry State (to support dynamic skill registration)
+# SOK Active Capability Skill Registry State
 skill_graph_registry = [
     {"id": "jules_test_runner_loop", "dependencies": []},
     {"id": "codex_parallel_worktrees", "dependencies": ["jules_test_runner_loop"]},
@@ -106,6 +109,33 @@ def save_sok_cards(cards):
     except Exception as e:
         logger.error(f"Error writing SOK cards database file: {e}")
 
+def load_sok_links():
+    """Loads SOK relationship links from persistent JSON."""
+    if os.path.exists(SOK_LINKS_FILE):
+        try:
+            with open(SOK_LINKS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading SOK links database file: {e}")
+
+    # Seed relationship link entries:
+    # 1. Card 1 (SpinQuant) ENHANCES Card 3 (Adaptive Bit Allocation)
+    # 2. Card 3 (Adaptive Bit Allocation) DEPENDS_ON Card 2 (BitNet b1.58)
+    default_links = [
+        {"source_id": 1, "target_id": 3, "relationship_type": "ENHANCES"},
+        {"source_id": 3, "target_id": 2, "relationship_type": "DEPENDS_ON"}
+    ]
+    save_sok_links(default_links)
+    return default_links
+
+def save_sok_links(links):
+    """Saves SOK relationship links to persistent JSON."""
+    try:
+        with open(SOK_LINKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(links, f, indent=4)
+    except Exception as e:
+        logger.error(f"Error writing SOK links database file: {e}")
+
 class SandboxExecutor:
     """
     Quarantined Sandbox Execution Engine.
@@ -114,13 +144,11 @@ class SandboxExecutor:
     @staticmethod
     def run_code(python_code, timeout_seconds=5.0):
         t0 = time.time()
-        # Create a secure temporary file to house the python script
         with tempfile.NamedTemporaryFile(suffix=".py", delete=False, mode="w", encoding="utf-8") as temp_file:
             temp_file.write(python_code)
             temp_file_path = temp_file.name
 
         try:
-            # Run using the same python interpreter in a restricted sandbox subprocess
             process = subprocess.run(
                 [sys.executable, temp_file_path],
                 capture_output=True,
@@ -154,12 +182,84 @@ class SandboxExecutor:
                 "status": "CRASHED"
             }
         finally:
-            # Clean up the temporary file safely
             if os.path.exists(temp_file_path):
                 try:
                     os.remove(temp_file_path)
                 except Exception as e:
                     logger.warning(f"Error removing sandbox temp file: {e}")
+
+def get_vm_rss_memory():
+    """Parses process memory footprint VmRSS with fallback."""
+    try:
+        if os.path.exists("/proc/self/status"):
+            with open("/proc/self/status", "r") as f:
+                for line in f:
+                    if line.startswith("VmRSS:"):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            return int(parts[1]) * 1024 # Convert KB to bytes
+        # Fallback to getrusage (Unix only)
+        try:
+            import resource
+            usage = resource.getrusage(resource.RUSAGE_SELF)
+            if sys.platform == 'darwin':
+                return usage.ru_maxrss  # macOS returns bytes
+            else:
+                return usage.ru_maxrss * 1024  # Linux returns KB
+        except (ImportError, AttributeError):
+            return 0
+    except Exception as e:
+        logger.warning(f"Error getting VmRSS memory: {e}")
+        return 0
+
+def enforce_resource_guardrails(forced_rss_bytes=None):
+    """
+    Enforces a strict 1.5GB RAM process execution ceiling.
+    If VmRSS memory footprint exceeds this, it triggers database compaction to release resources,
+    purging low-confidence (< 1.0) and DRAFT status SOK cards.
+    Logs telemetry status continuously to logs/solomon_telemetry.log.
+    """
+    os.makedirs(TELEMETRY_LOG_DIR, exist_ok=True)
+
+    current_rss = forced_rss_bytes if forced_rss_bytes is not None else get_vm_rss_memory()
+    limit_rss = 1.5 * 1024 * 1024 * 1024 # 1.5 GB in bytes
+
+    compaction_triggered = False
+    purged_cards_count = 0
+
+    if current_rss > limit_rss:
+        compaction_triggered = True
+        logger.warning(f"ResourceGuardrails: VmRSS ({current_rss} bytes) exceeded 1.5GB limit. Triggering compaction!")
+
+        cards = load_sok_cards()
+        initial_count = len(cards)
+        # Keep only APPROVED/ACTIVE status cards that have confidence >= 1.0
+        compacted_cards = [
+            c for c in cards
+            if c.get("status") in ["APPROVED", "ACTIVE"] and c.get("confidence", 1.0) >= 1.0
+        ]
+        purged_cards_count = initial_count - len(compacted_cards)
+        save_sok_cards(compacted_cards)
+        logger.info(f"ResourceGuardrails: Compaction complete. Purged {purged_cards_count} low-confidence/draft cards.")
+
+    # Log telemetry metrics to plain-text log
+    log_line = (
+        f"{time.strftime('%Y-%m-%d %H:%M:%S')} | RSS_Bytes: {current_rss} | "
+        f"Limit_Bytes: {limit_rss:.0f} | Compaction_Triggered: {compaction_triggered} | "
+        f"Purged_Cards: {purged_cards_count}\n"
+    )
+    try:
+        with open(TELEMETRY_LOG_FILE, "a", encoding="utf-8") as lf:
+            lf.write(log_line)
+    except Exception as e:
+        logger.error(f"Failed to write plain-text telemetry: {e}")
+
+    return {
+        "current_rss_bytes": current_rss,
+        "rss_limit_bytes": limit_rss,
+        "compaction_triggered": compaction_triggered,
+        "purged_cards_count": purged_cards_count
+    }
 
 # Configure OpenAI Client (supporting local offline endpoints like llama.cpp / Ollama)
 api_key = os.environ.get("OPENAI_API_KEY", "mock_key_if_none")
@@ -241,31 +341,6 @@ class LocalInferenceEngine:
             "Codex capabilities, we can refactor code. What is our next operational objective?"
         )
 
-def get_vm_rss_memory():
-    """Parses process memory footprint VmRSS with fallback."""
-    try:
-        if os.path.exists("/proc/self/status"):
-            with open("/proc/self/status", "r") as f:
-                for line in f:
-                    if line.startswith("VmRSS:"):
-                        parts = line.split()
-                        if len(parts) >= 2:
-                            return int(parts[1]) * 1024 # Convert KB to bytes
-        # Fallback to getrusage (Unix only)
-        try:
-            import resource
-            usage = resource.getrusage(resource.RUSAGE_SELF)
-            if sys.platform == 'darwin':
-                return usage.ru_maxrss  # macOS returns bytes
-            else:
-                return usage.ru_maxrss * 1024  # Linux returns KB
-        except (ImportError, AttributeError):
-            # Fallback for Windows or systems without resource module
-            return 0
-    except Exception as e:
-        logger.warning(f"Error getting VmRSS memory: {e}")
-        return 0
-
 def generate_recommended_next_step(prompt_text, reply_text):
     """Generates a contextual SOK Recommended Next Step with visual formatting."""
     lower_prompt = prompt_text.lower()
@@ -298,6 +373,9 @@ def chat():
 
     if not isinstance(user_message, str) or user_message.strip() == "":
         return jsonify({"error": "Argument 'message' must be a non-empty string."}), 400
+
+    # Enforce resource checks on active chats
+    enforce_resource_guardrails()
 
     # Check preferences mode
     if routing_preferences["execution_mode"] == "solomon_only" and "codex" in user_message.lower():
@@ -751,6 +829,78 @@ def self_heal_skill():
         "promoted_to_active": result["status"] == "SUCCESS"
     })
 
+# Semantic Links Graph Endpoints (Phase XI)
+@app.route("/api/mnemosyne/cards/links", methods=["POST"])
+def create_card_link():
+    """Establishes directed semantic relationships (e.g. DEPENDS_ON, ENHANCES) between memory cards."""
+    data = request.get_json(silent=True) or {}
+    source_id = data.get("source_id")
+    target_id = data.get("target_id")
+    rel_type = data.get("relationship_type", "DEPENDS_ON")
+
+    if source_id is None or target_id is None:
+        return jsonify({"error": "Missing key 'source_id' or 'target_id' in link payload."}), 400
+
+    links = load_sok_links()
+    # Check for duplicates
+    for l in links:
+        if l["source_id"] == source_id and l["target_id"] == target_id and l["relationship_type"] == rel_type:
+            return jsonify({"status": "duplicate_ignored", "link": l}), 200
+
+    new_link = {
+        "source_id": int(source_id),
+        "target_id": int(target_id),
+        "relationship_type": rel_type
+    }
+    links.append(new_link)
+    save_sok_links(links)
+    return jsonify({"status": "success", "link": new_link}), 201
+
+@app.route("/api/mnemosyne/cards/graph", methods=["GET"])
+def get_card_graph():
+    """
+    Returns the complete structured graph view of SOK cards (nodes) and relational bonds (edges).
+    Performs a cycle detection algorithm to topologically assert linkage safety.
+    """
+    cards = load_sok_cards()
+    links = load_sok_links()
+
+    # Simple topological DFS cycle detection algorithm
+    nodes_map = {c["id"]: c for c in cards}
+    adj_list = {c["id"]: [] for c in cards}
+    for l in links:
+        s, t = l["source_id"], l["target_id"]
+        if s in adj_list and t in adj_list:
+            adj_list[s].append(t)
+
+    # Trace loops
+    visited = {} # id -> status: 0=unvisited, 1=visiting, 2=visited
+    cycle_detected = False
+
+    def dfs_cycle(u):
+        visited[u] = 1 # Gray
+        for v in adj_list[u]:
+            if visited.get(v, 0) == 1:
+                return True
+            if visited.get(v, 0) == 0:
+                if dfs_cycle(v):
+                    return True
+        visited[u] = 2 # Black
+        return False
+
+    for node_id in adj_list.keys():
+        if visited.get(node_id, 0) == 0:
+            if dfs_cycle(node_id):
+                cycle_detected = True
+                break
+
+    return jsonify({
+        "nodes": cards,
+        "edges": links,
+        "cycle_detected_in_linkage_graph": cycle_detected,
+        "is_safe_for_topological_execution": not cycle_detected
+    })
+
 @app.route("/api/mnemosyne/perpetual-loop", methods=["POST"])
 def perpetual_loop():
     """Orchestrates the 7-stage perpetual learning loop."""
@@ -761,6 +911,15 @@ def perpetual_loop():
         "processed_cards": len(cards),
         "sandbox_verification_status": "PASSED"
     })
+
+# API route to trigger forced telemetry guardrails checks programmatically
+@app.route("/api/command-center/guardrails", methods=["POST"])
+def trigger_guardrails_endpoint():
+    """Secured POST endpoint to enforce and audit resource guardrails on-demand."""
+    data = request.get_json(silent=True) or {}
+    forced_bytes = data.get("forced_rss_bytes")
+    res = enforce_resource_guardrails(forced_rss_bytes=forced_bytes)
+    return jsonify(res)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

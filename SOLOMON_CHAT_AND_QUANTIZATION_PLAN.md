@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 9-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 11-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -172,12 +172,26 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Update the status flag of the corresponding SOK memory card from `DRAFT` or `REVIEWED` to `APPROVED` or `ACTIVE`.
   3. Register the newly promoted code as an active runtime capability available inside the Solomon execution skill grid.
 
+### Phase X: Resource Guardrails and Telemetry Logging
+* **Objective**: Enforce strict system safety bounds and RSS memory limits.
+* **Action Steps**:
+  1. Monitor process-wide VmRSS memory. If memory footprint exceeds a strict 1.5GB ceiling, trigger active database compaction.
+  2. During database compaction, automatically remove `DRAFT` status cards or demote low-confidence cards (< 1.0) to free system memory resources.
+  3. Commit plain-text telemetry logs continuously to `logs/solomon_telemetry.log` detailing metrics and health indicators.
+
+### Phase XI: Semantic Graph Card Links and Traversal
+* **Objective**: Establish and map directed relational card links for topological execution logic.
+* **Action Steps**:
+  1. Build a card links relational mapper persisted to `sok_card_links.json`.
+  2. Support defining relationship bonds such as `DEPENDS_ON`, `PREVENTS`, and `ENHANCES` between cards.
+  3. Implement graph endpoints (`POST /api/mnemosyne/cards/links` and `GET /api/mnemosyne/cards/graph`) to create and traverse linked relational paths, ensuring Solomon topologically resolves dependency safety before attempting sandboxed code execution.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the complete self-correcting logic and promotion pipeline.
-2. CREATE `test_app.py` to assert correct self-healing loops and capability promotions.
+1. OVERWRITE `app.py` with the complete resource guardrails, logging, and semantic graph linking endpoints.
+2. CREATE `test_app.py` to assert correct telemetry logging, memory compaction, and card link graph traversals.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add AST self-correction loops and capability promotions so Solomon can autonomously compile, debug, and promote his own offline modules.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add resource guardrails, telemetry logging, and semantic graph card link traversals so Solomon can autonomously map dependencies and safeguard system resources.**
