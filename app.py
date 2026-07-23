@@ -173,7 +173,9 @@ def chat():
         "If the user asks you to perform a task that requires local execution or computation, you must embed the string `[EXECUTE_SKILL: <skill_name>]` in your response. "
         "If you need to generate a new Python capability dynamically, output `[SYNTHESIZE_AST_HOOK: <method_name>]` followed by the raw Python function code in a code block.\n"
         "If the user asks you to diagnose the system or analyze performance, output `[ANALYZE_TELEMETRY]`.\n"
-        "If the user asks you to trigger your background cognitive or learning cycles, output `[INITIATE_LEARNING_CYCLE]`.\n\n"
+        "If the user asks you to trigger your background cognitive or learning cycles, output `[INITIATE_LEARNING_CYCLE]`.\n"
+        "If the user asks you to reverse-engineer or profile a binary executable, output `[OBSERVE_BINARY: <binary_name>]`.\n"
+        "If the user asks you to map out or orchestrate a skill pipeline, output `[ORCHESTRATE_SKILLS: <root_skill>]`.\n\n"
         f"Relevant Context from Solomon's local Mnemosyne memory:\n{context_text}"
     )
 
@@ -278,6 +280,44 @@ def chat():
                 reply += f"\n\n**[PERPETUAL LEARNING MACHINE]**\nSuccessfully completed full 7-stage cognitive cycle in {cycle_duration} ms. Promoted card '{promoted_card}' to ACTIVE state."
             except Exception as e:
                 reply += f"\n\n**[PERPETUAL LEARNING ERROR]** Failed to execute cycle: {str(e)}"
+
+        # Phase 9: Observational Simulator Hook
+        if "[OBSERVE_BINARY:" in reply:
+            try:
+                obs_match = re.search(r"\[OBSERVE_BINARY:\s*([^\]]+)\]", reply)
+                if obs_match:
+                    binary_name = obs_match.group(1).strip()
+
+                    sim = ObservationalSimulator()
+                    profile_res = sim.profile_and_rebuild_binary(
+                        binary_name=binary_name,
+                        command=f"{binary_name} --version",
+                        std_output_sample="v1.0.0"
+                    )
+
+                    reply += f"\n\n**[OBSERVATIONAL SIMULATOR]**\nClean-Room Synthesized Class for `{binary_name}`:\n```python\n{profile_res['clean_room_class']}\n```"
+            except Exception as e:
+                reply += f"\n\n**[OBSERVATIONAL SIMULATOR ERROR]** Failed to profile binary: {str(e)}"
+
+        # Phase 10: Skill Graph Orchestration Hook
+        if "[ORCHESTRATE_SKILLS:" in reply:
+            try:
+                orch_match = re.search(r"\[ORCHESTRATE_SKILLS:\s*([^\]]+)\]", reply)
+                if orch_match:
+                    root_skill = orch_match.group(1).strip()
+
+                    # Assuming perpetual_loop is available globally or we init a new graph
+                    loop = SolomonPerpetualLearningLoop(db)
+
+                    # Add requested root skill arbitrarily to trace it if it doesnt exist
+                    loop.skill_graph.register_skill(root_skill, "Dynamic root user skill request", ["jules_test_runner_loop"])
+
+                    sequence = loop.skill_graph.resolve_execution_order()
+                    seq_str = " -> ".join(sequence)
+
+                    reply += f"\n\n**[SKILL GRAPH ORCHESTRATION]**\nTopological Execution Sequence for pipeline including `{root_skill}`:\n`{seq_str}`"
+            except Exception as e:
+                reply += f"\n\n**[SKILL GRAPH ERROR]** Failed to orchestrate skills: {str(e)}"
 
         # Append telemetry and mandated RECOMMENDED NEXT STEP section
         reply += (
