@@ -281,6 +281,95 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_meta_learning_engine_tuning(self):
+        """
+        Directly asserts that SOSS Phase 12 MetaLearningEngine dynamically tunes
+        Curiosity Engine weighting coefficients based on system momentum trends.
+        """
+        from solomon_meta_learning import MetaLearningEngine
+        weights = {
+            "w_value": 1.5,
+            "w_risk": 0.8
+        }
+        res = MetaLearningEngine.execute_meta_learning_tuning(
+            current_learning_speed_ratio=1.02,
+            historical_speeds=[1.01, 1.05], # Stagnating/decelerating trend
+            curiosity_weights=weights
+        )
+
+        assert res["status"] == "META_LEARNING_COMPLETE"
+        assert res["meta_learning_momentum"] == -0.03
+        assert res["tuned_curiosity_weights"]["w_value"] == 1.70
+        assert res["tuned_curiosity_weights"]["w_risk"] == 0.90
+        assert len(res["structural_refactorings_triggered"]) == 2
+
+    def test_loki_intelligence_engine_shin_and_kelly(self):
+        """
+        Directly asserts that Project Loki's Shin solver neutralizes overround/vig
+        and Fractional Kelly staking generates correct bankroll allocations.
+        """
+        from solomon_loki_engine import LokiIntelligenceEngine
+
+        # Test Shin Solver on standard binary market (implied: 52.36% / 52.36% summing to 104.72% overround)
+        implied_probs = [1.0 / 1.91, 1.0 / 1.91]
+        z, true_probs = LokiIntelligenceEngine.solve_shin_probabilities(implied_probs)
+
+        assert z > 0.0
+        assert abs(sum(true_probs) - 1.0) < 1e-4
+        assert true_probs == [0.5, 0.5] # Shin correctly extracts true 50% fair probability!
+
+        # Test Kelly Stake (with 55% true prob, 1.91 odds, 0.25 scaling fraction)
+        stake = LokiIntelligenceEngine.calculate_kelly_stake(
+            true_probability=0.55,
+            decimal_odds=1.91,
+            fraction=0.25
+        )
+        # f = fraction * (p*b - (1-p)) / b  where b = 0.91, p = 0.55
+        # f = 0.25 * (0.55*0.91 - 0.45) / 0.91 = 0.25 * (0.5005 - 0.45) / 0.91 = 0.25 * 0.0505 / 0.91 = 0.01387
+        assert abs(stake - 0.0139) < 1e-4
+
+    def test_meta_learning_and_loki_api_routes(self, client):
+        """
+        Verifies POST /api/mnemosyne/meta-learning/tune and POST /api/command-center/loki/evaluate
+        endpoints process correct payloads, calculate outputs, and return success JSON.
+        """
+        # 1. POST Meta-Learning
+        payload_meta = {
+            "current_learning_speed_ratio": 1.08,
+            "historical_speeds": [1.02, 1.05],
+            "curiosity_weights": {"w_value": 1.5, "w_risk": 0.8}
+        }
+        res_meta = client.post(
+            "/api/mnemosyne/meta-learning/tune",
+            data=json.dumps(payload_meta),
+            content_type="application/json"
+        )
+        assert res_meta.status_code == 200
+        data_meta = res_meta.get_json()
+        assert data_meta["status"] == "success"
+        assert data_meta["meta_learning_report"]["meta_learning_momentum"] == 0.03 # positive growth
+
+        # 2. POST Loki Evaluate
+        payload_loki = {
+            "odds": [1.91, 1.91],
+            "model_true_probability": 0.55,
+            "odds_selected": 1.91,
+            "kelly_fraction": 0.25
+        }
+        res_loki = client.post(
+            "/api/command-center/loki/evaluate",
+            data=json.dumps(payload_loki),
+            content_type="application/json"
+        )
+        assert res_loki.status_code == 200
+        data_loki = res_loki.get_json()
+        assert data_loki["status"] == "success"
+
+        analysis = data_loki["loki_analysis"]
+        assert analysis["shin_z_informed_bettor_fraction"] > 0
+        assert analysis["calculated_fractional_kelly_stake"] == 0.0139
+        assert analysis["action_recommendation"] == "PLACE_BET"
+
     def test_distributed_node_ledger_sync(self, test_db):
         """
         Directly asserts that DistributedNodeLedger merges peer node cards delta
@@ -370,6 +459,13 @@ class TestMnemosyneAPIIntegration:
         Verifies POST /api/mnemosyne/ledger/sync and POST /api/mnemosyne/wisdom/evaluate
         endpoints process correct payloads, parse deltas, and output wisdom vectors.
         """
+        # Clean up database state for deterministic run
+        import sqlite3
+        conn = sqlite3.connect("solomon_mnemosyne_demo.db")
+        conn.execute("DELETE FROM knowledge_cards WHERE card_id = ?", ("SOK-LEDGER-SYNC-ROUTE-TEST",))
+        conn.commit()
+        conn.close()
+
         # 1. POST Ledger Sync
         payload_sync = {
             "node_id": "UBUNTU-LOCAL-NODE-99",

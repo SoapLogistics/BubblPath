@@ -25,6 +25,8 @@ from solomon_autonomous_tool_creator import AutonomousToolCreator
 from solomon_self_repair import SelfRepairEngine
 from solomon_distributed_ledger import DistributedNodeLedger
 from solomon_wisdom_layer import WisdomLayer
+from solomon_meta_learning import MetaLearningEngine
+from solomon_loki_engine import LokiIntelligenceEngine
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -1067,6 +1069,79 @@ def evaluate_wisdom_constraints():
             "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
             "Always pipe dynamic capability executions through this Wisdom validation gate "
             "to enforce system ethics, safety bounds, and human override checks!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/meta-learning/tune", methods=["POST"])
+def run_meta_learning_tuning():
+    """
+    Autonomously optimizes the structural algorithms of the Curiosity and Experiment Engines.
+    """
+    data = request.json or {}
+    speed_ratio = float(data.get("current_learning_speed_ratio", 1.05))
+    historical = data.get("historical_speeds", [1.02, 1.04, 1.06])
+
+    curiosity_weights = data.get("curiosity_weights", {
+        "w_value": 1.5,
+        "w_difficulty": 1.0,
+        "w_future_use": 1.2,
+        "w_risk": 0.8,
+        "w_compute_cost": 0.5
+    })
+
+    report = MetaLearningEngine.execute_meta_learning_tuning(speed_ratio, historical, curiosity_weights)
+    return jsonify({
+        "status": "success",
+        "meta_learning_report": report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'> "
+            "Autonomously inject these updated coefficients into the Prometheus Curiosity Engine "
+            "to maximize cumulative knowledge gains!</span>"
+        )
+    })
+
+
+@app.route("/api/command-center/loki/evaluate", methods=["POST"])
+def evaluate_loki_implied_probabilities():
+    """
+    Applies Shin's Probability Solver to neutralize overround/vig and calculates Fractional Kelly Stake size.
+    """
+    data = request.json or {}
+    odds = data.get("odds", [1.91, 1.91]) # Standard 50/50 odds with vig
+    model_true_prob = float(data.get("model_true_probability", 0.55)) # Loki's true probability model estimate
+    odds_selected = float(data.get("odds_selected", 1.91))
+    kelly_fraction = float(data.get("kelly_fraction", 0.25))
+
+    # Calculate implied probabilities
+    implied_probs = [1.0 / od for od in odds]
+
+    # Neutralize overround via Shin Solver
+    z, true_probs = LokiIntelligenceEngine.solve_shin_probabilities(implied_probs)
+
+    # Compute Fractional Kelly stake
+    stake = LokiIntelligenceEngine.calculate_kelly_stake(
+        true_probability=model_true_prob,
+        decimal_odds=odds_selected,
+        fraction=kelly_fraction
+    )
+
+    return jsonify({
+        "status": "success",
+        "loki_analysis": {
+            "bookmaker_implied_probabilities": [round(ip, 4) for pi, ip in zip(odds, implied_probs)],
+            "shin_z_informed_bettor_fraction": z,
+            "shin_calibrated_true_probabilities": true_probs,
+            "model_probability_assigned": model_true_prob,
+            "calculated_fractional_kelly_stake": stake,
+            "action_recommendation": "PLACE_BET" if stake > 0 else "PASS_NO_EDGE"
+        },
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Place this calculated Quarter-Kelly wager on your virtual ledger "
+            "to build compound long-term ROI yields!</span>"
         )
     })
 
