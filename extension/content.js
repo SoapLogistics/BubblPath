@@ -48,6 +48,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.type === 'PREPARE_FORM') {
     const result = simulateFormFill(request.payload);
     sendResponse(result);
+  } else if (request.type === 'EXECUTE_ACTION') {
+    if (request.action === 'page.scroll') {
+      if (request.direction === 'down') {
+        window.scrollBy(0, window.innerHeight / 2);
+        sendResponse({ status: 'scrolled down' });
+      }
+    } else if (request.action === 'page.highlight') {
+      const selection = window.getSelection();
+      if (selection && selection.toString().length > 0) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.backgroundColor = 'yellow';
+        span.style.color = 'black';
+        range.surroundContents(span);
+        sendResponse({ status: 'highlighted selection' });
+      } else {
+        sendResponse({ status: 'no text selected' });
+      }
+    }
   }
   return true;
 });

@@ -10,6 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusDiv = document.getElementById('status');
   const kalshiOrderForm = document.getElementById('kalshi-order-form');
 
+  // Phase 4 Elements
+  const btnScrollDown = document.getElementById('btn-scroll-down');
+  const btnHighlightText = document.getElementById('btn-highlight-text');
+
+  // Phase 5 Elements
+  const btnStartBjDrill = document.getElementById('btn-start-bj-drill');
+  const bjDrillArea = document.getElementById('bj-drill-area');
+  const bjCardDisplay = document.getElementById('bj-card-display');
+  const bjUserCount = document.getElementById('bj-user-count');
+  const btnSubmitBjCount = document.getElementById('btn-submit-bj-count');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -74,6 +85,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   });
 
+  // --- Phase 4: Controlled Browser Actions ---
+  btnScrollDown.addEventListener('click', () => {
+    appendMessage('Solomon', 'Executing scroll down action.');
+    chrome.runtime.sendMessage({ type: 'EXECUTE_ACTION', action: 'page.scroll', direction: 'down' });
+  });
+
+  btnHighlightText.addEventListener('click', () => {
+    appendMessage('Solomon', 'Highlighting currently selected text on page.');
+    chrome.runtime.sendMessage({ type: 'EXECUTE_ACTION', action: 'page.highlight' });
+  });
+
   // --- Phase 3: Preparer ---
   btnPrepareKalshi.addEventListener('click', () => {
     const ticker = document.getElementById('kalshi-ticker').value;
@@ -92,6 +114,46 @@ document.addEventListener('DOMContentLoaded', () => {
     appendMessage('Solomon', 'Preparing trade payload. <strong>I cannot submit this.</strong>', true);
     appendMessage('Solomon Payload', `<pre style="background:#f3f4f6;padding:4px;border-radius:4px;font-size:0.75rem;white-space:pre-wrap;">${JSON.stringify(payload, null, 2)}</pre>`, true);
     appendMessage('System', 'You must manually copy this payload or click the final submission button on the Kalshi UI.');
+  });
+
+  // --- Phase 5: Blackjack Training Lab ---
+  let currentBjCount = 0;
+  const bjCards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+  let currentCard = '';
+
+  btnStartBjDrill.addEventListener('click', () => {
+    appendMessage('Solomon Lab', 'Starting Hi-Lo running count drill. (Offline Simulation)');
+    bjDrillArea.classList.remove('hidden');
+    currentBjCount = 0;
+    drawNextBjCard();
+  });
+
+  function drawNextBjCard() {
+    currentCard = bjCards[Math.floor(Math.random() * bjCards.length)];
+    bjCardDisplay.textContent = currentCard;
+    bjUserCount.value = '';
+
+    // Update internal true count
+    if (['2', '3', '4', '5', '6'].includes(currentCard)) {
+      currentBjCount += 1;
+    } else if (['10', 'J', 'Q', 'K', 'A'].includes(currentCard)) {
+      currentBjCount -= 1;
+    }
+  }
+
+  btnSubmitBjCount.addEventListener('click', () => {
+    const userVal = parseInt(bjUserCount.value);
+    if (isNaN(userVal)) {
+      appendMessage('Solomon Lab', 'Please enter a valid number.');
+      return;
+    }
+
+    if (userVal === currentBjCount) {
+      appendMessage('Solomon Lab', 'Correct!');
+      drawNextBjCard();
+    } else {
+      appendMessage('Solomon Lab', `Incorrect. The running count was ${currentBjCount}. Try again.`);
+    }
   });
 
   // --- Emergency ---

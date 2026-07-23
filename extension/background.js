@@ -25,4 +25,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // Keep the message channel open for async response
   }
+
+  if (request.type === 'EXECUTE_ACTION') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length > 0 && tabs[0].id) {
+        chrome.tabs.sendMessage(tabs[0].id, request, (response) => {
+          sendResponse(response);
+        });
+      } else {
+        sendResponse({ error: 'No active tab found.' });
+      }
+    });
+    return true;
+  }
 });

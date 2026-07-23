@@ -86,19 +86,27 @@
     .hidden {
       display: none;
     }
+    .btn-secondary {
+      background-color: #4b5563;
+    }
+    .btn-secondary:hover {
+      background-color: #374151;
+    }
   </style>
 </head>
 <body>
   <h1>Solomon Companion</h1>
-  <div class="status-bar" id="status">Mode: Phases 1-3 (Observer/Prepare)</div>
+  <div class="status-bar" id="status">Mode: Phase 5 (Full Prototype)</div>
 
   <div class="chat-box" id="chat">
     <p><em>Solomon initialized. Awaiting commands.</em></p>
   </div>
 
   <div class="panel-section">
-    <h2>Observer Actions</h2>
+    <h2>Page Interactions</h2>
     <button id="btn-read-page">Read Current Page</button>
+    <button id="btn-scroll-down" class="btn-secondary">Scroll Down</button>
+    <button id="btn-highlight-text" class="btn-secondary">Highlight Selected Text</button>
   </div>
 
   <div class="panel-section">
@@ -122,6 +130,18 @@
     <label>Matchup Line (e.g. Eagles -3.5 at -110)</label>
     <input type="text" id="sports-line" placeholder="Enter odds...">
     <button id="btn-analyze-sports">Calculate Shin Probability</button>
+  </div>
+
+  <div class="panel-section" id="blackjack-lab">
+    <h2>Blackjack Training Lab</h2>
+    <p style="font-size:0.75rem; color:#4b5563; margin-top:0;">Offline simulation only. No live casino connections permitted.</p>
+    <button id="btn-start-bj-drill">Start Hi-Lo Drill</button>
+    <div id="bj-drill-area" class="hidden">
+      <p>Card: <strong id="bj-card-display" style="font-size:1.5rem;">--</strong></p>
+      <label>Current Running Count?</label>
+      <input type="text" id="bj-user-count" placeholder="e.g., -1, 0, 1">
+      <button id="btn-submit-bj-count">Submit Count</button>
+    </div>
   </div>
 
   <button class="btn-stop" id="btn-stop">EMERGENCY STOP</button>
