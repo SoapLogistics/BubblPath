@@ -21,6 +21,8 @@ from solomon_skill_factory import SkillFactory
 from solomon_skill_graph_navigator import SkillGraphNavigator
 from solomon_self_study import SelfStudyOptimizer
 from solomon_autonomous_research import AutonomousResearcher
+from solomon_autonomous_tool_creator import AutonomousToolCreator
+from solomon_self_repair import SelfRepairEngine
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -33,6 +35,8 @@ perpetual_loop = SolomonPerpetualLearningLoop(db, router, skills_graph)
 experiment_engine = ExperimentEngine(db)
 graph_navigator = SkillGraphNavigator()
 autonomous_researcher = AutonomousResearcher(db)
+autonomous_tool_creator = AutonomousToolCreator(db, skills_graph)
+self_repair_engine = SelfRepairEngine(db)
 
 # Seed default capabilities inside the Graph Navigator
 graph_navigator.register_skill_node(
@@ -955,6 +959,52 @@ def evaluate_autonomous_research_project():
             "message": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+
+@app.route("/api/mnemosyne/tools/create", methods=["POST"])
+def create_autonomous_tool():
+    """
+    Autonomously prototypes, audits, and registers a missing capability as a reusable skill.
+    """
+    data = request.json or {}
+    tool_id = data.get("tool_id")
+    name = data.get("name")
+    intended_code = data.get("source_code")
+    entry_call = data.get("entry_call")
+
+    if not tool_id or not name or not intended_code or not entry_call:
+        return jsonify({"error": "Missing tool_id, name, source_code, or entry_call parameters."}), 400
+
+    report = autonomous_tool_creator.prototype_and_register_tool(tool_id, name, intended_code, entry_call)
+    return jsonify({
+        "status": "success",
+        "autonomous_tool_creation_report": report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'> "
+            "Call POST /api/mnemosyne/skills/execute with this new skill_id to "
+            "verify dynamic execution of your autonomously prototyped production utility!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/self-repair/run", methods=["POST"])
+def run_autonomous_self_repair():
+    """
+    Audits active telemetry metrics and compiles and registers repair playbooks autonomously upon deviations.
+    """
+    data = request.json or {}
+    report = self_repair_engine.audit_and_repair_system(data)
+    return jsonify({
+        "status": "success",
+        "self_repair_audit_report": report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "A repair playbook has been registered! Retrieve it semantically "
+            "to automatically resolve subsequent performance warnings.</span>"
+        )
+    })
 
 
 @app.route("/api/mnemosyne/skills/execute", methods=["POST"])

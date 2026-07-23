@@ -281,6 +281,95 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_autonomous_tool_creation_direct(self, test_db):
+        """
+        Directly asserts that AutonomousToolCreator prototypes, audits, and registers
+        new tools inside the Active Skill Graph and Mnemosyne DB successfully.
+        """
+        from solomon_skill_graph import SkillGraph
+        from solomon_autonomous_tool_creator import AutonomousToolCreator
+
+        graph = SkillGraph()
+        creator = AutonomousToolCreator(test_db, graph)
+
+        tool_id = "SKILL-SYS-CLEAN-01"
+        source = "def clean_system(): return 'CLEANED'"
+        res = creator.prototype_and_register_tool(tool_id, "System Cleaner", source, "clean_system()")
+
+        assert res["status"] == "SUCCESSFULLY_REGISTERED"
+        assert res["return_value"] == "CLEANED"
+
+        # Assert card was saved directly in ACTIVE validation state
+        card = test_db.get_card(f"SOK-TOOL-{tool_id.upper().replace('-', '_')}")
+        assert card is not None
+        assert card["validation_state"] == "ACTIVE"
+        assert "CLEANED" in card["content"]
+
+        # Assert registered inside Active Skill Graph
+        assert graph.get_skill(tool_id) is not None
+
+    def test_self_repair_engine_direct(self, test_db):
+        """
+        Directly asserts that SelfRepairEngine scans metrics deviations and compiles
+        and compiles ACTIVE repair playbooks inside Mnemosyne DB successfully.
+        """
+        from solomon_self_repair import SelfRepairEngine
+        repair_engine = SelfRepairEngine(test_db)
+
+        # Trigger audit with latencies above threshold
+        metrics = {
+            "rolling_average_latency_ms": 15.4,
+            "out_of_memory_signals": 1
+        }
+        res = repair_engine.audit_and_repair_system(metrics)
+        assert res["faults_detected"] is True
+        assert len(res["repaired_actions_executed"]) == 2
+        assert res["promoted_repair_card_id"] == "SOK-REPAIR-TELEMETRY-DEVIATION"
+
+        # Assert card was saved in ACTIVE validation state in Mnemosyne
+        card = test_db.get_card("SOK-REPAIR-TELEMETRY-DEVIATION")
+        assert card is not None
+        assert card["validation_state"] == "ACTIVE"
+
+    def test_tool_creation_and_self_repair_api_routes(self, client):
+        """
+        Verifies POST /api/mnemosyne/tools/create and POST /api/mnemosyne/self-repair/run
+        endpoints process requests, execute prototyping and healing, and output success status.
+        """
+        # 1. POST Tools Create
+        payload_tool = {
+            "tool_id": "SKILL-MATH-FIB-101",
+            "name": "Fibonacci Fast Solver",
+            "source_code": "def fib(n=10):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n",
+            "entry_call": "fib(5)"
+        }
+        res_tool = client.post(
+            "/api/mnemosyne/tools/create",
+            data=json.dumps(payload_tool),
+            content_type="application/json"
+        )
+        assert res_tool.status_code == 200
+        data_tool = res_tool.get_json()
+        assert data_tool["status"] == "success"
+        assert data_tool["autonomous_tool_creation_report"]["status"] == "SUCCESSFULLY_REGISTERED"
+        assert data_tool["autonomous_tool_creation_report"]["return_value"] == 5
+
+        # 2. POST Self-Repair Run
+        payload_repair = {
+            "rolling_average_latency_ms": 6.8,
+            "out_of_memory_signals": 0
+        }
+        res_repair = client.post(
+            "/api/mnemosyne/self-repair/run",
+            data=json.dumps(payload_repair),
+            content_type="application/json"
+        )
+        assert res_repair.status_code == 200
+        data_repair = res_repair.get_json()
+        assert data_repair["status"] == "success"
+        assert data_repair["self_repair_audit_report"]["faults_detected"] is True
+        assert data_repair["self_repair_audit_report"]["promoted_repair_card_id"] == "SOK-REPAIR-TELEMETRY-DEVIATION"
+
     def test_self_study_optimizer(self):
         """
         Directly asserts that the SelfStudyOptimizer tunes active vector weights
