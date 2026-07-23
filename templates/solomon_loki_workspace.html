@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solomon SOSS & Project Loki Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md">
+                <i class="fa-solid fa-brain text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-400 bg-clip-text text-transparent">SOLOMON SOSS</h1>
+                <p class="text-xs text-slate-400 code-font">Perpetual Learning Substrate v2.0</p>
+            </div>
+        </div>
+
+        <!-- Security classification & Bearer Configuration -->
+        <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+            <div class="flex items-center bg-slate-950 rounded-md border border-slate-800 px-3 py-1.5 space-x-2">
+                <span class="text-xs text-slate-400 code-font">AUTH:</span>
+                <input type="password" id="api-key" placeholder="Bearer Token" value="DEMO_KEY" class="bg-transparent border-none text-xs text-indigo-400 focus:outline-none focus:ring-0 w-32 code-font">
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-xs text-slate-300 font-semibold uppercase tracking-wider code-font">SS1: LIVE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Top Status & Performance Dashboard Metrics -->
+    <section class="max-w-7xl mx-auto w-full px-6 pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Virtual Bankroll Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-md flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Loki Virtual Bankroll</p>
+                <h3 class="text-2xl font-bold text-white mt-1 code-font" id="stat-balance">$10,000.00</h3>
+                <span class="text-xs text-emerald-400 font-medium code-font" id="stat-profit-lbl">+$0.00 Net Profit</span>
+            </div>
+            <div class="p-3.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-lg">
+                <i class="fa-solid fa-wallet text-2xl"></i>
+            </div>
+        </div>
+
+        <!-- Total Bets Placed Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-md flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Selections</p>
+                <h3 class="text-2xl font-bold text-white mt-1 code-font" id="stat-total-bets">0</h3>
+                <span class="text-xs text-slate-400 font-medium code-font" id="stat-pending-bets">0 Pending Bets</span>
+            </div>
+            <div class="p-3.5 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-lg">
+                <i class="fa-solid fa-chart-line text-2xl"></i>
+            </div>
+        </div>
+
+        <!-- Win Rate Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-md flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Historical Win Rate</p>
+                <h3 class="text-2xl font-bold text-white mt-1 code-font" id="stat-win-rate">0.00%</h3>
+                <span class="text-xs text-slate-400 font-medium code-font" id="stat-resolved-bets">0 Bets Resolved</span>
+            </div>
+            <div class="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+                <i class="fa-solid fa-trophy text-2xl"></i>
+            </div>
+        </div>
+
+        <!-- Net ROI Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-md flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Projected ROI</p>
+                <h3 class="text-2xl font-bold text-white mt-1 code-font" id="stat-roi">0.00%</h3>
+                <span class="text-xs text-indigo-400 font-medium code-font">Quarter-Kelly Stake Formula</span>
+            </div>
+            <div class="p-3.5 bg-pink-500/10 border border-pink-500/20 text-pink-400 rounded-lg">
+                <i class="fa-solid fa-percent text-2xl"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Dynamic Workspace Body Grid -->
+    <main class="max-w-7xl mx-auto w-full px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+        <!-- LEFT COLUMN: Solomon Conversation Console (lg:col-span-5) -->
+        <section class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl shadow-lg flex flex-col h-[650px]">
+
+            <!-- Console Header -->
+            <div class="px-5 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-terminal text-indigo-400 text-sm"></i>
+                    <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">Solomon Conversation Console</h2>
+                </div>
+                <select id="chat-clearance" class="bg-slate-950 border border-slate-800 rounded text-xs px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-300 font-semibold code-font">
+                    <option value="PUBLIC">PUBLIC (Clearance)</option>
+                    <option value="INTERNAL" selected>INTERNAL (Clearance)</option>
+                    <option value="RESTRICTED">RESTRICTED (Clearance)</option>
+                </select>
+            </div>
+
+            <!-- Chat Message Feed -->
+            <div id="chat-feed" class="flex-grow overflow-y-auto p-5 space-y-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+                <!-- Welcome greeting -->
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 rounded bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shrink-0">
+                        <span class="text-xs font-bold text-white">S</span>
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800/80 rounded-lg px-4 py-3 max-w-[85%] text-sm">
+                        <p class="leading-relaxed">Greetings! I am **Solomon**, your primary autonomous capability growth coordinator and Systems Architect.</p>
+                        <p class="leading-relaxed mt-2">I am fully connected to **Project Mnemosyne** (Perpetual Learning Memory Engine) and **Project Loki** (Predictive Sports Betting & Arbitrage Engine). Ask me anything, or run sports simulations in the right panel!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Console Input Footer -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+                <form id="chat-form" class="flex items-center space-x-2">
+                    <input type="text" id="chat-input" placeholder="Query Solomon or ask Loki to find edges..." class="flex-grow bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder-slate-500">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center space-x-1 shrink-0 shadow-md">
+                        <span>Send</span>
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Project Loki Betting Dashboard (lg:col-span-7) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+
+            <!-- Loki Active Picks Board Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl shadow-lg flex flex-col h-[340px]">
+
+                <!-- Board Header -->
+                <div class="px-5 py-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-receipt text-violet-400 text-sm"></i>
+                        <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">Loki Sports Betting Picks Board</h2>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs text-indigo-400 font-semibold uppercase px-2 py-0.5 bg-indigo-500/10 rounded border border-indigo-500/20 code-font">Shin Probability Solver Enabled</span>
+                    </div>
+                </div>
+
+                <!-- Picks Board Content -->
+                <div class="flex-grow overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-800">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-800 text-xs">
+                            <thead>
+                                <tr class="text-slate-400 text-left font-semibold uppercase tracking-wider">
+                                    <th class="pb-2">Fixture / Sport</th>
+                                    <th class="pb-2">Outcome Pick</th>
+                                    <th class="pb-2 text-right">Odds (DK/FD)</th>
+                                    <th class="pb-2 text-right">Pinnacle</th>
+                                    <th class="pb-2 text-right">Shin Prob</th>
+                                    <th class="pb-2 text-right">EV (%)</th>
+                                    <th class="pb-2 text-right">Kelly Stake</th>
+                                </tr>
+                            </thead>
+                            <tbody id="picks-tbody" class="divide-y divide-slate-800/60">
+                                <!-- Loaded dynamically -->
+                                <tr>
+                                    <td colspan="7" class="py-12 text-center text-slate-500">
+                                        <i class="fa-solid fa-spinner animate-spin text-xl text-indigo-500 mb-2"></i>
+                                        <p>Scanning markets and calculating overrounds...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historical Bets & Simulation Controller Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl shadow-lg flex flex-col h-[286px]">
+
+                <!-- Ledger Header -->
+                <div class="px-5 py-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-400 text-sm"></i>
+                        <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">Historical Bets & Execution Ledger</h2>
+                    </div>
+                    <button id="btn-simulate-tick" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wide px-3 py-1.5 rounded flex items-center space-x-1.5 transition-colors shadow shadow-emerald-700/40">
+                        <i class="fa-solid fa-forward-step"></i>
+                        <span>Simulate Tick</span>
+                    </button>
+                </div>
+
+                <!-- Ledger Content Table -->
+                <div class="flex-grow overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-800">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-800 text-xs">
+                            <thead>
+                                <tr class="text-slate-400 text-left font-semibold uppercase tracking-wider">
+                                    <th class="pb-2">ID</th>
+                                    <th class="pb-2">Fixture / Sport</th>
+                                    <th class="pb-2">Selection</th>
+                                    <th class="pb-2 text-right">Odds</th>
+                                    <th class="pb-2 text-right">Stake ($)</th>
+                                    <th class="pb-2 text-right">Status</th>
+                                    <th class="pb-2 text-right">P/L ($)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody" class="divide-y divide-slate-800/60">
+                                <!-- Loaded dynamically -->
+                                <tr>
+                                    <td colspan="7" class="py-10 text-center text-slate-500">No bets recorded. Click "Simulate Tick" to trigger picks and trades.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Unified Footnote -->
+    <footer class="bg-slate-950 border-t border-slate-900 px-6 py-4 mt-auto text-center text-xs text-slate-500">
+        <p>&copy; 2026 Solomon Autonomous Intelligence Network. Fully integrated Project Loki predictive betting model under SOSS governance.</p>
+    </footer>
+
+    <!-- Frontend Interactive Javascript Code -->
+    <script>
+        // Global State & Event Listeners
+        const chatFeed = document.getElementById('chat-feed');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatClearance = document.getElementById('chat-clearance');
+        const apiKeyInput = document.getElementById('api-key');
+        const btnSimulateTick = document.getElementById('btn-simulate-tick');
+
+        // Fetch Stats, Picks, and Histories on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchStats();
+            fetchPicks();
+        });
+
+        // 1. Fetch Loki Stats
+        async function fetchStats() {
+            const token = apiKeyInput.value.trim();
+            try {
+                const response = await fetch('/api/command-center/loki/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    const stats = data.stats;
+                    document.getElementById('stat-balance').innerText = `$${stats.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+                    const profitLossVal = stats.net_profit;
+                    const profitLbl = document.getElementById('stat-profit-lbl');
+                    if (profitLossVal >= 0) {
+                        profitLbl.innerText = `+$${profitLossVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Net Profit`;
+                        profitLbl.className = "text-xs text-emerald-400 font-medium code-font";
+                    } else {
+                        profitLbl.innerText = `-$${Math.abs(profitLossVal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Net Loss`;
+                        profitLbl.className = "text-xs text-pink-400 font-medium code-font";
+                    }
+
+                    document.getElementById('stat-total-bets').innerText = stats.total_bets;
+                    document.getElementById('stat-pending-bets').innerText = `${stats.pending_bets} Pending Bets`;
+                    document.getElementById('stat-win-rate').innerText = `${(stats.win_rate * 100).toFixed(2)}%`;
+                    document.getElementById('stat-resolved-bets').innerText = `${stats.resolved_bets} Bets Resolved`;
+                    document.getElementById('stat-roi').innerText = `${(stats.roi * 100).toFixed(2)}%`;
+
+                    renderHistoryTable(stats.bets_history);
+                }
+            } catch (err) {
+                console.error("Failed to load Loki stats:", err);
+            }
+        }
+
+        // 2. Fetch Loki Value Picks
+        async function fetchPicks() {
+            try {
+                const response = await fetch('/api/picks');
+                const data = await response.json();
+                const tbody = document.getElementById('picks-tbody');
+
+                if (data.ok && data.picks.length > 0) {
+                    tbody.innerHTML = '';
+                    data.picks.forEach(p => {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-900/40 transition-colors";
+                        tr.innerHTML = `
+                            <td class="py-3 font-medium text-slate-200">
+                                <div>${p.fixture}</div>
+                                <div class="text-[10px] text-slate-500 uppercase font-semibold code-font">${p.sport}</div>
+                            </td>
+                            <td class="py-3 text-slate-300 font-semibold">${p.outcome}</td>
+                            <td class="py-3 text-right text-indigo-400 font-bold code-font">${p.odds}</td>
+                            <td class="py-3 text-right text-slate-400 font-medium code-font">${p.pinnacle_odds}</td>
+                            <td class="py-3 text-right text-slate-400 font-medium code-font">${(p.shin_true_prob * 100).toFixed(1)}%</td>
+                            <td class="py-3 text-right text-emerald-400 font-bold code-font">+${((p.expected_value - 1) * 100).toFixed(1)}%</td>
+                            <td class="py-3 text-right text-violet-400 font-semibold code-font">${(p.kelly_fraction * 100).toFixed(1)}%</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="py-12 text-center text-slate-500">
+                                <i class="fa-solid fa-circle-info text-slate-600 text-lg mb-2 block"></i>
+                                <p>No positive EV picks detected under current overround margin profiles.</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (err) {
+                console.error("Failed to load picks:", err);
+            }
+        }
+
+        // 3. Render Historical Bets Table
+        function renderHistoryTable(bets) {
+            const tbody = document.getElementById('history-tbody');
+            if (bets && bets.length > 0) {
+                tbody.innerHTML = '';
+                bets.forEach(b => {
+                    let statusBadge = '';
+                    if (b.status === 'WON') {
+                        statusBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">WON</span>';
+                    } else if (b.status === 'LOST') {
+                        statusBadge = '<span class="px-2 py-0.5 rounded bg-pink-500/10 text-pink-400 border border-pink-500/20 font-bold text-[10px]">LOST</span>';
+                    } else {
+                        statusBadge = '<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-[10px] animate-pulse">PENDING</span>';
+                    }
+
+                    const plFormatted = b.status === 'PENDING' ? '-' : (b.profit_loss >= 0 ? `+$${b.profit_loss.toFixed(2)}` : `-$${Math.abs(b.profit_loss).toFixed(2)}`);
+                    const plClass = b.status === 'PENDING' ? 'text-slate-400' : (b.profit_loss >= 0 ? 'text-emerald-400 font-bold' : 'text-pink-400 font-bold');
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-900/40 transition-colors";
+                    tr.innerHTML = `
+                        <td class="py-2.5 text-slate-500 code-font">${b.bet_id}</td>
+                        <td class="py-2.5 font-medium text-slate-200">
+                            <div>${b.fixture}</div>
+                            <div class="text-[9px] text-slate-500 uppercase font-semibold code-font">${b.sport}</div>
+                        </td>
+                        <td class="py-2.5 text-slate-300 font-semibold">${b.market}: ${b.outcome || 'Moneyline'}</td>
+                        <td class="py-2.5 text-right text-indigo-400 font-bold code-font">${b.odds}</td>
+                        <td class="py-2.5 text-right text-slate-300 font-medium code-font">$${b.stake.toFixed(2)}</td>
+                        <td class="py-2.5 text-right">${statusBadge}</td>
+                        <td class="py-2.5 text-right ${plClass} code-font">${plFormatted}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-10 text-center text-slate-500">No bets recorded. Click "Simulate Tick" to trigger picks and trades.</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 4. Submit Chat Message
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // Append User Message
+            appendMessage(message, 'user');
+            chatInput.value = '';
+
+            const token = apiKeyInput.value.trim();
+            const clearance = chatClearance.value;
+            const requestId = `req-${Date.now()}`;
+            const conversationId = 'workspace-conv';
+
+            try {
+                const response = await fetch('/api/command-center/solomon-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: conversationId,
+                        request_id: requestId,
+                        security_classification: clearance
+                    })
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    appendMessage(data.reply, 'solomon', data.memory);
+                } else {
+                    appendMessage(`Error: ${data.error || 'Failed to receive Solomon response.'}`, 'system');
+                }
+            } catch (err) {
+                console.error("Chat failure:", err);
+                appendMessage(`Connection Error: Unable to query the Solomon API gateway.`, 'system');
+            }
+        });
+
+        // Helper to append messages
+        function appendMessage(text, sender, memory = null) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = "flex items-start space-x-3";
+
+            let senderBg = '';
+            let senderChar = '';
+            let contentClass = '';
+
+            if (sender === 'user') {
+                senderBg = 'bg-slate-700';
+                senderChar = 'U';
+                contentClass = 'bg-indigo-600/10 border border-indigo-500/20';
+            } else if (sender === 'system') {
+                senderBg = 'bg-pink-600';
+                senderChar = 'X';
+                contentClass = 'bg-pink-600/10 border border-pink-500/20 text-pink-400 code-font';
+            } else {
+                senderBg = 'bg-gradient-to-tr from-indigo-600 to-violet-500';
+                senderChar = 'S';
+                contentClass = 'bg-slate-950 border border-slate-800/80';
+            }
+
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedText = formattedText.replace(/\n/g, '<br>');
+
+            let memoryHtml = '';
+            if (memory && memory.retrieved_card_ids.length > 0) {
+                memoryHtml = `
+                    <div class="mt-2.5 pt-2 border-t border-slate-800 flex flex-wrap gap-1.5 items-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider code-font">Memories Recalled:</span>
+                        ${memory.retrieved_card_ids.map(id => `<span class="px-1.5 py-0.5 text-[9px] bg-slate-900 border border-slate-800 text-indigo-400 font-semibold rounded code-font">${id}</span>`).join('')}
+                    </div>
+                `;
+            }
+
+            msgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded ${senderBg} flex items-center justify-center shrink-0">
+                    <span class="text-xs font-bold text-white">${senderChar}</span>
+                </div>
+                <div class="${contentClass} rounded-lg px-4 py-3 max-w-[85%] text-sm">
+                    <div class="leading-relaxed">${formattedText}</div>
+                    ${memoryHtml}
+                </div>
+            `;
+            chatFeed.appendChild(msgDiv);
+            chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+
+        // 5. Trigger Simulate Tick
+        btnSimulateTick.addEventListener('click', async () => {
+            const btnIcon = btnSimulateTick.querySelector('i');
+            btnIcon.className = "fa-solid fa-spinner animate-spin";
+            btnSimulateTick.disabled = true;
+
+            const token = apiKeyInput.value.trim();
+            try {
+                const response = await fetch('/api/command-center/loki/simulate-tick', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    await fetchStats();
+                    await fetchPicks();
+                    appendMessage(`Loki Simulation Tick Completed! Resolved ${data.resolved_bets_count} bets. Placed ${data.new_bets_count} new trades based on overround value picks!`, 'system');
+                } else {
+                    appendMessage(`Simulation failed: ${data.error}`, 'system');
+                }
+            } catch (err) {
+                console.error("Tick failure:", err);
+                appendMessage(`Connection error: Failed to trigger simulation tick on SS1.`, 'system');
+            } finally {
+                btnIcon.className = "fa-solid fa-forward-step";
+                btnSimulateTick.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+</html>

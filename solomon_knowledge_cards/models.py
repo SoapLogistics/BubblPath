@@ -174,5 +174,39 @@ class DatabaseManager:
                     """, (now_str, now_str, now_str, now_str))
 
                     conn.execute("INSERT INTO migrations (version) VALUES (4);")
+
+                # Migration 5: Adding Loki bets and bankroll tables
+                if current_v < 5:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_bets (
+                            bet_id TEXT PRIMARY KEY,
+                            sport TEXT NOT NULL,
+                            fixture TEXT NOT NULL,
+                            market TEXT NOT NULL,
+                            outcome TEXT NOT NULL,
+                            odds REAL NOT NULL,
+                            shin_prob REAL NOT NULL,
+                            kelly_fraction REAL NOT NULL,
+                            stake REAL NOT NULL,
+                            status TEXT NOT NULL, -- PENDING, WON, LOST
+                            profit_loss REAL DEFAULT 0.0,
+                            created_at TEXT NOT NULL,
+                            resolved_at TEXT
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_bankroll (
+                            bankroll_id TEXT PRIMARY KEY,
+                            balance REAL NOT NULL,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    now_str = datetime.utcnow().isoformat()
+                    conn.execute("""
+                        INSERT OR IGNORE INTO loki_bankroll (bankroll_id, balance, updated_at)
+                        VALUES ('default', 10000.0, ?);
+                    """, (now_str,))
+
+                    conn.execute("INSERT INTO migrations (version) VALUES (5);")
         finally:
             conn.close()

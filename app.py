@@ -3,7 +3,7 @@ import hmac
 import json
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import openai
 
 from solomon_knowledge_cards import MnemosyneRuntime
@@ -728,6 +728,57 @@ def cc_compile_modelfile():
     except Exception as e:
         logger.error(f"Failed to compile quantization Modelfile: {str(e)}")
         return jsonify({"ok": False, "error": f"Modelfile compilation failed: {str(e)}"}), 500
+
+
+# --- Project Loki Sports Betting & Simulation Endpoints ---
+from solomon_knowledge_cards.loki_engine import LokiEngine
+loki_engine = LokiEngine(runtime)
+
+@app.route("/api/picks", methods=["GET"])
+def bp_get_picks():
+    """Retrieves all active high-probability sports betting selections computed by Project Loki."""
+    try:
+        picks = loki_engine.get_active_value_picks()
+        return jsonify({
+            "ok": True,
+            "picks": picks,
+            "count": len(picks)
+        })
+    except Exception as e:
+        logger.error(f"Failed to fetch active Loki picks: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/loki/simulate-tick", methods=["POST"])
+def bp_loki_simulate_tick():
+    """Triggers an active Loki simulation tick to resolve old bets and place new ones."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    try:
+        result = loki_engine.simulate_tick()
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Loki simulation tick failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/loki/stats", methods=["GET"])
+def bp_get_loki_stats():
+    """Retrieves betting performance and bankroll stats for Project Loki."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    try:
+        stats = loki_engine.get_betting_stats()
+        return jsonify({
+            "ok": True,
+            "stats": stats
+        })
+    except Exception as e:
+        logger.error(f"Failed to fetch Loki betting stats: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/workspace", methods=["GET"])
+def render_workspace_view():
+    """Renders the comprehensive Solomon SOSS & Project Loki frontend workspace."""
+    return render_template("solomon_loki_workspace.html")
 
 
 if __name__ == "__main__":
