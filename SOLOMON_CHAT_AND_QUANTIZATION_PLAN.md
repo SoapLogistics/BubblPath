@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 7-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 9-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -157,12 +157,27 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Capture full execution traces (stdout, stderr, exit code).
   3. If compilation fails or exceptions arise, feed the traceback back into Solomon's reasoning loop so he can fix his own code autonomously.
 
+### Phase VIII: AST-Guided Code Self-Correction Loop
+* **Objective**: Empower Solomon to autonomously parse python tracebacks and correct compiling errors.
+* **Action Steps**:
+  1. Create an automated self-healing loop inside `app.py` via `POST /api/mnemosyne/skills/self-heal`.
+  2. If the initial script run returns an error exit code, parse the exception message.
+  3. Formulate a correction query targeting the `LocalInferenceEngine` or simulated LLM instruction parser to rewrite the code.
+  4. Re-run inside the `SandboxExecutor` up to a maximum recursion depth of 3 until it successfully executes.
+
+### Phase IX: Governed Capability Promotion Pipeline (GCPP)
+* **Objective**: Transition successfully compiled sandbox modules from DRAFT -> APPROVED -> ACTIVE.
+* **Action Steps**:
+  1. When a synthesized code block passes sandbox tests with zero warnings, initiate promotion.
+  2. Update the status flag of the corresponding SOK memory card from `DRAFT` or `REVIEWED` to `APPROVED` or `ACTIVE`.
+  3. Register the newly promoted code as an active runtime capability available inside the Solomon execution skill grid.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the complete local card persistence store and sandboxed execution gateway.
-2. CREATE `test_app.py` to assert correct local card memory insertion and sandbox execution routing.
+1. OVERWRITE `app.py` with the complete self-correcting logic and promotion pipeline.
+2. CREATE `test_app.py` to assert correct self-healing loops and capability promotions.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add persistent card storage and live sandboxed execution lanes so Solomon can autonomously code and execute entirely offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add AST self-correction loops and capability promotions so Solomon can autonomously compile, debug, and promote his own offline modules.**

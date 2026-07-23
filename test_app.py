@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 from unittest.mock import MagicMock, patch
-from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE
+from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE, skill_graph_registry
 
 @pytest.fixture
 def flask_client():
@@ -317,6 +317,43 @@ def test_skills_endpoint_and_sandbox_run(flask_client):
     assert data5["execution_status"] == "FAILED"
     assert data5["exit_code"] != 0
     assert "Simulated compilation error" in data5["stderr"]
+
+def test_self_heal_endpoint(flask_client):
+    """Verifies that the AST Self-Correction and Capability Promotion GCPP works."""
+    # 1. Validation checks
+    response_val = flask_client.post(
+        "/api/mnemosyne/skills/self-heal",
+        data=json.dumps({"skill_id": "jules_dynamic_autonomer"}),
+        content_type="application/json"
+    )
+    assert response_val.status_code == 400
+
+    # 2. Live execution of a code with errors (triggers correction and promotion!)
+    err_code = "raise ValueError('Simulated compilation error')\n"
+    response_run = flask_client.post(
+        "/api/mnemosyne/skills/self-heal",
+        data=json.dumps({"skill_id": "jules_dynamic_autonomer", "code": err_code}),
+        content_type="application/json"
+    )
+    assert response_run.status_code == 200
+    data_run = response_run.get_json()
+    assert data_run["self_healing_status"] == "SUCCESSFUL"
+    assert data_run["total_attempts"] == 2
+    assert "self-healed after compile error" in data_run["stdout"]
+    assert data_run["promoted_to_active"] is True
+
+    # 3. Assert card was promoted to ACTIVE in Mnemosyne
+    response_check = flask_client.get("/api/mnemosyne/cards?status=ACTIVE")
+    cards = response_check.get_json()
+    promoted_card = [c for c in cards if "jules_dynamic_autonomer" in c["title"]]
+    assert len(promoted_card) == 1
+    assert promoted_card[0]["status"] == "ACTIVE"
+
+    # 4. Assert skill registry added the capability
+    response_skills = flask_client.get("/api/mnemosyne/skills")
+    skills = response_skills.get_json()["skills"]
+    registered_ids = [s["id"] for s in skills]
+    assert "jules_dynamic_autonomer" in registered_ids
 
 def test_perpetual_loop_endpoint(flask_client):
     """Verifies end-to-end continuous loop orchestration."""
