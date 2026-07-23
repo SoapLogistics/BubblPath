@@ -28,6 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnApproveMemory = document.getElementById('btn-approve-memory');
   const btnRejectMemory = document.getElementById('btn-reject-memory');
 
+  // Phase 8 Elements
+  const btnAnalyzeNews = document.getElementById('btn-analyze-news');
+
+  // Phase 9 Elements
+  const btnAnalyzeShopping = document.getElementById('btn-analyze-shopping');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -213,6 +219,62 @@ document.addEventListener('DOMContentLoaded', () => {
   btnRejectMemory.addEventListener('click', () => {
     appendMessage('System', '&#10005; Memory Card rejected. Discarding.', true);
     memoryApprovalArea.classList.add('hidden');
+  });
+
+  // --- Phase 8: News Companion ---
+  btnAnalyzeNews.addEventListener('click', () => {
+    appendMessage('Solomon', 'Initiating News Extraction & Timeline build...');
+
+    setTimeout(() => {
+      appendMessage('Solomon', '&#10003; Extracting main claims from DOM...', true);
+    }, 600);
+
+    setTimeout(() => {
+      appendMessage('Solomon', '&#10003; Cross-referencing 3 external primary sources...', true);
+    }, 1500);
+
+    setTimeout(() => {
+      const newsReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Main Claim:</strong> Federal Reserve expected to hold rates.<br>
+          <strong>Confidence:</strong> High (Confirmed by 2 primary sources)<br>
+          <strong>Loaded Language:</strong> "Slammed", "Plummet" detected.<br>
+          <strong>Timeline:</strong><br>
+          - 09:00: CPI Data Released.<br>
+          - 09:15: WSJ confirms likely hold.<br>
+          - 09:30: Market prices in 95% hold probability (Kalshi).
+        </div>
+      `;
+      appendMessage('Solomon News', newsReport, true);
+    }, 2500);
+  });
+
+  // --- Phase 9: Shopping Companion ---
+  btnAnalyzeShopping.addEventListener('click', () => {
+    appendMessage('Solomon', 'Scanning product listing (Amazon/eBay heuristics)...');
+
+    setTimeout(() => {
+      appendMessage('Solomon', '&#10003; Extracting model numbers and verifying seller reputation...', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon', '&#10003; Checking historic price data and external competitors...', true);
+    }, 1800);
+
+    setTimeout(() => {
+      const shoppingReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Product:</strong> Samsung T7 Shield 2 TB<br>
+          <strong>Base Price:</strong> $139.99<br>
+          <strong>Total Landed:</strong> $149.79 (incl. Tax/Ship)<br>
+          <strong>Seller:</strong> Third-Party (92% positive)<br>
+          <strong>Counterfeit Risk:</strong> Low<br>
+          <strong>Warning:</strong> Found same model at Best Buy for $129.99.<br>
+          <strong>Recommendation:</strong> Prepare checkout at Best Buy instead.
+        </div>
+      `;
+      appendMessage('Solomon Shopping', shoppingReport, true);
+    }, 2800);
   });
 
 
