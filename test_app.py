@@ -1,0 +1,379 @@
+import json
+import pytest
+from unittest.mock import MagicMock, patch
+from app import app, client, routing_preferences, worker_modes
+
+@pytest.fixture
+def flask_client():
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
+
+def test_health_endpoint(flask_client):
+    """Verifies that the telemetry health probe works as expected."""
+    response = flask_client.get("/health")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "healthy"
+    assert "uptime_seconds" in data
+    assert "memory_rss_bytes" in data
+    assert "memory_rss_formatted" in data
+
+def test_metrics_endpoint(flask_client):
+    """Verifies that the telemetry metrics works."""
+    response = flask_client.get("/metrics")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "sql_query_latency_speeds" in data
+    assert "ast_fusion_stats" in data
+
+def test_preferences_endpoint(flask_client):
+    """Verifies retrieval and update of preferences."""
+    # GET preferences
+    response = flask_client.get("/api/command-center/preferences")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "execution_mode" in data
+
+    # POST preferences
+    update_payload = {
+        "execution_mode": "solomon_only",
+        "codex_enabled": False,
+        "fallback_to_codex": False
+    }
+    response2 = flask_client.post(
+        "/api/command-center/preferences",
+        data=json.dumps(update_payload),
+        content_type="application/json"
+    )
+    assert response2.status_code == 200
+    data2 = response2.get_json()
+    assert data2["status"] == "updated"
+    assert data2["preferences"]["execution_mode"] == "solomon_only"
+    assert data2["preferences"]["codex_enabled"] is False
+
+    # Restore preferences
+    flask_client.post(
+        "/api/command-center/preferences",
+        data=json.dumps({"execution_mode": "hybrid", "codex_enabled": True, "fallback_to_codex": True}),
+        content_type="application/json"
+    )
+
+def test_worker_modes_endpoint(flask_client):
+    """Verifies retrieval and updates of worker execution modes."""
+    # GET worker modes
+    response = flask_client.get("/api/command-center/worker-modes")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["Gabriel"] == "READ_ONLY"
+
+    # POST worker modes
+    response2 = flask_client.post(
+        "/api/command-center/worker-modes",
+        data=json.dumps({"Gabriel": "LIVE", "Loki": "LIVE"}),
+        content_type="application/json"
+    )
+    assert response2.status_code == 200
+    data2 = response2.get_json()
+    assert data2["worker_modes"]["Gabriel"] == "LIVE"
+    assert data2["worker_modes"]["Loki"] == "LIVE"
+
+    # Restore worker modes
+    flask_client.post(
+        "/api/command-center/worker-modes",
+        data=json.dumps({"Gabriel": "READ_ONLY", "Loki": "RESEARCH_ONLY"}),
+        content_type="application/json"
+    )
+
+def test_quantization_blueprint_endpoint(flask_client):
+    """Verifies feasibility blueprints are retrieved."""
+    response = flask_client.get("/api/quantization/blueprint")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["feasibility_status"] == "HIGHLY_FEASIBLE"
+    assert len(data["layers"]) == 4
+
+def test_quantization_simulate_endpoint(flask_client):
+    """Verifies AMPBA simulations."""
+    response = flask_client.post(
+        "/api/quantization/simulate",
+        data=json.dumps({"ram_ceiling_gb": 8.0}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["target_ram_ceiling_gb"] == 8.0
+    assert "average_allocated_bitwidth" in data
+
+def test_cognitive_cycle_endpoint(flask_client):
+    """Verifies SOK sequence steps retrieval."""
+    response = flask_client.get("/api/quantization/cognitive-cycle")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data["cycle_stages"]) == 7
+
+def test_mnemosyne_cards_endpoint(flask_client):
+    """Verifies Mnemosyne card retrieval."""
+    response = flask_client.get("/api/mnemosyne/cards?status=ACTIVE")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+
+def test_mnemosyne_search_endpoint(flask_client):
+    """Verifies mock semantic search rankings and cosine boundaries."""
+    response = flask_client.post(
+        "/api/mnemosyne/search",
+        data=json.dumps({"query": "Ternary SpinQuant optimization"}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "results" in data
+    assert len(data["results"]) >= 1
+    # Check that cosine boundaries division-by-zero protection holds
+    for item in data["results"]:
+        assert -1.0 <= item["similarity_score"] <= 1.0
+
+def test_mnemosyne_route_endpoint(flask_client):
+    """Verifies dynamic operator routing based on confidence."""
+    response1 = flask_client.post(
+        "/api/mnemosyne/route",
+        data=json.dumps({"query": "How to optimize Quantization?"}),
+        content_type="application/json"
+    )
+    assert response1.status_code == 200
+    data1 = response1.get_json()
+    assert data1["routed_model"] == "Ultra-Light INT4 Quantized Model"
+
+    response2 = flask_client.post(
+        "/api/mnemosyne/route",
+        data=json.dumps({"query": "Unknown query topic"}),
+        content_type="application/json"
+    )
+    assert response2.status_code == 200
+    data2 = response2.get_json()
+    assert data2["routed_model"] == "High-Precision FP16 Model"
+
+def test_mnemosyne_feedback_endpoint(flask_client):
+    """Verifies feedback scaling with clipping bounds [0.1, 2.0]."""
+    response = flask_client.post(
+        "/api/mnemosyne/feedback",
+        data=json.dumps({"card_id": 1, "rating": 1}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["card"]["confidence"] <= 2.0
+
+    # Test error fallback
+    response_err = flask_client.post(
+        "/api/mnemosyne/feedback",
+        data=json.dumps({"card_id": 999, "rating": 1}),
+        content_type="application/json"
+    )
+    assert response_err.status_code == 404
+
+def test_crucible_endpoint(flask_client):
+    """Verifies AST crucible optimization."""
+    response = flask_client.post(
+        "/api/mnemosyne/crucible",
+        data=json.dumps({"mode": "AST-FUSION"}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["crucible_mode"] == "AST-FUSION"
+
+def test_ast_inject_endpoint(flask_client):
+    """Verifies AST Injection."""
+    # Failure case
+    response1 = flask_client.post(
+        "/api/mnemosyne/ast-inject",
+        data=json.dumps({"class_name": "SolomonGateway"}),
+        content_type="application/json"
+    )
+    assert response1.status_code == 400
+
+    # Success case
+    response2 = flask_client.post(
+        "/api/mnemosyne/ast-inject",
+        data=json.dumps({"class_name": "SolomonGateway", "method_name": "dynamic_test_call"}),
+        content_type="application/json"
+    )
+    assert response2.status_code == 200
+    data = response2.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["injected_method"] == "dynamic_test_call"
+
+def test_observe_endpoint(flask_client):
+    """Verifies blackbox profiling synthesis."""
+    response = flask_client.post(
+        "/api/mnemosyne/observe",
+        data=json.dumps({"binary_name": "kubernetes-cli", "command": "kubectl get pods"}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["binary_profiled"] == "kubernetes-cli"
+    assert "synthesized_clean_room_python" in data
+
+def test_skills_endpoint(flask_client):
+    """Verifies active capability graph and isolated sandbox execute lanes."""
+    # GET skills
+    response1 = flask_client.get("/api/mnemosyne/skills")
+    assert response1.status_code == 200
+    data1 = response1.get_json()
+    assert len(data1["skills"]) == 4
+
+    # POST execute skill failure
+    response2 = flask_client.post(
+        "/api/mnemosyne/skills/execute",
+        data=json.dumps({}),
+        content_type="application/json"
+    )
+    assert response2.status_code == 400
+
+    # POST execute skill success
+    response3 = flask_client.post(
+        "/api/mnemosyne/skills/execute",
+        data=json.dumps({"skill_id": "codex_mcp_bridge"}),
+        content_type="application/json"
+    )
+    assert response3.status_code == 200
+    data3 = response3.get_json()
+    assert data3["execution_status"] == "SUCCESS"
+
+def test_perpetual_loop_endpoint(flask_client):
+    """Verifies end-to-end continuous loop orchestration."""
+    response = flask_client.post("/api/mnemosyne/perpetual-loop")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["loop_status"] == "RUNNING"
+
+def test_chat_payload_validation(flask_client):
+    """Ensures strict JSON body, string validation, and query logging are enforced."""
+    # Missing body
+    response = flask_client.post("/chat")
+    assert response.status_code == 400
+    assert "Malformed request" in response.get_json()["error"]
+
+    # Missing key
+    response = flask_client.post(
+        "/chat",
+        data=json.dumps({"msg": "hello"}),
+        content_type="application/json"
+    )
+    assert response.status_code == 400
+    assert "Missing key 'message'" in response.get_json()["error"]
+
+    # Empty/Wrong type
+    response = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": 12345}),
+        content_type="application/json"
+    )
+    assert response.status_code == 400
+    assert "must be a non-empty string" in response.get_json()["error"]
+
+def test_chat_blocked_codex_solomon_only(flask_client):
+    """Ensures Codex actions are blocked in solomon_only mode."""
+    # Set preference to solomon_only
+    flask_client.post(
+        "/api/command-center/preferences",
+        data=json.dumps({"execution_mode": "solomon_only"}),
+        content_type="application/json"
+    )
+
+    response = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": "Hey Codex, run optimization rules please."}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "BLOCKED"
+    assert "blocked because the current system preferences are set to 'solomon_only'" in data["reply"]
+    assert "RECOMMENDED NEXT STEP" in data["reply"]
+
+    # Restore preferences
+    flask_client.post(
+        "/api/command-center/preferences",
+        data=json.dumps({"execution_mode": "hybrid"}),
+        content_type="application/json"
+    )
+
+@patch("app.client")
+def test_chat_live_and_fallback_modes(mock_openai_client, flask_client):
+    """Verifies conversational reply and foreman routing for fallback and mock-live execution."""
+    # 1. Fallback / Simulation Mode (client or api_key mock_key_if_none)
+    response = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": "Hello Solomon, let's discuss AWQ quantization."}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "Jules" in data["reply"]
+    assert "Codex" in data["reply"]
+    assert "RECOMMENDED NEXT STEP" in data["reply"]
+    assert "AMPBA" in data["reply"]
+    assert data["worker_orchestration"] is False
+
+    # 1b. Test alternate recommendation route for "db / mnemosyne"
+    response_db = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": "Show me our active db memory cards."}),
+        content_type="application/json"
+    )
+    assert response_db.status_code == 200
+    data_db = response_db.get_json()
+    assert "search against Mnemosyne" in data_db["reply"]
+
+    # 2. Worker Foreman Dispatcher Mode
+    response_worker = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": "Gabriel: compile codex_mcp_bridge template"}),
+        content_type="application/json"
+    )
+    assert response_worker.status_code == 200
+    data_worker = response_worker.get_json()
+    assert "Foreman" in data_worker["reply"]
+    assert "Gabriel" in data_worker["reply"]
+    assert "READ_ONLY" in data_worker["reply"]
+    assert data_worker["worker_orchestration"] is True
+
+    # 3. Live Mock OpenAI Mode
+    # Mock the response structure of client.chat.completions.create
+    mock_completion = MagicMock()
+    mock_choice = MagicMock()
+    mock_message = MagicMock()
+    mock_message.content = "This is a live-synthesized response from Solomon AI core."
+    mock_choice.message = mock_message
+    mock_completion.choices = [mock_choice]
+    mock_openai_client.chat.completions.create.return_value = mock_completion
+
+    with patch("app.api_key", "valid_test_api_key"):
+        response_live = flask_client.post(
+            "/chat",
+            data=json.dumps({"message": "Analyze quantization limits."}),
+            content_type="application/json"
+        )
+        assert response_live.status_code == 200
+        data_live = response_live.get_json()
+        assert "live-synthesized" in data_live["reply"]
+        assert "RECOMMENDED NEXT STEP" in data_live["reply"]
+
+        # Test live call throwing exception
+        mock_openai_client.chat.completions.create.side_effect = Exception("OpenAI API Outage Simulation")
+        response_err = flask_client.post(
+            "/chat",
+            data=json.dumps({"message": "This will trigger error fallback path."}),
+            content_type="application/json"
+        )
+        assert response_err.status_code == 200
+        data_err = response_err.get_json()
+        assert "gateway exception" in data_err["reply"]
+        assert "OpenAI API Outage Simulation" in data_err["reply"]

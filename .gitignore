@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.coverage
+flask_server.log
+.pytest_cache/
