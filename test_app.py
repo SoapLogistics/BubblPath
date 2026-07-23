@@ -661,6 +661,62 @@ def test_startup_pipeline_initialization(flask_client):
     assert "allocated_bitwidth" in data["layers"][0]
     assert 2.0 <= data["average_allocated_bit_width"] <= 8.0
 
+def test_visual_graph_pipeline(flask_client):
+    """Verifies topological card graph density metrics and visual layout coordinate allocations."""
+    response = flask_client.get("/api/mnemosyne/cards/graph/visual")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "SUCCESS"
+    assert "density_metrics" in data
+    assert "visual_graph" in data
+    assert data["density_metrics"]["node_count"] >= 3
+    assert data["visual_graph"]["nodes"][0]["x"] is not None
+
+def test_multi_agent_planner_draft_and_execution(flask_client):
+    """Verifies high-level multi-step planner drafts and automatic code execution promotions."""
+    # 1. Planner Draft Failure check (Missing key)
+    res_val = flask_client.post(
+        "/api/command-center/planner/draft",
+        data=json.dumps({}),
+        content_type="application/json"
+    )
+    assert res_val.status_code == 400
+
+    # 2. Successful Planner Draft
+    res_draft = flask_client.post(
+        "/api/command-center/planner/draft",
+        data=json.dumps({"prompt": "Construct a dynamic offloading GCPP module"}),
+        content_type="application/json"
+    )
+    assert res_draft.status_code == 201
+    draft_data = res_draft.get_json()
+    assert draft_data["status"] == "SUCCESS"
+    assert len(draft_data["drafted_task_pipeline"]) == 4
+    assert draft_data["created_draft_card"]["status"] == "DRAFT"
+
+    # 3. Successful Planner Execute & Promotion
+    run_code = (
+        "import sys\n"
+        "sys.stdout.write('Planner compiled dynamic code successfully')\n"
+        "sys.exit(0)\n"
+    )
+    res_exec = flask_client.post(
+        "/api/command-center/planner/execute",
+        data=json.dumps({"skill_id": "dynamic_planner_runner", "code": run_code}),
+        content_type="application/json"
+    )
+    assert res_exec.status_code == 200
+    exec_data = res_exec.get_json()
+    assert exec_data["status"] == "SUCCESS"
+    assert exec_data["prometheus_audit_status"] == "PASSED"
+    assert exec_data["promoted_to_active"] is True
+
+    # 4. Check active memory card was promoted
+    res_check = flask_client.get("/api/mnemosyne/cards?status=ACTIVE")
+    active_cards = res_check.get_json()
+    promoted = [c for c in active_cards if "dynamic_planner_runner" in c["title"]]
+    assert len(promoted) == 1
+
 def test_perpetual_loop_endpoint(flask_client):
     """Verifies end-to-end continuous loop orchestration."""
     response = flask_client.post("/api/mnemosyne/perpetual-loop")

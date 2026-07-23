@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 25-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 27-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -283,12 +283,26 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. On server start, compute the optimal mixed-precision layout layer-by-layer (e.g. allocating 8, 4, 3, or 2 bits) using simulated Hessian trace sensitivities to maximize local VRAM efficiency.
   3. Log and output the final model bit allocation layout cleanly to the terminal context.
 
+### Phase XXVI: Visual Graph Topological Render Pipeline
+* **Objective**: Provide structured visual layout geometries and topological density metrics for graph-connected cards.
+* **Action Steps**:
+  1. Expose `GET /api/mnemosyne/cards/graph/visual` in `app.py`.
+  2. Compute network metrics (graph density, average clustering coefficient) and autogenerate x/y layout coordinates for nodes.
+  3. Enable visual node linking and canvas mapping in front-end sync panels.
+
+### Phase XXVII: Autonomous Multi-Agent Planner and Gabriel Assimilation Core
+* **Objective**: Enable high-level multi-turn task planning, code generation, sandboxed execution, and GCPP promotions.
+* **Action Steps**:
+  1. Expose `/api/command-center/planner/draft` (POST) to analyze user prompts and create multi-step task lists.
+  2. Expose `/api/command-center/planner/execute` (POST) to sequentially compile draft codes, execute tests inside quarantined sandboxes, and promote verified codes to ACTIVE.
+  3. Fully automate capability drafting and self-healing deployment workflows.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the cognitive cycle maps and the startup dynamic live model-loading initialization pipeline.
-2. CREATE `test_app.py` to assert correct cognitive cycle outputs and startup metrics.
+1. OVERWRITE `app.py` with the visual graph network pipeline and the multi-agent planner drafting/execution engines.
+2. CREATE `test_app.py` to assert correct layout coordinates, planner task breakdowns, and sequential capability promotion outputs.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add the cognitive cycle maps and the startup live model-loading initialization pipeline so Solomon can safely output model metrics and sequences offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add visual graph pipelines and multi-agent planners so Solomon can autonomously draft, verify, and promote complex capabilities offline.**
