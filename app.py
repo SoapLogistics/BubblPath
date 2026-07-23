@@ -15,15 +15,18 @@ from solomon_observational_simulator import ObservationalSimulator
 from solomon_skill_graph import SkillGraph, SandboxExecutor
 from solomon_perpetual_learning_loop import SolomonPerpetualLearningLoop
 from solomon_docker_executor import DockerSandboxExecutor
+from solomon_prometheus_curiosity import PrometheusCuriosityEngine
+from solomon_experiment_engine import ExperimentEngine
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-# Instantiate our Relational Mnemosyne SQLite Database, Model Router, and active Skill Graph
+# Instantiate our Relational Mnemosyne SQLite Database, Model Router, active Skill Graph, and Experiment Engine
 db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
 router = ModelRouter(db)
 skills_graph = SkillGraph()
 perpetual_loop = SolomonPerpetualLearningLoop(db, router, skills_graph)
+experiment_engine = ExperimentEngine(db)
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -665,6 +668,61 @@ def get_all_sandbox_skills():
         "total_skills": len(skills),
         "skills": skills
     })
+
+
+@app.route("/api/mnemosyne/curiosity/discover", methods=["POST"])
+def discover_curiosity_opportunities():
+    """
+    Scans system parameters, logs, and failure rates to discover and rank Learning Opportunities (LOs).
+    """
+    data = request.json or {}
+    opportunities = PrometheusCuriosityEngine.discover_learning_opportunities(data)
+    return jsonify({
+        "status": "success",
+        "total_opportunities_discovered": len(opportunities),
+        "priority_learning_queue": opportunities,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Select the top-ranked Learning Opportunity and execute it autonomously "
+            "using the POST /api/mnemosyne/experiment/run endpoint!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/experiment/run", methods=["POST"])
+def run_scientific_experiment():
+    """
+    Executes a formal scientific experiment based on the provided Learning Opportunity.
+    Hypothesis -> Plan -> Sandbox Execution -> Evidence Capture -> Review -> Promotion.
+    """
+    data = request.json or {}
+    opportunity = data.get("opportunity")
+
+    if not opportunity:
+        # Default to the top-ranked opportunity from our queue
+        opportunities = PrometheusCuriosityEngine.discover_learning_opportunities({})
+        opportunity = opportunities[0]
+
+    try:
+        report = experiment_engine.execute_formal_experiment(opportunity)
+        return jsonify({
+            "status": "success",
+            "scientific_experiment_report": report,
+            "recommended_next_step": (
+                "RECOMMENDED NEXT STEP:\n"
+                "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+                "The verified capability has been dynamically promoted and is active! "
+                "Execute the Model Router to hot-swap query lanes to this optimized backend.</span>"
+            )
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
 
 
 @app.route("/api/mnemosyne/perpetual-loop", methods=["POST"])

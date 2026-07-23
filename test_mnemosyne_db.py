@@ -281,6 +281,59 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_prometheus_curiosity_engine_scoring(self):
+        """
+        Directly asserts that the Prometheus Curiosity Engine calculates and sorts
+        Learning Opportunities using the Opportunity Weighting Matrix correctly.
+        """
+        from solomon_prometheus_curiosity import PrometheusCuriosityEngine
+        score = PrometheusCuriosityEngine.calculate_lo_score(10.0, 5.0, 10.0, 2.0, 2.0)
+        # score = (1.5 * 10) + (1.0 * 5) + (1.2 * 10) - (0.8 * 2) - (0.5 * 2) = 15 + 5 + 12 - 1.6 - 1 = 29.4
+        assert score == 29.4
+
+        opps = PrometheusCuriosityEngine.discover_learning_opportunities({})
+        assert len(opps) == 3
+        # Check sorted order descending
+        assert opps[0]["lo_score"] >= opps[1]["lo_score"]
+        assert opps[1]["lo_score"] >= opps[2]["lo_score"]
+
+    def test_curiosity_and_experiment_api_routes(self, client):
+        """
+        Verifies POST /api/mnemosyne/curiosity/discover and POST /api/mnemosyne/experiment/run
+        endpoints process requests, execute the formal scientific experiment pipeline,
+        and dynamically promote verified cards through the SQLite database state gates.
+        """
+        # 1. Trigger discover route
+        res_disc = client.post("/api/mnemosyne/curiosity/discover", data=json.dumps({}), content_type="application/json")
+        assert res_disc.status_code == 200
+        data_disc = res_disc.get_json()
+        assert data_disc["status"] == "success"
+        assert len(data_disc["priority_learning_queue"]) > 0
+
+        target_opp = data_disc["priority_learning_queue"][0]
+
+        # 2. Trigger experiment run route
+        payload_exp = {
+            "opportunity": target_opp
+        }
+        res_exp = client.post("/api/mnemosyne/experiment/run", data=json.dumps(payload_exp), content_type="application/json")
+        assert res_exp.status_code == 200
+        data_exp = res_exp.get_json()
+        assert data_exp["status"] == "success"
+
+        report = data_exp["scientific_experiment_report"]
+        assert report["opportunity_id"] == target_opp["id"]
+        assert report["experiment_status"] == "SUCCESS"
+        assert report["validation_state"] == "ACTIVE"
+
+        traces = report["traces"]
+        assert len(traces) == 5
+        assert "Step 1" in traces[0]
+        assert "Step 2" in traces[1]
+        assert "Step 3" in traces[2]
+        assert "Step 4" in traces[3]
+        assert "Step 5" in traces[4]
+
     def test_worker_modes_get_and_post_api(self, client):
         """
         Asserts that /api/command-center/worker-modes correctly manages and toggles helper states.
