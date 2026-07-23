@@ -1,1 +1,0 @@
-# solomon_knowledge_cards package initialization

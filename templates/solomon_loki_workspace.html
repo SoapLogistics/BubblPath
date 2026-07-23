@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solomon SOSS - Quantization & Memory Telemetry Workspace</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2.5 rounded-lg text-white animate-pulse">
+                <i class="fa-solid fa-brain text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-wider text-slate-100">SOLOMON SOSS</h1>
+                <p class="text-xs text-indigo-400 font-semibold tracking-widest uppercase">Perpetual Learning Control Center</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="flex items-center space-x-2 bg-slate-950 border border-slate-800 px-3.5 py-1.5 rounded-full text-xs">
+                <span class="h-2 w-2 bg-emerald-500 rounded-full animate-ping"></span>
+                <span class="text-slate-400 font-mono font-bold uppercase tracking-wider">Gateway Active</span>
+            </span>
+            <div class="text-xs text-slate-400">
+                <span class="font-mono">Port:</span> <span class="text-indigo-400 font-bold">10000</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
+
+        <!-- Column A: Health Telemetry & SOK State Machine (Left 5 Columns) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+
+            <!-- Panel A1: Quantization & RAM Telemetry -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-microchip text-indigo-400"></i>
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">System Telemetry Monitor</h2>
+                    </div>
+                    <span class="text-xs text-slate-500 font-mono">Live Logs</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 mb-1">RAM (RSS Footprint)</div>
+                        <div class="text-xl font-mono font-bold text-indigo-400" id="rss-footprint">{{ "{:.2f}".format(rss_memory_mb) }} MB</div>
+                        <div class="text-[10px] text-slate-500 mt-1">Cap: 1500.0 MB</div>
+                    </div>
+                    <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 mb-1">Active VRAM Savings</div>
+                        <div class="text-xl font-mono font-bold text-emerald-400">13.3 GB</div>
+                        <div class="text-[10px] text-slate-500 mt-1">Reduction: 78.2%</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-slate-400">RAM Ceiling Usage</span>
+                        <span class="text-xs font-mono font-bold text-slate-300" id="ram-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" id="ram-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-500 space-y-1">
+                    <div class="flex justify-between"><span>Active DB Size:</span> <span class="font-mono text-slate-300">124.0 KB</span></div>
+                    <div class="flex justify-between"><span>Optimizations Run:</span> <span class="font-mono text-slate-300">AST-FUSION, AST-PRUNE</span></div>
+                    <div class="flex justify-between"><span>Active Routing mode:</span> <span class="font-mono text-slate-300">Cognitive Hybrid</span></div>
+                </div>
+            </div>
+
+            <!-- Panel A2: SOK Memory State Machine -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex-1 flex flex-col space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-database text-teal-400"></i>
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">SOK Database Cards</h2>
+                    </div>
+                    <span class="text-xs text-emerald-400 font-mono flex items-center space-x-1">
+                        <i class="fa-solid fa-circle text-[8px] animate-ping"></i>
+                        <span class="pl-1">Seeded</span>
+                    </span>
+                </div>
+
+                <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1 max-h-[350px]">
+                    {% for card_id, card in seeded_cards.items() %}
+                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-lg flex flex-col space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-teal-400 font-mono">{{ card_id }}</span>
+                            <span class="text-[10px] bg-slate-900 border border-slate-800 px-2.5 py-0.5 rounded-full text-slate-400 font-medium uppercase tracking-wider">{{ card.family }}</span>
+                        </div>
+                        <div class="text-xs text-slate-300 leading-relaxed font-light">
+                            {{ card.content }}
+                        </div>
+                        {% if card.outgoing_links %}
+                        <div class="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-900">
+                            {% for link in card.outgoing_links %}
+                            <span class="text-[9px] bg-indigo-950/50 border border-indigo-900/50 text-indigo-300 px-2 py-0.5 rounded-md font-mono">
+                                <i class="fa-solid fa-arrow-right-long mr-1 text-indigo-400"></i> {{ link.relationship_type }} &rarr; {{ link.target_id }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Column B: Model Router Pathway & Interactive Simulation Console (Right 7 Columns) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+
+            <!-- Panel B1: Model Router Dynamic Pathway -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-route text-amber-400"></i>
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">Dynamic Model Router Simulator</h2>
+                    </div>
+                </div>
+
+                <!-- Input Panel -->
+                <div class="flex flex-col space-y-2">
+                    <label class="text-xs text-slate-400">Query Input Stream</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="router-query" placeholder="Enter system query..." class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono" value="Solve the multi-choice knapsack integer program with average Hessian traces">
+                        <button onclick="runRouterQuery()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider px-5 rounded-lg flex items-center space-x-1 transition-all">
+                            <i class="fa-solid fa-circle-play"></i>
+                            <span>Route</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Pathway Visualization -->
+                <div class="bg-slate-950 border border-slate-800 p-5 rounded-lg flex flex-col space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Routing Path Flow</span>
+                        <span class="text-xs font-mono font-bold" id="decision-status">Awaiting Input</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+
+                        <!-- Step 1: Input query -->
+                        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Input Query</div>
+                            <div class="text-xs font-mono text-slate-300 truncate" id="query-val">...</div>
+                        </div>
+
+                        <!-- Step 2: Similarity Check -->
+                        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center flex flex-col items-center">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">SOK Similarity</div>
+                            <div class="text-xs font-mono font-bold text-indigo-400" id="sim-val">--</div>
+                            <div class="text-[9px] text-slate-500" id="thresh-val">Thresh: 0.15</div>
+                        </div>
+
+                        <!-- Step 3: Allocated Model -->
+                        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg text-center" id="allocated-model-box">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Model Allocated</div>
+                            <div class="text-xs font-mono font-bold text-slate-400" id="model-val">--</div>
+                        </div>
+
+                    </div>
+
+                    <!-- Memory Metrics impact -->
+                    <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-900 text-center">
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">VRAM Footprint</div>
+                            <div class="text-xs font-mono text-slate-300" id="vram-val">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">Latency</div>
+                            <div class="text-xs font-mono text-slate-300" id="latency-val">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">Estimated Cost Savings</div>
+                            <div class="text-xs font-mono text-emerald-400 font-bold" id="savings-val">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel B2: Review Gate & Sandbox Skill Promoter -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex-1 flex flex-col space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">Review Gate Capability Promotion</h2>
+                    </div>
+                    <span class="text-xs text-slate-400 font-mono font-bold uppercase tracking-widest">GCPP Pipeline</span>
+                </div>
+
+                <div class="flex-1 overflow-y-auto custom-scrollbar max-h-[300px] space-y-3 pr-1">
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold font-mono text-slate-200">SKILL-ARRAY-SORT-001</span>
+                                <span class="text-[10px] text-indigo-400 font-semibold uppercase">Quicksort Array Optimizer</span>
+                            </div>
+                            <span class="text-[9px] bg-indigo-950 text-indigo-300 border border-indigo-900 px-3 py-1 rounded-full uppercase tracking-wider font-bold">APPROVED / ACTIVE</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            A highly optimized sorting capability executing QuickSort inside a timed-out sandbox subprocess environment.
+                        </p>
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-900">
+                            <span class="text-[10px] text-slate-500 font-mono">Sandbox: timed-out execution verified</span>
+                            <button class="bg-indigo-600/50 hover:bg-indigo-600 text-white text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-all" onclick="executeSkill('SKILL-ARRAY-SORT-001')">
+                                Execute Sandbox
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold font-mono text-slate-200">SKILL-DIB-001</span>
+                                <span class="text-[10px] text-amber-400 font-semibold uppercase">Infinite Loop Preventative Test</span>
+                            </div>
+                            <span class="text-[9px] bg-slate-900 text-amber-400 border border-slate-800 px-3 py-1 rounded-full uppercase tracking-wider font-bold">REVIEWED</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Simulated execution of infinite dynamic loops to test state-reverting capabilities of the Solomon rollback daemon.
+                        </p>
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-900">
+                            <span class="text-[10px] text-slate-500 font-mono">Sandbox: timeout boundaries enforced</span>
+                            <button class="bg-amber-600/50 hover:bg-amber-600 text-white text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-all" onclick="executeSkill('SKILL-DIB-001')">
+                                Execute Sandbox
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sandbox Output Console -->
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+                    <div class="text-[10px] text-slate-500 uppercase font-mono font-bold mb-1.5">Sandbox Output Terminal</div>
+                    <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-slate-300 max-h-[80px] overflow-y-auto custom-scrollbar" id="sandbox-output">
+                        $ await client.post("/api/mnemosyne/skills/execute")
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Console Footer Section -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-3 text-center text-xs text-slate-400 mt-6 shadow-xl">
+        <p>&copy; 2026 Solomon perpetual learning engine. Built for ultimate system RAM efficiency and secure execution.</p>
+    </footer>
+
+    <!-- Interactive Workspace logic -->
+    <script>
+        // Update live Progress Bar on load
+        document.addEventListener("DOMContentLoaded", function() {
+            const rssVal = parseFloat(document.getElementById("rss-footprint").innerText);
+            const cap = 1500.0;
+            const percentage = Math.min(100.0, (rssVal / cap) * 100).toFixed(1);
+            document.getElementById("ram-percentage").innerText = percentage + "%";
+            document.getElementById("ram-progress").style.width = percentage + "%";
+        });
+
+        // Query model router dynamically
+        function runRouterQuery() {
+            const query = document.getElementById("router-query").value;
+            if (!query) return;
+
+            document.getElementById("decision-status").innerText = "Routing query...";
+            document.getElementById("query-val").innerText = query;
+
+            fetch("/api/mnemosyne/route", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    query: query,
+                    threshold: 0.15
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const decision = data.routing_decision;
+                document.getElementById("decision-status").innerText = "Success";
+
+                // Set similarity score
+                document.getElementById("sim-val").innerText = decision.max_similarity.toFixed(4);
+
+                // Format Allocated Model Box and styling
+                const modelVal = document.getElementById("model-val");
+                const modelBox = document.getElementById("allocated-model-box");
+
+                modelVal.innerText = decision.routed_model;
+                if (decision.model_type === "high_precision") {
+                    modelBox.className = "bg-emerald-950 border border-emerald-800 p-3 rounded-lg text-center";
+                    modelVal.className = "text-xs font-mono font-bold text-emerald-400";
+                } else {
+                    modelBox.className = "bg-indigo-950 border border-indigo-900 p-3 rounded-lg text-center";
+                    modelVal.className = "text-xs font-mono font-bold text-indigo-400";
+                }
+
+                // Render metrics impact
+                document.getElementById("vram-val").innerText = decision.active_ram_footprint_gb + " GB";
+                document.getElementById("latency-val").innerText = decision.estimated_latency_ms + " ms";
+                document.getElementById("savings-val").innerText = decision.resource_impact.cost_savings_percent + "%";
+            })
+            .catch(err => {
+                document.getElementById("decision-status").innerText = "Routing failed";
+                console.error(err);
+            });
+        }
+
+        // Run isolated Sandbox capability
+        function executeSkill(skillId) {
+            const terminal = document.getElementById("sandbox-output");
+            terminal.innerText = `Executing ${skillId}... Please wait...`;
+
+            fetch("/api/mnemosyne/skills/execute", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    skill_id: skillId,
+                    timeout_sec: 1.5
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const exec = data.sandboxed_execution_result;
+                if (exec.success) {
+                    terminal.className = "bg-slate-900 p-2.5 rounded font-mono text-xs text-emerald-400 max-h-[80px] overflow-y-auto custom-scrollbar";
+                    terminal.innerText = `[SUCCESS] Output: ${JSON.stringify(exec.return_value)}`;
+                } else {
+                    terminal.className = "bg-slate-900 p-2.5 rounded font-mono text-xs text-amber-500 max-h-[80px] overflow-y-auto custom-scrollbar";
+                    terminal.innerText = `[TIMEOUT/INTERCEPTED] Error: ${exec.error}`;
+
+                    // Trigger SOSS self-repair sequence automatically upon failure!
+                    terminal.innerText += "\n[SELF-HEALING] Transmitting traceback to /api/mnemosyne/repair/evaluate...";
+                    triggerSelfRepair(skillId, exec.error);
+                }
+            })
+            .catch(err => {
+                terminal.className = "bg-slate-900 p-2.5 rounded font-mono text-xs text-red-400 max-h-[80px] overflow-y-auto custom-scrollbar";
+                terminal.innerText = `[ERROR] Subprocess connection failed: ${err}`;
+            });
+        }
+
+        // Automatic self-repair triggers
+        function triggerSelfRepair(skillId, errorMsg) {
+            const terminal = document.getElementById("sandbox-output");
+            fetch("/api/mnemosyne/repair/evaluate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    skill_id: skillId,
+                    success: false,
+                    error_msg: errorMsg,
+                    traceback: "Traceback sandbox run loop auto-intercept."
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const rep = data.self_repair_action_report;
+                terminal.innerText += `\n[REPAIRED] Failure Card created: ${rep.failure_card_created}. Rolled back branch to ${rep.rollback_status.active_development_branch_alignment}. System restored!`;
+            })
+            .catch(err => {
+                console.error(err);
+            });
+        }
+    </script>
+</body>
+</html>
