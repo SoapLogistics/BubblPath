@@ -64,6 +64,32 @@ class SolomonMnemosyneDB:
             )
         """)
 
+        # 3. Create worker_modes table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS worker_modes (
+                worker_id TEXT PRIMARY KEY,
+                worker_name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                mode TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+
+        # Check if table is empty and seed if necessary
+        cursor.execute("SELECT COUNT(*) FROM worker_modes")
+        if cursor.fetchone()[0] == 0:
+            import datetime
+            now_str = datetime.datetime.now().isoformat()
+            cursor.executemany("""
+                INSERT INTO worker_modes (worker_id, worker_name, role, mode, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, [
+                ('gabriel', 'Gabriel', 'COMMAND_CENTER_RELAY', 'READ_ONLY', now_str),
+                ('mnemosyne', 'Mnemosyne', 'MEMORY_CONTEXT', 'READ_ONLY', now_str),
+                ('prometheus', 'Prometheus', 'BUILD_PLANNER', 'DRY_RUN_ONLY', now_str),
+                ('loki', 'Loki', 'SPORTS_RESEARCH_MODEL', 'RESEARCH_ONLY', now_str)
+            ])
+
         conn.commit()
         conn.close()
 
@@ -134,6 +160,44 @@ class SolomonMnemosyneDB:
                     embedding=excluded.embedding,
                     validation_state=excluded.validation_state
             """, (card_id, family, focus, content, embedding_json, confidence, existing_state))
+            conn.commit()
+            return True
+        except sqlite3.Error:
+            return False
+        finally:
+            conn.close()
+
+    def get_worker_modes(self) -> List[Dict[str, Any]]:
+        """
+        Retrieves all registered helper worker modes from the SQLite store.
+        """
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM worker_modes")
+            return [dict(r) for r in cursor.fetchall()]
+        except sqlite3.Error:
+            return []
+        finally:
+            conn.close()
+
+    def update_worker_mode(self, worker_id: str, mode: str) -> bool:
+        """
+        Dynamically updates the operational mode of a helper worker.
+        """
+        import datetime
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT 1 FROM worker_modes WHERE worker_id = ?", (worker_id.lower(),))
+            if not cursor.fetchone():
+                return False
+            cursor.execute("""
+                UPDATE worker_modes
+                SET mode = ?, updated_at = ?
+                WHERE worker_id = ?
+            """, (mode.upper(), datetime.datetime.now().isoformat(), worker_id.lower()))
             conn.commit()
             return True
         except sqlite3.Error:

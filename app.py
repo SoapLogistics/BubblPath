@@ -23,7 +23,7 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
 router = ModelRouter(db)
 skills_graph = SkillGraph()
-perpetual_loop = SolomonPerpetualLearningLoop(db, router)
+perpetual_loop = SolomonPerpetualLearningLoop(db, router, skills_graph)
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -621,6 +621,37 @@ def execute_observational_profiling():
         )
     }
     return jsonify(observational_response)
+
+
+@app.route("/api/command-center/worker-modes", methods=["GET", "POST"])
+def get_or_update_worker_modes():
+    """
+    Exposes and allows updating active operational modes for cognitive helpers.
+    Transitions worker modes from safe dry-runs to live execution dynamically.
+    """
+    if request.method == "POST":
+        data = request.json or {}
+        worker_id = data.get("worker_id")
+        mode = data.get("mode")
+
+        if not worker_id or not mode:
+            return jsonify({"error": "Missing worker_id or mode"}), 400
+
+        updated = db.update_worker_mode(worker_id, mode)
+        if not updated:
+            return jsonify({"error": f"Worker '{worker_id}' not found."}), 404
+
+    modes = db.get_worker_modes()
+    return jsonify({
+        "status": "success",
+        "worker_modes": modes,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Formally transition Mnemosyne and Gabriel to 'LIVE' or 'READ_WRITE' "
+            "to physically commit generated capabilities directly to production files!</span>"
+        )
+    })
 
 
 @app.route("/api/mnemosyne/skills", methods=["GET"])

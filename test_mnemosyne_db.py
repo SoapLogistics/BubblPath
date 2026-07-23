@@ -281,6 +281,83 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_worker_modes_get_and_post_api(self, client):
+        """
+        Asserts that /api/command-center/worker-modes correctly manages and toggles helper states.
+        """
+        # GET baseline check
+        response_get = client.get("/api/command-center/worker-modes")
+        assert response_get.status_code == 200
+        data_get = response_get.get_json()
+        assert data_get["status"] == "success"
+        assert len(data_get["worker_modes"]) == 4
+
+        # POST update mode
+        payload = {
+            "worker_id": "gabriel",
+            "mode": "LIVE"
+        }
+        response_post = client.post(
+            "/api/command-center/worker-modes",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        assert response_post.status_code == 200
+        data_post = response_post.get_json()
+        assert data_post["status"] == "success"
+
+        # Check update persisted
+        modes = data_post["worker_modes"]
+        gabriel_mode = [m for m in modes if m["worker_id"] == "gabriel"][0]
+        assert gabriel_mode["mode"] == "LIVE"
+
+        # Restore back to READ_ONLY for subsequent test isolation
+        payload_restore = {"worker_id": "gabriel", "mode": "READ_ONLY"}
+        client.post("/api/command-center/worker-modes", data=json.dumps(payload_restore), content_type="application/json")
+
+    def test_perpetual_learning_loop_phase2_live_bypasses_and_phase3_auto_scans(self, client):
+        """
+        Verifies both Phase 2 physical commits (when in LIVE mode) and Phase 3 Automated Review Gate
+        promotions with security audits.
+        """
+        # 1. Update Gabriel to LIVE mode to trigger Phase 2 physical commits
+        payload_mode = {"worker_id": "gabriel", "mode": "LIVE"}
+        client.post("/api/command-center/worker-modes", data=json.dumps(payload_mode), content_type="application/json")
+
+        payload_loop = {
+            "task": "Test Live Compilation and Physical Writing",
+            "target_service": "kubernetes-cli-live-test"
+        }
+        response = client.post(
+            "/api/mnemosyne/perpetual-loop",
+            data=json.dumps(payload_loop),
+            content_type="application/json"
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        report = data["perpetual_learning_report"]
+        impact = report["phase2_live_impact"]
+        assert impact["active_mode"] == "LIVE"
+        assert impact["physical_file_written"] is True
+        assert impact["registered_in_active_graph"] is True
+
+        review_impact = report["phase3_review_gate_impact"]
+        assert review_impact["security_scan_passed"] is True
+        assert review_impact["review_gate_promoted"] is True
+
+        # Assert file was physically written to disk
+        filepath = "solomon_rebuilt_kubernetes_cli_live_test.py"
+        assert os.path.exists(filepath) is True
+
+        # Clean up files from disk
+        os.remove(filepath)
+
+        # Restore worker mode back to READ_ONLY
+        payload_restore = {"worker_id": "gabriel", "mode": "READ_ONLY"}
+        client.post("/api/command-center/worker-modes", data=json.dumps(payload_restore), content_type="application/json")
+
         # Trigger validation failure via non-numeric threshold parameter
         payload = {"query": "test query", "threshold": "invalid_threshold"}
         response = client.post(
@@ -525,8 +602,8 @@ class TestMnemosyneAPIIntegration:
         traces = report["cognitive_execution_traces"]
         assert len(traces) > 0
         assert "Stage 1 & 2" in traces[0]
-        assert "Review Gate" in traces[3]
-        assert "Stage 5 & 6" in traces[6]
+        assert "Review Gate" in traces[3] or "Phase 3" in traces[3]
+        assert "Stage 5 & 6" in traces[-1]
         assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
 
     def test_update_validation_state_success_and_failure(self, test_db):

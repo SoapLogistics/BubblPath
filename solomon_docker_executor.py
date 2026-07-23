@@ -12,7 +12,10 @@ import os
 import sys
 import json
 import tempfile
-import docker
+try:
+    import docker
+except ImportError:
+    docker = None
 import time
 import logging
 from typing import Dict, Any, List, Optional
@@ -62,6 +65,10 @@ class DockerSandboxExecutor:
             f.write(full_code)
 
         # Initialize Docker client
+        if docker is None:
+            logger.warning("Docker package not installed. Falling back to SandboxExecutor.")
+            return cls._execute_fallback(source_code, entry_function_call, timeout_sec)
+
         try:
             client = docker.from_env()
         except Exception as e:
