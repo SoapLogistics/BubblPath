@@ -324,6 +324,34 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Gather independent validation signatures and numeric scores from five active workers (Gabriel, Mnemosyne, Prometheus, Loki, Codex).
   3. Compute the unified weighted agreement index, blocking promotion if the weighted consensus score fails to meet the safety supermajority threshold of $0.66$.
 
+### Phase XXXII: Ternary-Weight Entropy Regularizer and Calibration Probe
+* **Objective**: Optimize ternary weight boundaries for 1.58-bit models (mapping values strictly to $\{-1, 0, 1\}$) by minimizing quantization entropy loss.
+* **Action Steps**:
+  1. Expose `POST /api/quantization/ternary-entropy` inside `app.py`.
+  2. Gather layer tensor weight distributions and calculate Shannon entropy of the mapped ternary state matrix.
+  3. Output optimal scaling and threshold boundaries ($\Delta = 0.7 \times E[|W|]$) to align weight layers cleanly.
+
+### Phase XXXIII: Dynamic KV-Cache PagedAttention Compressor and Eviction Router
+* **Objective**: Reclaim up to 60% of active context memory pressure by dynamically compressing and evicting irrelevant tokens from paged KV caches.
+* **Action Steps**:
+  1. Expose `POST /api/quantization/kv-cache/compress` inside `app.py`.
+  2. Parse active block tokens and their corresponding attention scoring matrices.
+  3. Execute an eviction routing loop that retains high-attention key headers while quantizing/compressing low-utility context segments into FP8 or INT4 blocks.
+
+### Phase XXXIV: Activation Outlier Mitigation with Hadamard Rotations
+* **Objective**: Neutralize activation outlier channels mathematically prior to quantization by executing simulated Hadamard learned rotation matrices.
+* **Action Steps**:
+  1. Expose `POST /api/quantization/spinquant/rotate` inside `app.py`.
+  2. Parse activation vectors and apply Walsh-Hadamard learned orthogonal rotation matrices to distribute channel magnitudes evenly.
+  3. Return rotated tensor fields along with maximum/minimum outlier range reduction ratios.
+
+### Phase XXXV: Layer-Wise QAT Entropy Distiller
+* **Objective**: Bridge the accuracy gap between heavy teacher models (FP16) and student models (INT4/INT2) during simulated Quantization-Aware Training (QAT).
+* **Action Steps**:
+  1. Expose `POST /api/quantization/qat/distill` inside `app.py`.
+  2. Map KL-Divergence loss profiles between layer logits of teacher and student networks.
+  3. Output refined student scaling factors and temperature optimization parameters to maximize layer-wise semantic preservation.
+
 ---
 
 ## 5. Summary of Recommended Actions

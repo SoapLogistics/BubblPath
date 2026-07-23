@@ -1055,3 +1055,157 @@ def test_agent_consensus_protocol(flask_client):
     assert data_authorized["status"] == "AUTHORIZED"
     assert data_authorized["consensus_authorized"] is True
     assert data_authorized["weighted_consensus_score"] >= 0.8
+
+def test_ternary_entropy_regularizer(flask_client):
+    """Verifies Phase XXXII ternary-weight entropy and threshold calculations with edge cases."""
+    # 1. Missing payload key
+    res_err1 = flask_client.post("/api/quantization/ternary-entropy", data=json.dumps({}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'weights'" in res_err1.get_json()["error"]
+
+    # 2. Invalid non-empty list of float values
+    res_err2 = flask_client.post("/api/quantization/ternary-entropy", data=json.dumps({"weights": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "must be a non-empty list" in res_err2.get_json()["error"]
+
+    # 3. Non-numerical float list values
+    res_err3 = flask_client.post("/api/quantization/ternary-entropy", data=json.dumps({"weights": ["a", "b"]}), content_type="application/json")
+    assert res_err3.status_code == 400
+    assert "must be numerical float values" in res_err3.get_json()["error"]
+
+    # 4. Successful ternary mappings and Shannon entropy calculations
+    res_success = flask_client.post(
+        "/api/quantization/ternary-entropy",
+        data=json.dumps({"weights": [0.1, -0.8, 1.2, 0.05, -0.01, 1.5, -1.1]}),
+        content_type="application/json"
+    )
+    assert res_success.status_code == 200
+    data = res_success.get_json()
+    assert data["status"] == "SUCCESS"
+    assert "clipping_threshold_delta" in data
+    assert "shannon_entropy_bits" in data
+    assert "mapped_ternary_states" in data
+    assert isinstance(data["state_counts"], dict)
+    assert sum(data["state_counts"].values()) == 7
+
+def test_kv_cache_compressor(flask_client):
+    """Verifies Phase XXXIII dynamic KV Cache compression and eviction rules."""
+    # 1. Missing payload key
+    res_err1 = flask_client.post("/api/quantization/kv-cache/compress", data=json.dumps({}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'blocks'" in res_err1.get_json()["error"]
+
+    # 2. Invalid block parameter type
+    res_err2 = flask_client.post("/api/quantization/kv-cache/compress", data=json.dumps({"blocks": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "must be a list of block objects" in res_err2.get_json()["error"]
+
+    # 3. Eviction and compression rules mapping based on attention score
+    res_success = flask_client.post(
+        "/api/quantization/kv-cache/compress",
+        data=json.dumps({
+            "target_compression_ratio": 0.5,
+            "blocks": [
+                {
+                    "block_id": 101,
+                    "token_count": 16,
+                    "attention_scores": [0.9, 0.85, 0.95]  # High attention -> RETAIN_FP16
+                },
+                {
+                    "block_id": 102,
+                    "token_count": 16,
+                    "attention_scores": [0.5, 0.45, 0.55]  # Moderate attention -> COMPRESS_FP8
+                },
+                {
+                    "block_id": 103,
+                    "token_count": 16,
+                    "attention_scores": [0.1, 0.2, 0.05]   # Low attention -> EVICT_INT4
+                }
+            ]
+        }),
+        content_type="application/json"
+    )
+    assert res_success.status_code == 200
+    data = res_success.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["total_original_bytes"] == 16 * 128 * 2 * 3
+    assert data["total_reclaimed_bytes"] > 0
+    assert "reclaimed_percentage" in data
+
+    # Assert action taken mapping
+    block_actions = {b["block_id"]: b["action_taken"] for b in data["blocks"]}
+    assert block_actions[101] == "RETAIN_FP16"
+    assert block_actions[102] == "COMPRESS_FP8"
+    assert block_actions[103] == "EVICT_INT4"
+
+def test_spinquant_rotations(flask_client):
+    """Verifies Phase XXXIV Walsh-Hadamard orthogonal rotation matrix spreads activations cleanly."""
+    # 1. Missing payload key
+    res_err1 = flask_client.post("/api/quantization/spinquant/rotate", data=json.dumps({}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'activations'" in res_err1.get_json()["error"]
+
+    # 2. Invalid parameter type
+    res_err2 = flask_client.post("/api/quantization/spinquant/rotate", data=json.dumps({"activations": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "must be a non-empty list of numerical values" in res_err2.get_json()["error"]
+
+    # 3. Non-numerical values list
+    res_err3 = flask_client.post("/api/quantization/spinquant/rotate", data=json.dumps({"activations": [1.0, "bad"]}), content_type="application/json")
+    assert res_err3.status_code == 400
+    assert "must be numerical float values" in res_err3.get_json()["error"]
+
+    # 4. Successful rotation with outlier spreading checks
+    res_success = flask_client.post(
+        "/api/quantization/spinquant/rotate",
+        data=json.dumps({"activations": [10.0, -1.0, 0.5, -0.5]}),
+        content_type="application/json"
+    )
+    assert res_success.status_code == 200
+    data = res_success.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["original_max_outlier"] == 10.0
+    assert data["rotated_max_outlier"] < 10.0  # Spun outlier channel peak should be reduced
+    assert data["outlier_reduction_ratio"] > 1.0
+    assert len(data["rotated_activations"]) == 4
+
+def test_qat_distillation(flask_client):
+    """Verifies Phase XXXV layer-wise QAT temperature-scaled logit KL-Divergence measurements."""
+    # 1. Missing payload keys
+    res_err1 = flask_client.post("/api/quantization/qat/distill", data=json.dumps({"teacher_logits": [1.0]}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'teacher_logits' or 'student_logits'" in res_err1.get_json()["error"]
+
+    # 2. Invalid parameter types
+    res_err2 = flask_client.post("/api/quantization/qat/distill", data=json.dumps({"teacher_logits": [1.0], "student_logits": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "must be list objects" in res_err2.get_json()["error"]
+
+    # 3. Size mismatch
+    res_err3 = flask_client.post("/api/quantization/qat/distill", data=json.dumps({"teacher_logits": [1.0], "student_logits": [1.0, 2.0]}), content_type="application/json")
+    assert res_err3.status_code == 400
+    assert "must be non-empty and of identical lengths" in res_err3.get_json()["error"]
+
+    # 4. Non-numerical elements
+    res_err4 = flask_client.post("/api/quantization/qat/distill", data=json.dumps({"teacher_logits": ["bad"], "student_logits": [1.0]}), content_type="application/json")
+    assert res_err4.status_code == 400
+    assert "must be numerical float values" in res_err4.get_json()["error"]
+
+    # 5. Successful KL-Divergence loss calculation
+    res_success = flask_client.post(
+        "/api/quantization/qat/distill",
+        data=json.dumps({
+            "teacher_logits": [2.0, 1.0, 0.1],
+            "student_logits": [1.8, 1.1, 0.15],
+            "temperature": 1.5
+        }),
+        content_type="application/json"
+    )
+    assert res_success.status_code == 200
+    data = res_success.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["temperature"] == 1.5
+    assert data["kl_divergence_loss"] >= 0.0
+    assert len(data["teacher_probabilities"]) == 3
+    assert len(data["student_probabilities"]) == 3
+    assert "recommended_student_scaling_adjust" in data

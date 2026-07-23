@@ -1714,6 +1714,237 @@ def execute_agent_consensus_vote():
         "byzantine_fault_tolerance_level": "f=1"
     })
 
+# API route to calculate ternary weight entropy metrics (Phase XXXII)
+@app.route("/api/quantization/ternary-entropy", methods=["POST"])
+def calculate_ternary_entropy():
+    """
+    Ternary-Weight Entropy Regularizer and Calibration Probe.
+    Measures Shannon entropy of mapped ternary weights {-1, 0, 1} to find optimal clipping thresholds.
+    """
+    data = request.get_json(silent=True) or {}
+    weights = data.get("weights")
+
+    if weights is None:
+        return jsonify({"error": "Missing key 'weights' inside payload."}), 400
+
+    if not isinstance(weights, list) or len(weights) == 0:
+        return jsonify({"error": "Argument 'weights' must be a non-empty list of float values."}), 400
+
+    try:
+        float_weights = [float(w) for w in weights]
+    except (ValueError, TypeError):
+        return jsonify({"error": "All elements in 'weights' must be numerical float values."}), 400
+
+    # Calculate optimal threshold Delta = 0.7 * Mean absolute weight
+    mean_abs = sum(abs(w) for w in float_weights) / len(float_weights)
+    delta = 0.7 * mean_abs
+
+    # Map weights to ternary states {-1, 0, 1}
+    states = []
+    counts = {-1: 0, 0: 0, 1: 0}
+    for w in float_weights:
+        if w < -delta:
+            val = -1
+        elif w > delta:
+            val = 1
+        else:
+            val = 0
+        states.append(val)
+        counts[val] += 1
+
+    # Calculate Shannon Entropy of the ternary distribution
+    n = len(float_weights)
+    entropy = 0.0
+    for state, count in counts.items():
+        prob = count / n
+        if prob > 0:
+            entropy -= prob * math.log2(prob)
+
+    return jsonify({
+        "status": "SUCCESS",
+        "clipping_threshold_delta": round(delta, 4),
+        "shannon_entropy_bits": round(entropy, 4),
+        "state_counts": counts,
+        "mapped_ternary_states": states[:100],  # Return up to 100 values to avoid huge payload size
+        "average_absolute_weight": round(mean_abs, 4),
+        "entropy_within_optimal_bounds": 0.8 <= entropy <= 1.58
+    })
+
+# API route to compress active KV Cache blocks (Phase XXXIII)
+@app.route("/api/quantization/kv-cache/compress", methods=["POST"])
+def compress_kv_cache():
+    """
+    Dynamic KV-Cache PagedAttention Compressor and Eviction Router.
+    Analyzes token attention scores to compress/evict low-utility blocks to reclaim RAM.
+    """
+    data = request.get_json(silent=True) or {}
+    blocks = data.get("blocks")
+    target_compression_ratio = float(data.get("target_compression_ratio", 0.5))
+
+    if blocks is None:
+        return jsonify({"error": "Missing key 'blocks' inside payload."}), 400
+
+    if not isinstance(blocks, list):
+        return jsonify({"error": "Argument 'blocks' must be a list of block objects."}), 400
+
+    compressed_blocks = []
+    total_reclaimed_bytes = 0
+    total_original_bytes = 0
+
+    for i, b in enumerate(blocks):
+        block_id = b.get("block_id", i)
+        token_count = int(b.get("token_count", 16))
+        attention_scores = b.get("attention_scores", [])
+        original_size = token_count * 128 * 2  # mock calculation (2 bytes per FP16 element)
+        total_original_bytes += original_size
+
+        # Eviction router rule: Keep high-attention tokens, compress the rest
+        avg_attention = sum(attention_scores) / len(attention_scores) if attention_scores else 0.5
+
+        # Determine compression format
+        if avg_attention >= 0.8:
+            action = "RETAIN_FP16"
+            compressed_size = original_size
+        elif avg_attention >= 0.4:
+            action = "COMPRESS_FP8"
+            compressed_size = int(original_size * 0.5)
+        else:
+            action = "EVICT_INT4"
+            compressed_size = int(original_size * 0.25)
+
+        reclaimed = original_size - compressed_size
+        total_reclaimed_bytes += reclaimed
+
+        compressed_blocks.append({
+            "block_id": block_id,
+            "original_size_bytes": original_size,
+            "compressed_size_bytes": compressed_size,
+            "action_taken": action,
+            "reclaimed_bytes": reclaimed,
+            "average_attention_score": round(avg_attention, 4)
+        })
+
+    reclaimed_percent = (total_reclaimed_bytes / total_original_bytes * 100) if total_original_bytes > 0 else 0.0
+
+    return jsonify({
+        "status": "SUCCESS",
+        "target_compression_ratio": target_compression_ratio,
+        "total_original_bytes": total_original_bytes,
+        "total_reclaimed_bytes": total_reclaimed_bytes,
+        "reclaimed_percentage": round(reclaimed_percent, 2),
+        "compressed_blocks_count": len(blocks),
+        "blocks": compressed_blocks,
+        "kv_paging_status": "OPTIMIZED" if reclaimed_percent >= (target_compression_ratio * 100) else "SUB_OPTIMAL"
+    })
+
+# API route to apply Walsh-Hadamard learned orthogonal rotations (Phase XXXIV)
+@app.route("/api/quantization/spinquant/rotate", methods=["POST"])
+def rotate_spinquant_tensors():
+    """
+    Activation Outlier Mitigation with Hadamard Rotations.
+    Mathematically distributes outlier channel peaks across dimensions prior to quantization.
+    """
+    data = request.get_json(silent=True) or {}
+    activations = data.get("activations")
+
+    if activations is None:
+        return jsonify({"error": "Missing key 'activations' inside payload."}), 400
+
+    if not isinstance(activations, list) or len(activations) == 0:
+        return jsonify({"error": "Argument 'activations' must be a non-empty list of numerical values."}), 400
+
+    try:
+        floats = [float(x) for x in activations]
+    except (ValueError, TypeError):
+        return jsonify({"error": "All elements in 'activations' must be numerical float values."}), 400
+
+    # Standard Walsh-Hadamard Transform simulation
+    # For simulation, we compute the maximum outlier magnitude before rotation
+    max_before = max(abs(x) for x in floats) if floats else 0.0
+
+    # Simple Hadamard-like orthogonal mixing for 1D:
+    # y[i] = sum_j (H_ij * x_j) / sqrt(N)
+    # We will simulate the spreading effect: all channels are mixed using a deterministic rotation matrix
+    n = len(floats)
+    rotated = []
+    for i in range(n):
+        val = 0.0
+        for j, x in enumerate(floats):
+            # Deterministic orthogonal sign matrix entry (+1 or -1)
+            sign = 1 if ((i & j).bit_count() % 2 == 0) else -1
+            val += sign * x
+        rotated.append(val / math.sqrt(n))
+
+    max_after = max(abs(y) for y in rotated) if rotated else 0.0
+    reduction_ratio = (max_before / max_after) if max_after > 0 else 1.0
+
+    return jsonify({
+        "status": "SUCCESS",
+        "original_max_outlier": round(max_before, 4),
+        "rotated_max_outlier": round(max_after, 4),
+        "outlier_reduction_ratio": round(reduction_ratio, 4),
+        "rotated_activations": [round(y, 4) for y in rotated],
+        "spinquant_rotation_stable": reduction_ratio >= 1.0
+    })
+
+# API route to simulate Layer-Wise QAT logit distillation (Phase XXXV)
+@app.route("/api/quantization/qat/distill", methods=["POST"])
+def distill_qat_logits():
+    """
+    Layer-Wise QAT Entropy Distiller.
+    Measures KL-Divergence loss between teacher logits and quantized student logits.
+    """
+    data = request.get_json(silent=True) or {}
+    teacher_logits = data.get("teacher_logits")
+    student_logits = data.get("student_logits")
+    temperature = float(data.get("temperature", 2.0))
+
+    if teacher_logits is None or student_logits is None:
+        return jsonify({"error": "Missing key 'teacher_logits' or 'student_logits' in payload."}), 400
+
+    if not isinstance(teacher_logits, list) or not isinstance(student_logits, list):
+        return jsonify({"error": "Logits must be list objects of numerical values."}), 400
+
+    if len(teacher_logits) != len(student_logits) or len(teacher_logits) == 0:
+        return jsonify({"error": "Teacher and student logit lists must be non-empty and of identical lengths."}), 400
+
+    try:
+        t_floats = [float(x) for x in teacher_logits]
+        s_floats = [float(x) for x in student_logits]
+    except (ValueError, TypeError):
+        return jsonify({"error": "All logit elements must be numerical float values."}), 400
+
+    # Softmax function with temperature scaling
+    def softmax_temp(logits, temp):
+        exp_vals = []
+        for x in logits:
+            # clip exponent argument for numerical safety
+            exp_vals.append(math.exp(min(max(x / temp, -20.0), 20.0)))
+        total_exp = sum(exp_vals)
+        return [e / total_exp for e in exp_vals] if total_exp > 0 else [1.0/len(logits)] * len(logits)
+
+    p_teacher = softmax_temp(t_floats, temperature)
+    q_student = softmax_temp(s_floats, temperature)
+
+    # Kullback-Leibler Divergence: D_KL(P || Q) = sum( P[i] * log( P[i] / Q[i] ) )
+    kl_divergence = 0.0
+    for p, q in zip(p_teacher, q_student):
+        if p > 0 and q > 0:
+            kl_divergence += p * math.log(p / q)
+
+    # Calculate recommended student dynamic scaling factor adjustment
+    recommended_scaling_adjust = 1.0 + (kl_divergence * 0.1)
+
+    return jsonify({
+        "status": "SUCCESS",
+        "temperature": temperature,
+        "kl_divergence_loss": round(kl_divergence, 6),
+        "teacher_probabilities": [round(p, 4) for p in p_teacher],
+        "student_probabilities": [round(q, 4) for q in q_student],
+        "recommended_student_scaling_adjust": round(recommended_scaling_adjust, 4),
+        "distillation_loss_stable": kl_divergence <= 0.5
+    })
+
 # API route to trigger forced telemetry guardrails checks programmatically
 @app.route("/api/command-center/guardrails", methods=["POST"])
 def trigger_guardrails_endpoint():
