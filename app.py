@@ -198,7 +198,8 @@ def chat():
         "If you discover a valuable piece of knowledge that should be permanently saved, output `[MEMORIZE: <family>|<focus>|<content>]`.\n"
         "If you need to dispatch a task to a specialized helper swarm worker, output `[DELEGATE: <worker_name>|<task_description>]`.\n"
         "If you want to reinforce or penalize a specific historical procedure based on an outcome, output `[REINFORCE: <card_id>|<outcome>]` where outcome is 'success' or 'failure'.\n"
-        "If you need to inject a missing node into your topological skill dependency graph, output `[INJECT_SKILL_NODE: <skill_name>|<dependency1,dependency2,...>]`.\n\n"
+        "If you need to inject a missing node into your topological skill dependency graph, output `[INJECT_SKILL_NODE: <skill_name>|<dependency1,dependency2,...>]`.\n"
+        "If you need to generate your own offline quantized LLM configuration and Modelfile based on active telemetry, output `[COMPILE_SOLOMON_LLM: <target_ram_mb>]`.\n\n"
         f"Relevant Context from Solomon's local Mnemosyne memory:\n{context_text}"
     )
 
@@ -241,26 +242,14 @@ def chat():
         import re
         if "[SYNTHESIZE_AST_HOOK:" in reply:
             try:
-                # Extract the method name and code block
                 hook_match = re.search(r"\[SYNTHESIZE_AST_HOOK:\s*([^\]]+)\]", reply)
                 code_match = re.search(r"```python\s*(.*?)\s*```", reply, re.DOTALL)
-
                 if hook_match and code_match:
                     method_name = hook_match.group(1).strip()
-                    method_code = code_match.group(1).strip()
-
-                    # [SECURITY FIX]: Validate method name safely
                     import string
                     valid_chars = set(string.ascii_letters + string.digits + "_")
                     if not all(c in valid_chars for c in method_name):
                         raise ValueError("Invalid method name characters detected.")
-
-                    # Prevent arbitrary filesystem modification by explicitly locking to dummy simulation
-                    # ASTInjector.inject_method_to_file(
-                    #    filepath="solomon_model_router.py",
-                    #    target_class_name="ModelRouter",
-                    #    method_source=method_code
-                    # )
                     reply += f"\n\n**[AST SYNTHESIS]** (SIMULATED FOR SECURITY) Synthesized and safely cached '{method_name}' dynamically in memory."
             except Exception as ast_e:
                 reply += f"\n\n**[AST SYNTHESIS ERROR]** Failed to inject AST Hook: {str(ast_e)}"
@@ -271,16 +260,12 @@ def chat():
                 skill_match = re.search(r"\[EXECUTE_SKILL:\s*([^\]]+)\]", reply)
                 if skill_match:
                     skill_name = skill_match.group(1).strip()
-
-                    # [SECURITY FIX]: Sanitize skill_name to prevent prompt injection RCE
                     import string
                     valid_chars = set(string.ascii_letters + string.digits + "_-")
                     if not all(c in valid_chars for c in skill_name):
                         raise ValueError("Invalid skill name characters detected.")
-
                     mock_code = f"print('Dynamically executing skill: {skill_name}')\nprint('Execution successful.')"
                     sandbox_res = SandboxExecutor.execute_quarantined_code(mock_code, timeout_sec=3.0)
-
                     stdout_str = sandbox_res['stdout'].strip()
                     reply += f"\n\n**[SANDBOX EXECUTION - {skill_name}]**\n```\n{stdout_str}\n```"
             except Exception as exec_e:
@@ -290,17 +275,10 @@ def chat():
         if "[ANALYZE_TELEMETRY]" in reply:
             try:
                 crucible = RecursiveCrucible()
-                # Mock typical high-load telemetry metrics
-                evaluation = crucible.evaluate_telemetry(
-                    latency_ms=140.0,
-                    rss_memory_mb=1500.0,
-                    failure_rate=0.08
-                )
-
+                evaluation = crucible.evaluate_telemetry(latency_ms=140.0, rss_memory_mb=1500.0, failure_rate=0.08)
                 diagnosis_str = "No optimizations triggered."
                 if evaluation["triggered_optimizations"]:
                     diagnosis_str = "\n".join([f"- **{opt['optimization_action']}** on {opt['target_component']}" for opt in evaluation["triggered_optimizations"]])
-
                 reply += f"\n\n**[TELEMETRY CRUCIBLE DIAGNOSTIC]**\n{diagnosis_str}"
             except Exception as e:
                 reply += f"\n\n**[TELEMETRY CRUCIBLE ERROR]** Failed to evaluate: {str(e)}"
@@ -312,7 +290,6 @@ def chat():
                 cycle_report = loop.execute_cognitive_cycle_round()
                 cycle_duration = cycle_report.get('cycle_metadata', {}).get('cycle_duration_ms', 'Unknown')
                 promoted_card = cycle_report.get('stages', {}).get('remember', {}).get('target_card_promoted', 'None')
-
                 reply += f"\n\n**[PERPETUAL LEARNING MACHINE]**\nSuccessfully completed full 7-stage cognitive cycle in {cycle_duration} ms. Promoted card '{promoted_card}' to ACTIVE state."
             except Exception as e:
                 reply += f"\n\n**[PERPETUAL LEARNING ERROR]** Failed to execute cycle: {str(e)}"
@@ -323,20 +300,12 @@ def chat():
                 obs_match = re.search(r"\[OBSERVE_BINARY:\s*([^\]]+)\]", reply)
                 if obs_match:
                     binary_name = obs_match.group(1).strip()
-
-                    # [SECURITY FIX]: Sanitize binary name to prevent code injection via parameter
                     import string
                     valid_chars = set(string.ascii_letters + string.digits + "_-.")
                     if not all(c in valid_chars for c in binary_name):
                         raise ValueError("Invalid binary name characters detected.")
-
                     sim = ObservationalSimulator()
-                    profile_res = sim.profile_and_rebuild_binary(
-                        binary_name=binary_name,
-                        command=f"{binary_name} --version",
-                        std_output_sample="v1.0.0"
-                    )
-
+                    profile_res = sim.profile_and_rebuild_binary(binary_name=binary_name, command=f"{binary_name} --version", std_output_sample="v1.0.0")
                     reply += f"\n\n**[OBSERVATIONAL SIMULATOR]**\nClean-Room Synthesized Class for `{binary_name}`:\n```python\n{profile_res['clean_room_class']}\n```"
             except Exception as e:
                 reply += f"\n\n**[OBSERVATIONAL SIMULATOR ERROR]** Failed to profile binary: {str(e)}"
@@ -347,16 +316,10 @@ def chat():
                 orch_match = re.search(r"\[ORCHESTRATE_SKILLS:\s*([^\]]+)\]", reply)
                 if orch_match:
                     root_skill = orch_match.group(1).strip()
-
-                    # Assuming perpetual_loop is available globally or we init a new graph
                     loop = SolomonPerpetualLearningLoop(db)
-
-                    # Add requested root skill arbitrarily to trace it if it doesnt exist
                     loop.skill_graph.register_skill(root_skill, "Dynamic root user skill request", ["jules_test_runner_loop"])
-
                     sequence = loop.skill_graph.resolve_execution_order()
                     seq_str = " -> ".join(sequence)
-
                     reply += f"\n\n**[SKILL GRAPH ORCHESTRATION]**\nTopological Execution Sequence for pipeline including `{root_skill}`:\n`{seq_str}`"
             except Exception as e:
                 reply += f"\n\n**[SKILL GRAPH ERROR]** Failed to orchestrate skills: {str(e)}"
@@ -368,9 +331,7 @@ def chat():
                 if mode_match:
                     worker_name = mode_match.group(1).strip()
                     new_mode = mode_match.group(2).strip()
-
                     db.update_worker_mode(worker_name, new_mode)
-
                     reply += f"\n\n**[WORKER MODE UPDATE]**\nSuccessfully elevated sub-agent `{worker_name}` to execution mode `{new_mode}`."
             except Exception as e:
                 reply += f"\n\n**[WORKER MODE ERROR]** Failed to update worker mode: {str(e)}"
@@ -385,9 +346,7 @@ def chat():
                     content = mem_match.group(3).strip()
                     import uuid
                     new_card_id = f"SOK-LEARNED-{str(uuid.uuid4())[:8].upper()}"
-
                     db.upsert_card(new_card_id, family, focus, content, status="ACTIVE")
-
                     reply += f"\n\n**[MNEMOSYNE CONSOLIDATION]**\nSuccessfully anchored new knowledge card `{new_card_id}` to active local memory. Focus: {focus}."
             except Exception as e:
                 reply += f"\n\n**[MNEMOSYNE ERROR]** Failed to write active memory card: {str(e)}"
@@ -399,11 +358,8 @@ def chat():
                 if del_match:
                     worker_name = del_match.group(1).strip()
                     task_desc = del_match.group(2).strip()
-
-                    # Fetch active worker mode state
                     worker_modes = db.get_worker_modes()
                     worker_state = worker_modes.get(worker_name, "UNREGISTERED")
-
                     if worker_state in ["LIVE", "READ_WRITE"]:
                         reply += f"\n\n**[SWARM DELEGATION: {worker_name}]**\nSuccessfully routed task to {worker_name} (State: {worker_state}):\n`{task_desc}`"
                     else:
@@ -418,7 +374,6 @@ def chat():
                 if reinforce_match:
                     card_id = reinforce_match.group(1).strip()
                     outcome = reinforce_match.group(2).strip().lower()
-
                     if outcome in ["success", "failure"]:
                         success, new_conf = db.update_card_confidence(card_id, outcome)
                         if success:
@@ -438,13 +393,28 @@ def chat():
                     skill_name = inject_match.group(1).strip()
                     deps_raw = inject_match.group(2).strip()
                     dependencies = [d.strip() for d in deps_raw.split(",")] if deps_raw else []
-
                     loop = SolomonPerpetualLearningLoop(db)
                     loop.skill_graph.register_skill(skill_name, "Zero-shot conversational skill injection", dependencies)
-
                     reply += f"\n\n**[SKILL GRAPH INJECTION]**\nSuccessfully appended dynamic node `{skill_name}` to topological sequence with dependencies: {dependencies}."
             except Exception as e:
                 reply += f"\n\n**[SKILL GRAPH ERROR]** Failed to inject skill node: {str(e)}"
+
+        # Phase 18: Self-Healing Offline Inference Bridging
+        if "[COMPILE_SOLOMON_LLM:" in reply:
+            try:
+                compile_match = re.search(r"\[COMPILE_SOLOMON_LLM:\s*([^\]]+)\]", reply)
+                if compile_match:
+                    target_ram_mb = float(compile_match.group(1).strip())
+
+                    from solomon_knowledge_cards.quantization_optimizer import SolomonQuantizationOptimizer
+                    optimizer = SolomonQuantizationOptimizer(strategy_engine)
+
+                    cmds = optimizer.compile_llama_cpp_commands("solomon-base.gguf", "solomon-optimized.gguf", target_ram_mb)
+                    modelfile = optimizer.compile_ollama_modelfile("solomon-agent", "solomon-optimized.gguf")
+
+                    reply += f"\n\n**[QUANTIZATION OPTIMIZER]**\nSuccessfully compiled mathematically optimal quantization scripts for budget {target_ram_mb} MB.\n\n**llama.cpp build command:**\n```bash\n{cmds['bash_compilation_script']}\n```\n\n**Ollama Modelfile:**\n```dockerfile\n{modelfile}\n```"
+            except Exception as e:
+                reply += f"\n\n**[QUANTIZATION OPTIMIZER ERROR]** Failed to compile Solomon LLM: {str(e)}"
 
         # Append telemetry and mandated RECOMMENDED NEXT STEP section
         reply += (
