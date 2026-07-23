@@ -352,6 +352,20 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Map KL-Divergence loss profiles between layer logits of teacher and student networks.
   3. Output refined student scaling factors and temperature optimization parameters to maximize layer-wise semantic preservation.
 
+### Phase XXXVI: Activation Quantization Clipped MSE Minimizer
+* **Objective**: Find the optimal dynamic quantization clipping threshold for activation tensors by minimizing Mean Squared Error (MSE) distortion across different scaling factors.
+* **Action Steps**:
+  1. Expose `POST /api/quantization/activation/mse` inside `app.py`.
+  2. Evaluate activation distributions across multiple candidate clipping bounds $[x_{\min}, x_{\max}]$.
+  3. Compute quantization grid mismatch and return the clipping boundary that minimizes the total MSE loss.
+
+### Phase XXXVII: Sparse Fine-Grained Weight Pruning Simulator
+* **Objective**: Reduce the computational graph size by simulating fine-grained sparse 2:4 structured pruning or magnitude-based weight pruning.
+* **Action Steps**:
+  1. Expose `POST /api/quantization/weight/prune` inside `app.py`.
+  2. Accept model weight tensors and prune those whose magnitudes fall below the target sparsity percentile.
+  3. Output the sparsified weight matrix along with the calculated compression factor and remaining network parameter weights.
+
 ---
 
 ## 5. Summary of Recommended Actions

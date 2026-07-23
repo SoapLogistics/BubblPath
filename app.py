@@ -1945,6 +1945,126 @@ def distill_qat_logits():
         "distillation_loss_stable": kl_divergence <= 0.5
     })
 
+# API route to calculate optimal dynamic quantization clipping thresholds via MSE minimization (Phase XXXVI)
+@app.route("/api/quantization/activation/mse", methods=["POST"])
+def minimize_quantization_mse():
+    """
+    Activation Quantization Clipped MSE Minimizer.
+    Finds the dynamic clipping boundary that minimizes the Mean Squared Error of quantized activations.
+    """
+    data = request.get_json(silent=True) or {}
+    activations = data.get("activations")
+    bits = int(data.get("bits", 8))
+
+    if activations is None:
+        return jsonify({"error": "Missing key 'activations' inside payload."}), 400
+
+    if not isinstance(activations, list) or len(activations) == 0:
+        return jsonify({"error": "Argument 'activations' must be a non-empty list of float values."}), 400
+
+    try:
+        floats = [float(x) for x in activations]
+    except (ValueError, TypeError):
+        return jsonify({"error": "All elements in 'activations' must be numerical float values."}), 400
+
+    if bits < 2 or bits > 16:
+        return jsonify({"error": "Quantization bits must be between 2 and 16."}), 400
+
+    # Helper to calculate quantization MSE at a given clipping threshold
+    def calculate_mse_at_clip(vals, clip_val, q_bits):
+        q_max = (2 ** (q_bits - 1)) - 1
+        scale = clip_val / q_max if q_max > 0 and clip_val > 0 else 1.0
+
+        squared_errors = []
+        for x in vals:
+            # clip input
+            clipped_x = min(max(x, -clip_val), clip_val)
+            # quantize & dequantize
+            quant_x = round(clipped_x / scale)
+            dequant_x = quant_x * scale
+
+            squared_errors.append((x - dequant_x) ** 2)
+
+        return sum(squared_errors) / len(vals)
+
+    # Search candidates (90%, 95%, 99%, 100% of maximum magnitude)
+    max_mag = max(abs(x) for x in floats) if floats else 1.0
+    candidates = [0.90 * max_mag, 0.95 * max_mag, 0.99 * max_mag, 1.0 * max_mag]
+
+    best_clip = max_mag
+    best_mse = float("inf")
+    candidate_mses = {}
+
+    for c in candidates:
+        mse = calculate_mse_at_clip(floats, c, bits)
+        candidate_mses[f"{int(c / max_mag * 100)}%_clip"] = round(mse, 6)
+        if mse < best_mse:
+            best_mse = mse
+            best_clip = c
+
+    return jsonify({
+        "status": "SUCCESS",
+        "bits": bits,
+        "max_activation_magnitude": round(max_mag, 4),
+        "optimal_clipping_threshold": round(best_clip, 4),
+        "minimal_mse_loss": round(best_mse, 6),
+        "candidate_threshold_mse_results": candidate_mses,
+        "clipping_applied_percent": round(best_clip / max_mag * 100, 2)
+    })
+
+# API route to simulate sparse fine-grained model weight pruning (Phase XXXVII)
+@app.route("/api/quantization/weight/prune", methods=["POST"])
+def prune_model_weights():
+    """
+    Sparse Fine-Grained Weight Pruning Simulator.
+    Simulates magnitude-based weight pruning for model parameter consolidation.
+    """
+    data = request.get_json(silent=True) or {}
+    weights = data.get("weights")
+    sparsity_percentile = float(data.get("sparsity_percentile", 50.0))
+
+    if weights is None:
+        return jsonify({"error": "Missing key 'weights' inside payload."}), 400
+
+    if not isinstance(weights, list) or len(weights) == 0:
+        return jsonify({"error": "Argument 'weights' must be a non-empty list of weight values."}), 400
+
+    try:
+        floats = [float(x) for x in weights]
+    except (ValueError, TypeError):
+        return jsonify({"error": "All elements in 'weights' must be numerical float values."}), 400
+
+    if sparsity_percentile < 0.0 or sparsity_percentile >= 100.0:
+        return jsonify({"error": "Sparsity percentile must be between 0.0 and 100.0 (exclusive)."}), 400
+
+    # Sort absolute values to find the pruning cutoff
+    abs_weights = sorted(abs(x) for x in floats)
+    cutoff_index = int(len(abs_weights) * (sparsity_percentile / 100.0))
+    cutoff_value = abs_weights[cutoff_index] if abs_weights else 0.0
+
+    pruned_weights = []
+    pruned_count = 0
+    for w in floats:
+        if abs(w) < cutoff_value:
+            pruned_weights.append(0.0)
+            pruned_count += 1
+        else:
+            pruned_weights.append(w)
+
+    actual_sparsity = (pruned_count / len(floats)) * 100.0
+    compression_factor = len(floats) / (len(floats) - pruned_count) if (len(floats) - pruned_count) > 0 else float("inf")
+
+    return jsonify({
+        "status": "SUCCESS",
+        "target_sparsity_percentile": sparsity_percentile,
+        "actual_sparsity_percent": round(actual_sparsity, 2),
+        "compression_factor": round(compression_factor, 2) if compression_factor != float("inf") else "INFINITE",
+        "pruning_threshold_cutoff": round(cutoff_value, 4),
+        "original_weights_count": len(floats),
+        "pruned_weights_count": pruned_count,
+        "pruned_weights": pruned_weights[:100]  # Return up to first 100 to avoid huge payloads
+    })
+
 # API route to trigger forced telemetry guardrails checks programmatically
 @app.route("/api/command-center/guardrails", methods=["POST"])
 def trigger_guardrails_endpoint():

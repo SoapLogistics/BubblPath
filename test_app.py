@@ -1209,3 +1209,85 @@ def test_qat_distillation(flask_client):
     assert len(data["teacher_probabilities"]) == 3
     assert len(data["student_probabilities"]) == 3
     assert "recommended_student_scaling_adjust" in data
+
+def test_activation_mse_minimizer(flask_client):
+    """Verifies Phase XXXVI activation quantization clipped MSE threshold searches and error handling."""
+    # 1. Missing payload key
+    res_err1 = flask_client.post("/api/quantization/activation/mse", data=json.dumps({}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'activations'" in res_err1.get_json()["error"]
+
+    # 2. Invalid parameter type
+    res_err2 = flask_client.post("/api/quantization/activation/mse", data=json.dumps({"activations": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "must be a non-empty list of float values" in res_err2.get_json()["error"]
+
+    # 3. Non-numerical elements
+    res_err3 = flask_client.post("/api/quantization/activation/mse", data=json.dumps({"activations": [1.0, "bad"]}), content_type="application/json")
+    assert res_err3.status_code == 400
+    assert "must be numerical float values" in res_err3.get_json()["error"]
+
+    # 4. Out of bounds bits
+    res_err4 = flask_client.post("/api/quantization/activation/mse", data=json.dumps({"activations": [1.0], "bits": 1}), content_type="application/json")
+    assert res_err4.status_code == 400
+    assert "bits must be between 2 and 16" in res_err4.get_json()["error"]
+
+    # 5. Successful clipping threshold calculation with minimal MSE checks
+    res_success = flask_client.post(
+        "/api/quantization/activation/mse",
+        data=json.dumps({
+            "activations": [0.1, -0.5, 2.0, -1.8, 0.05, 3.5, -4.0],
+            "bits": 8
+        }),
+        content_type="application/json"
+    )
+    assert res_success.status_code == 200
+    data = res_success.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["bits"] == 8
+    assert data["max_activation_magnitude"] == 4.0
+    assert "optimal_clipping_threshold" in data
+    assert "minimal_mse_loss" in data
+    assert isinstance(data["candidate_threshold_mse_results"], dict)
+
+def test_weight_pruning_simulator(flask_client):
+    """Verifies Phase XXXVII sparse weight pruning percentiles and cutoff thresholds with boundary conditions."""
+    # 1. Missing payload key
+    res_err1 = flask_client.post("/api/quantization/weight/prune", data=json.dumps({}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'weights'" in res_err1.get_json()["error"]
+
+    # 2. Invalid parameter type
+    res_err2 = flask_client.post("/api/quantization/weight/prune", data=json.dumps({"weights": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "must be a non-empty list of weight values" in res_err2.get_json()["error"]
+
+    # 3. Non-numerical values list
+    res_err3 = flask_client.post("/api/quantization/weight/prune", data=json.dumps({"weights": [1.0, "bad"]}), content_type="application/json")
+    assert res_err3.status_code == 400
+    assert "must be numerical float values" in res_err3.get_json()["error"]
+
+    # 4. Out of bounds percentile
+    res_err4 = flask_client.post("/api/quantization/weight/prune", data=json.dumps({"weights": [1.0], "sparsity_percentile": 105.0}), content_type="application/json")
+    assert res_err4.status_code == 400
+    assert "Sparsity percentile must be between 0.0 and 100.0" in res_err4.get_json()["error"]
+
+    # 5. Successful magnitude weight pruning execution
+    res_success = flask_client.post(
+        "/api/quantization/weight/prune",
+        data=json.dumps({
+            "weights": [0.05, -2.5, 1.8, -0.01, 3.0, -1.2, 0.4, 0.1, -0.02, 0.8],
+            "sparsity_percentile": 40.0
+        }),
+        content_type="application/json"
+    )
+    assert res_success.status_code == 200
+    data = res_success.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["target_sparsity_percentile"] == 40.0
+    assert data["actual_sparsity_percent"] >= 40.0
+    assert data["original_weights_count"] == 10
+    assert data["pruned_weights_count"] >= 4
+    assert len(data["pruned_weights"]) == 10
+    # verify smallest weights were set to 0.0
+    assert 0.0 in data["pruned_weights"]
