@@ -129,6 +129,52 @@
                 </div>
             </div>
 
+            <!-- Panel B4: SOSS Phase 10 & 11 Evolution Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-brain text-emerald-400"></i>
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">Phase 10 & 11: Curiosity & Science</h2>
+                    </div>
+                    <span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-900 px-2 py-0.5 rounded-md font-mono font-bold uppercase tracking-wider">Evolution Loop</span>
+                </div>
+
+                <!-- Phase 10 Curiosity Gaps -->
+                <div class="space-y-2">
+                    <div class="text-[10px] text-slate-400 font-mono font-bold uppercase">Phase 10: Prometheus Curiosity Gaps</div>
+                    <div class="bg-slate-950 p-2.5 rounded text-xs border border-slate-800 max-h-[140px] overflow-y-auto custom-scrollbar" id="curiosity-container">
+                        <div class="text-slate-500 italic text-center py-2">No curiosity diagnostic run yet. Click 'Scan Gaps' to discover low-confidence vulnerabilities.</div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg flex items-center space-x-1 transition-all" onclick="triggerCuriosityScan()">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                            <span>Scan Gaps & Register Card</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Phase 11 Scientific Trial -->
+                <div class="space-y-2 pt-2 border-t border-slate-800/55">
+                    <div class="text-[10px] text-slate-400 font-mono font-bold uppercase">Phase 11: Scientific Trial Sandbox</div>
+                    <div class="grid grid-cols-1 gap-2">
+                        <input type="text" id="exp-card-id" placeholder="Curiosity Card ID (e.g. SOK-CURIOSITY-MISSION-QUANT-001)" class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded p-1.5 focus:outline-none focus:border-cyan-500 font-mono">
+                        <textarea id="exp-code" rows="2" placeholder="def my_trial():\n    print('Executing calibration experiment...')\n    return True" class="bg-slate-950 border border-slate-800 text-slate-200 text-[11px] rounded p-1.5 focus:outline-none focus:border-cyan-500 font-mono custom-scrollbar">def my_trial():
+    print('Executing dynamic memory calibration...')
+    return True</textarea>
+                        <input type="text" id="exp-call" value="my_trial()" placeholder="Function call: my_trial()" class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded p-1.5 focus:outline-none focus:border-cyan-500 font-mono">
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded text-[11px] font-mono border border-slate-800 text-slate-400" id="experiment-output">
+                        Awaiting sandbox scientific trial execution...
+                    </div>
+                    <div class="flex justify-end">
+                        <button class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg flex items-center space-x-1 transition-all" onclick="triggerScientificExperiment()">
+                            <i class="fa-solid fa-vial"></i>
+                            <span>Execute Scientific Trial</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <!-- Column B: Model Router Pathway & Interactive Simulation Console (Right 7 Columns) -->
@@ -482,6 +528,98 @@
                 latBox.className = "text-xs font-mono font-bold text-rose-500";
                 driftBox.className = "text-xs font-mono font-bold text-rose-500";
                 console.error(err);
+            });
+        }
+
+        // Phase 10: Run Curiosity Scan
+        function triggerCuriosityScan() {
+            const container = document.getElementById("curiosity-container");
+            container.innerHTML = `<div class="text-slate-400 font-mono text-center py-2 animate-pulse">Running cognitive map curiosity audit...</div>`;
+
+            fetch("/api/mnemosyne/curiosity/discover", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ auto_register: true })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success" && data.gaps && data.gaps.length > 0) {
+                    let html = `<div class="font-bold text-slate-300 text-[11px] mb-1">Top Vulnerability Gap Found:</div>`;
+                    const topGap = data.gaps[0];
+                    html += `
+                        <div class="bg-slate-900 border border-slate-800 p-2 rounded mb-2 font-mono text-[11px] space-y-1 text-left">
+                            <div class="flex justify-between font-bold">
+                                <span class="text-yellow-400">${topGap.card_id}</span>
+                                <span class="text-emerald-400">Weight: ${topGap.opportunity_weight}</span>
+                            </div>
+                            <div class="text-slate-400">${topGap.content}</div>
+                            <div class="text-cyan-400 font-semibold italic text-[10px] pt-1">Proposed Curiosity Card Registered: ${data.auto_registered_card_id}</div>
+                        </div>
+                    `;
+                    container.innerHTML = html;
+
+                    // Autofill Phase 11 experimental card target
+                    if (data.auto_registered_card_id) {
+                        document.getElementById("exp-card-id").value = data.auto_registered_card_id;
+                    }
+                } else {
+                    container.innerHTML = `<div class="text-emerald-400 font-mono text-center py-2">✓ No critical cognitive gaps found! System operating at full accuracy constraints.</div>`;
+                }
+            })
+            .catch(err => {
+                container.innerHTML = `<div class="text-rose-500 font-mono text-center py-2">Error scanning curiosity map: ${err}</div>`;
+            });
+        }
+
+        // Phase 11: Run Scientific Sandbox Experiment
+        function triggerScientificExperiment() {
+            const cardId = document.getElementById("exp-card-id").value.trim();
+            const code = document.getElementById("exp-code").value;
+            const call = document.getElementById("exp-call").value.trim();
+            const output = document.getElementById("experiment-output");
+
+            if (!cardId) {
+                alert("Please select or enter a target Curiosity Card ID first!");
+                return;
+            }
+
+            output.innerHTML = `<span class="text-cyan-400 animate-pulse">Orchestrating Sandbox Trial Loop...</span>`;
+
+            fetch("/api/mnemosyne/experiment/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    curiosity_card_id: cardId,
+                    code_under_test: code,
+                    test_call: call
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    const r = data.experiment_report;
+                    let html = `
+                        <div class="space-y-1 text-[11px] text-left">
+                            <div class="flex justify-between font-bold">
+                                <span>Status: <span class="${r.review_gate_status.includes('APPROVED') ? 'text-emerald-400' : 'text-rose-500'}">${r.review_gate_status}</span></span>
+                                <span class="text-slate-500">${r.sandbox_evidence.elapsed_latency_ms} ms</span>
+                            </div>
+                            <div>Hypothesis: <span class="text-slate-300">${r.hypothesis}</span></div>
+                            <div class="text-slate-400 bg-slate-900 p-1.5 rounded text-[10px] max-h-[50px] overflow-y-auto custom-scrollbar border border-slate-800">
+                                <strong>Output:</strong> ${r.sandbox_evidence.sandbox_stdout || r.sandbox_evidence.execution_error || 'Execution completed.'}
+                            </div>
+                            <div class="text-cyan-400 font-bold">Promoted Card: ${r.promoted_card_id}</div>
+                        </div>
+                    `;
+                    output.innerHTML = html;
+                } else {
+                    output.className = "bg-slate-950 p-2.5 rounded text-[11px] font-mono border border-slate-800 text-rose-400 text-left";
+                    output.innerText = `[ERROR] Experiment failed: ${data.error || 'Unknown error'}`;
+                }
+            })
+            .catch(err => {
+                output.className = "bg-slate-950 p-2.5 rounded text-[11px] font-mono border border-slate-800 text-rose-400 text-left";
+                output.innerText = `[ERROR] System connection failed: ${err}`;
             });
         }
     </script>

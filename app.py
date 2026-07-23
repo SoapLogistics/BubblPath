@@ -15,6 +15,8 @@ from solomon_observational_simulator import ObservationalSimulator
 from solomon_skill_graph import SkillGraph, SandboxExecutor
 from solomon_self_repair import SelfRepairEngine
 from solomon_self_audit_probes import SelfAuditProbes
+from solomon_prometheus_curiosity import PrometheusCuriosityEngine
+from solomon_experiment_engine import ExperimentEngine
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -24,6 +26,8 @@ db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
 router = ModelRouter(db)
 skills_graph = SkillGraph()
 repair_engine = SelfRepairEngine(db)
+curiosity_engine = PrometheusCuriosityEngine(db)
+experiment_engine = ExperimentEngine(db)
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -793,6 +797,74 @@ def get_audit_status():
         "recommended_next_step": "Trigger POST /api/mnemosyne/audit/run to run a full diagnostic test instantly."
     }
     return jsonify(config_info)
+
+
+# ==========================================
+# SOSS PHASE 10: PROMETHEUS CURIOSITY DISCOVERY ROUTING
+# ==========================================
+@app.route("/api/mnemosyne/curiosity/discover", methods=["POST"])
+def run_curiosity_discovery():
+    """
+    Scans the cognitive map for knowledge gaps and confidence deficits.
+    Optionally registers the top gap as a curiosity card on-the-fly.
+    """
+    data = request.json or {}
+    auto_register = bool(data.get("auto_register", True))
+
+    gaps = curiosity_engine.discover_gaps()
+    registered_id = None
+
+    if auto_register and gaps:
+        top_gap = gaps[0]
+        registered_id = curiosity_engine.register_curiosity_card(top_gap)
+
+    return jsonify({
+        "status": "success",
+        "total_gaps_found": len(gaps),
+        "gaps": gaps,
+        "auto_registered_card_id": registered_id,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Direct the Phase 11 Experiment Engine to run automated trials against the registered "
+            f"curiosity card {registered_id if registered_id else ''} to resolve this cognitive vulnerability!</span>"
+        )
+    })
+
+
+# ==========================================
+# SOSS PHASE 11: SCIENTIFIC EXPERIMENTATION ROUTING
+# ==========================================
+@app.route("/api/mnemosyne/experiment/run", methods=["POST"])
+def run_scientific_experiment():
+    """
+    Executes a formal scientific trial inside the isolated sandbox environment.
+    Captures stdout and resource latency, and promotes the approved skill upon success.
+    """
+    data = request.json or {}
+    curiosity_card_id = data.get("curiosity_card_id")
+    code_under_test = data.get("code_under_test")
+    test_call = data.get("test_call")
+
+    if not curiosity_card_id or not code_under_test or not test_call:
+        return jsonify({"error": "Missing 'curiosity_card_id', 'code_under_test', or 'test_call' parameters."}), 400
+
+    result = experiment_engine.execute_scientific_experiment(
+        curiosity_card_id=curiosity_card_id,
+        code_under_test=code_under_test,
+        test_call=test_call
+    )
+
+    return jsonify({
+        "status": "success",
+        "experiment_report": result,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Utilize the freshly promoted SOK Procedure card to update the global model hot-swapping "
+            "routing algorithms for immediate execution upgrades!</span>"
+        )
+    })
 
 
 if __name__ == "__main__":
