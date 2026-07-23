@@ -1291,3 +1291,93 @@ def test_weight_pruning_simulator(flask_client):
     assert len(data["pruned_weights"]) == 10
     # verify smallest weights were set to 0.0
     assert 0.0 in data["pruned_weights"]
+
+def test_smoothquant_calibrator(flask_client):
+    """Verifies Phase XXXVIII SmoothQuant channel scaling and outlier migrations."""
+    # 1. Missing payload keys
+    res_err1 = flask_client.post("/api/quantization/smoothquant/calibrate", data=json.dumps({"activation_channels_max": [1.0]}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Missing key 'activation_channels_max' or 'weight_channels_max'" in res_err1.get_json()["error"]
+
+    # 2. Invalid parameter types
+    res_err2 = flask_client.post("/api/quantization/smoothquant/calibrate", data=json.dumps({"activation_channels_max": [1.0], "weight_channels_max": "not-a-list"}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "must be list objects" in res_err2.get_json()["error"]
+
+    # 3. Size mismatch
+    res_err3 = flask_client.post("/api/quantization/smoothquant/calibrate", data=json.dumps({"activation_channels_max": [1.0], "weight_channels_max": [1.0, 2.0]}), content_type="application/json")
+    assert res_err3.status_code == 400
+    assert "must be non-empty and of identical lengths" in res_err3.get_json()["error"]
+
+    # 4. Out of bounds alpha
+    res_err4 = flask_client.post("/api/quantization/smoothquant/calibrate", data=json.dumps({"activation_channels_max": [1.0], "weight_channels_max": [1.0], "alpha": 1.5}), content_type="application/json")
+    assert res_err4.status_code == 400
+    assert "Migration alpha parameter must be between 0.0 and 1.0" in res_err4.get_json()["error"]
+
+    # 5. Successful alpha migration calibration checks
+    res_success = flask_client.post(
+        "/api/quantization/smoothquant/calibrate",
+        data=json.dumps({
+            "activation_channels_max": [10.0, 8.0, 15.0],
+            "weight_channels_max": [1.5, 2.0, 1.0],
+            "alpha": 0.5
+        }),
+        content_type="application/json"
+    )
+    assert res_success.status_code == 200
+    data = res_success.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["alpha"] == 0.5
+    assert data["original_activation_peak"] == 15.0
+    assert data["original_weight_peak"] == 2.0
+    assert len(data["migration_scaling_factors"]) == 3
+    assert data["peak_reduction_ratio_activations"] > 1.0
+
+def test_non_linear_lut_compiler(flask_client):
+    """Verifies Phase XXXIX NF4 and Logarithmic spacing static LUT compiling logic."""
+    # 1. Invalid non-linear format
+    res_err1 = flask_client.post("/api/quantization/lut/compile", data=json.dumps({"format": "bad"}), content_type="application/json")
+    assert res_err1.status_code == 400
+    assert "Unsupported non-linear format" in res_err1.get_json()["error"]
+
+    # 2. Out of bounds bits
+    res_err2 = flask_client.post("/api/quantization/lut/compile", data=json.dumps({"format": "NF4", "bits": 12}), content_type="application/json")
+    assert res_err2.status_code == 400
+    assert "Quantization bits for static LUT must be between 2 and 8" in res_err2.get_json()["error"]
+
+    # 3. Successful NF4 static lookup table generation
+    res_nf4 = flask_client.post(
+        "/api/quantization/lut/compile",
+        data=json.dumps({
+            "format": "NF4",
+            "bits": 4
+        }),
+        content_type="application/json"
+    )
+    assert res_nf4.status_code == 200
+    data_nf4 = res_nf4.get_json()
+    assert data_nf4["status"] == "SUCCESS"
+    assert data_nf4["format"] == "NF4"
+    assert data_nf4["bits"] == 4
+    assert data_nf4["total_lut_entries"] == 16
+    assert data_nf4["warp_thread_aligned"] is True
+    assert len(data_nf4["lookup_table"]) == 16
+    assert "dequantize_lut" in data_nf4["fast_dequant_kernel_code_preview"]
+
+    # 4. Successful Logarithmic static lookup table generation
+    res_log = flask_client.post(
+        "/api/quantization/lut/compile",
+        data=json.dumps({
+            "format": "LOGARITHMIC",
+            "bits": 3
+        }),
+        content_type="application/json"
+    )
+    assert res_log.status_code == 200
+    data_log = res_log.get_json()
+    assert data_log["status"] == "SUCCESS"
+    assert data_log["format"] == "LOGARITHMIC"
+    assert data_log["bits"] == 3
+    assert data_log["total_lut_entries"] == 8
+    assert data_log["warp_thread_aligned"] is True
+    assert len(data_log["lookup_table"]) == 8

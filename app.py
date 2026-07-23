@@ -2065,6 +2065,134 @@ def prune_model_weights():
         "pruned_weights": pruned_weights[:100]  # Return up to first 100 to avoid huge payloads
     })
 
+# API route to calibrate SmoothQuant activation/weight scale migration (Phase XXXVIII)
+@app.route("/api/quantization/smoothquant/calibrate", methods=["POST"])
+def calibrate_smoothquant_migration():
+    """
+    SmoothQuant Migration Scaling and Outlier Calibrator.
+    Calculates migration scales (s) using alpha parameter to migrate quantization difficulty.
+    """
+    data = request.get_json(silent=True) or {}
+    activation_channels_max = data.get("activation_channels_max")
+    weight_channels_max = data.get("weight_channels_max")
+    alpha = float(data.get("alpha", 0.5))
+
+    if activation_channels_max is None or weight_channels_max is None:
+        return jsonify({"error": "Missing key 'activation_channels_max' or 'weight_channels_max' inside payload."}), 400
+
+    if not isinstance(activation_channels_max, list) or not isinstance(weight_channels_max, list):
+        return jsonify({"error": "Channel maximums must be list objects of numerical values."}), 400
+
+    if len(activation_channels_max) != len(weight_channels_max) or len(activation_channels_max) == 0:
+        return jsonify({"error": "Activation and weight channel lists must be non-empty and of identical lengths."}), 400
+
+    if alpha < 0.0 or alpha > 1.0:
+        return jsonify({"error": "Migration alpha parameter must be between 0.0 and 1.0 inclusive."}), 400
+
+    try:
+        act_maxes = [float(x) for x in activation_channels_max]
+        weight_maxes = [float(x) for x in weight_channels_max]
+    except (ValueError, TypeError):
+        return jsonify({"error": "All channel elements must be numerical float values."}), 400
+
+    migration_scales = []
+    migrated_activations_max = []
+    migrated_weights_max = []
+
+    for x_max, w_max in zip(act_maxes, weight_maxes):
+        # s = X_max^alpha / W_max^(1-alpha)
+        # Avoid division by zero
+        safe_x = max(abs(x_max), 1e-5)
+        safe_w = max(abs(w_max), 1e-5)
+
+        s = (safe_x ** alpha) / (safe_w ** (1.0 - alpha))
+        migration_scales.append(s)
+
+        # Migrated limits: X_new_max = X_max / s, W_new_max = W_max * s
+        migrated_activations_max.append(safe_x / s)
+        migrated_weights_max.append(safe_w * s)
+
+    original_act_max = max(act_maxes)
+    original_weight_max = max(weight_maxes)
+    migrated_act_max = max(migrated_activations_max)
+    migrated_weight_max = max(migrated_weights_max)
+
+    return jsonify({
+        "status": "SUCCESS",
+        "alpha": alpha,
+        "original_activation_peak": round(original_act_max, 4),
+        "original_weight_peak": round(original_weight_max, 4),
+        "migrated_activation_peak": round(migrated_act_max, 4),
+        "migrated_weight_peak": round(migrated_weight_max, 4),
+        "migration_scaling_factors": [round(s, 4) for s in migration_scales[:100]],  # Cap output size
+        "peak_reduction_ratio_activations": round(original_act_max / migrated_act_max, 4) if migrated_act_max > 0 else 1.0,
+        "quantization_migration_balanced": abs(migrated_act_max - migrated_weight_max) < abs(original_act_max - original_weight_max)
+    })
+
+# API route to compile non-linear quantization lookup tables (Phase XXXIX)
+@app.route("/api/quantization/lut/compile", methods=["POST"])
+def compile_non_linear_lut():
+    """
+    Non-Linear Quantization Mapping and Lookup-Table LUT Compiler.
+    Generates high-speed static Look-Up Tables for non-linear normal (NF4) or log weight scales.
+    """
+    data = request.get_json(silent=True) or {}
+    format_type = data.get("format", "NF4")
+    bits = int(data.get("bits", 4))
+
+    if format_type not in ["NF4", "LOGARITHMIC"]:
+        return jsonify({"error": "Unsupported non-linear format. Supported types are 'NF4' and 'LOGARITHMIC'."}), 400
+
+    if bits < 2 or bits > 8:
+        return jsonify({"error": "Quantization bits for static LUT must be between 2 and 8."}), 400
+
+    num_entries = 2 ** bits
+    lut = []
+
+    if format_type == "NF4":
+        # Simulate standard Normal Float 4 quantization boundaries
+        # Mapped to a Gaussian distribution (mu=0, sigma=1) quantiles
+        for i in range(num_entries):
+            # Quantiles calculation (approximating Gaussian partition split points)
+            p = (i + 0.5) / num_entries
+            # Simple approximation of inverse CDF of standard Normal (Probit)
+            val = math.sqrt(2.0) * math.erf(2.0 * p - 1.0) if hasattr(math, "erf") else (p - 0.5) * 4.0
+            lut.append({
+                "index": i,
+                "binary_code": format(i, f"0{bits}b"),
+                "dequantized_value": round(val, 6)
+            })
+    else:
+        # LOGARITHMIC spacing: values scaled exponentially
+        for i in range(num_entries):
+            half = num_entries / 2
+            sign = 1 if i >= half else -1
+            magnitude = (i - half if i >= half else half - 1 - i) / (half - 1 if half > 1 else 1)
+            val = sign * (2.0 ** (magnitude * 3.0) - 1.0) / 7.0
+            lut.append({
+                "index": i,
+                "binary_code": format(i, f"0{bits}b"),
+                "dequantized_value": round(val, 6)
+            })
+
+    # Verify lookup-table indexing alignment
+    warp_aligned = (num_entries % 8 == 0)
+
+    return jsonify({
+        "status": "SUCCESS",
+        "format": format_type,
+        "bits": bits,
+        "total_lut_entries": num_entries,
+        "warp_thread_aligned": warp_aligned,
+        "lookup_table": lut,
+        "fast_dequant_kernel_code_preview": (
+            f"__device__ inline float dequantize_lut(uint8_t index) {{\n"
+            f"    __shared__ float s_lut[{num_entries}];\n"
+            f"    return s_lut[index];\n"
+            f"}}"
+        )
+    })
+
 # API route to trigger forced telemetry guardrails checks programmatically
 @app.route("/api/command-center/guardrails", methods=["POST"])
 def trigger_guardrails_endpoint():

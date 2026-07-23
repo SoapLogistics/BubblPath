@@ -366,6 +366,20 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Accept model weight tensors and prune those whose magnitudes fall below the target sparsity percentile.
   3. Output the sparsified weight matrix along with the calculated compression factor and remaining network parameter weights.
 
+### Phase XXXVIII: SmoothQuant Migration Scaling and Outlier Calibrator
+* **Objective**: Migrate quantization difficulty from activations to weights dynamically by searching for the optimal per-channel migration scale parameter ($\alpha$).
+* **Action Steps**:
+  1. Expose `POST /api/quantization/smoothquant/calibrate` inside `app.py`.
+  2. Parse activation and weight channel maximum magnitudes, then compute the per-channel migration scaling factors $s = X_{\max}^{\alpha} / W_{\max}^{1 - \alpha}$.
+  3. Re-scale weight matrices and activations, returning optimized, balanced dynamic outliers that fit tightly within uniform quantization boundaries.
+
+### Phase XXXIX: Non-Linear Quantization Mapping and Lookup-Table LUT Compiler
+* **Objective**: Optimize execution of non-linear quantization distributions (such as logarithmic or normal distributions like NF4) using high-speed static Look-Up Tables (LUT).
+* **Action Steps**:
+  1. Expose `POST /api/quantization/lut/compile` inside `app.py`.
+  2. Compute non-linear quantization interval splits representing normal quantiles or custom logarithmic weight curves.
+  3. Compile and output a static numerical indexing array (LUT) that translates indices to floating dequantized values, maximizing GPU warp thread computation alignment.
+
 ---
 
 ## 5. Summary of Recommended Actions
