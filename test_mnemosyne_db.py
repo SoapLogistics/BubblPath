@@ -549,3 +549,56 @@ class TestMnemosyneAPIIntegration:
         # Transit to ACTIVE
         assert test_db.update_card_validation_state(card_id, "ACTIVE") is True
         assert test_db.get_card(card_id)["validation_state"] == "ACTIVE"
+
+    def test_docker_sandbox_executor_direct(self):
+        """
+        Directly asserts that DockerSandboxExecutor executes code safely and uses its
+        exception-resilient SandboxExecutor subprocess fallback in nested storage conditions.
+        """
+        from solomon_docker_executor import DockerSandboxExecutor
+        source = (
+            "def add_nums(a, b):\n"
+            "    return a + b\n"
+        )
+        res = DockerSandboxExecutor.execute_in_container(source, "add_nums(10, 32)", timeout_sec=2.0)
+        assert res["success"] is True
+        assert res["return_value"] == 42
+        assert "fallback" in res["message"] or "Quarantined" in res["message"]
+
+    def test_docker_sandbox_api_route(self, client):
+        """
+        Verifies POST /api/mnemosyne/docker/execute processes correct payload, triggers
+        the Docker execution lane, and returns the correct success JSON response schema.
+        """
+        payload = {
+            "source_code": "def run_multiply(x, y):\n    return x * y\n",
+            "entry_call": "run_multiply(7, 8)",
+            "timeout_sec": 3.0
+        }
+        response = client.post(
+            "/api/mnemosyne/docker/execute",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        sandbox_res = data["docker_sandbox_result"]
+        assert sandbox_res["success"] is True
+        assert sandbox_res["return_value"] == 56
+        assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
+
+    def test_docker_sandbox_api_invalid_payload(self, client):
+        """
+        Asserts that calling the endpoint with missing or malformed values returns HTTP 400.
+        """
+        # Missing source_code
+        payload = {"entry_call": "test()"}
+        response = client.post(
+            "/api/mnemosyne/docker/execute",
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        assert response.status_code == 400
+        assert "error" in response.get_json()

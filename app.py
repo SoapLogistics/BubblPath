@@ -14,6 +14,7 @@ from solomon_ast_injector import ASTInjector
 from solomon_observational_simulator import ObservationalSimulator
 from solomon_skill_graph import SkillGraph, SandboxExecutor
 from solomon_perpetual_learning_loop import SolomonPerpetualLearningLoop
+from solomon_docker_executor import DockerSandboxExecutor
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -663,6 +664,42 @@ def execute_perpetual_learning_loop():
             "message": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+
+@app.route("/api/mnemosyne/docker/execute", methods=["POST"])
+def execute_docker_sandbox():
+    """
+    Executes a Python code block safely inside our resource-constrained,
+    isolated Docker container (with secure subprocess fallback).
+    """
+    data = request.json or {}
+    source_code = data.get("source_code", "")
+    entry_call = data.get("entry_call", "")
+
+    try:
+        timeout_sec = float(data.get("timeout_sec", 3.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'timeout_sec', must be a float."}), 400
+
+    if not source_code or not entry_call:
+        return jsonify({"error": "Missing 'source_code' or 'entry_call' parameters."}), 400
+
+    result = DockerSandboxExecutor.execute_in_container(
+        source_code=source_code,
+        entry_function_call=entry_call,
+        timeout_sec=timeout_sec
+    )
+
+    return jsonify({
+        "status": "success",
+        "docker_sandbox_result": result,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Migrate this dynamic execution lane as the default solver backend "
+            "for Prometheus build-planners and Gabriel code extractors!</span>"
+        )
+    })
 
 
 @app.route("/api/mnemosyne/skills/execute", methods=["POST"])
