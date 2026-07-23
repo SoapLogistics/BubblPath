@@ -618,6 +618,42 @@ def test_unified_closed_loop_perpetual_orchestrator(flask_client):
     assert "remembered_new_card_inserted" in data
     assert data["retrieved_total_cards_count"] >= 4
 
+def test_context_budgeting_compression(flask_client):
+    """Verifies that conversation history exceeding 10,000 characters triggers active context compression."""
+    long_msg = "A" * 10500 # Over 10k character limit
+    response = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": long_msg}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["context_budget_compressed"] is True
+    assert "compressed to fit within SOSS memory limits" in data["reply"]
+
+def test_workspace_ui_sync_routes(flask_client):
+    """Verifies the HTML/CSS workspace console and Project Loki picks API."""
+    # 1. GET HTML Workspace Panel
+    response_html = flask_client.get("/workspace")
+    assert response_html.status_code == 200
+    assert b"Solomon Cognitive" in response_html.data
+    assert b"Loki Sports Betting" in response_html.data
+
+    # 2. GET Loki Picks API
+    response_picks = flask_client.get("/api/picks")
+    assert response_picks.status_code == 200
+    data_picks = response_picks.get_json()
+    assert data_picks["status"] == "SUCCESS"
+    assert len(data_picks["picks"]) == 3
+    assert data_picks["picks"][0]["sport"] == "NFL"
+
+def test_perpetual_loop_endpoint(flask_client):
+    """Verifies end-to-end continuous loop orchestration."""
+    response = flask_client.post("/api/mnemosyne/perpetual-loop")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["loop_status"] == "SUCCESS_CLOSED_LOOP"
+
 def test_chat_payload_validation(flask_client):
     """Ensures strict JSON body, string validation, and query logging are enforced."""
     # Missing body

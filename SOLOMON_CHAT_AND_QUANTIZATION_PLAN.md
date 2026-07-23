@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 19-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 21-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -243,12 +243,25 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Sequentially run: Observation -> Local Codex Code Generation -> Subprocess Sandbox Verification -> Self-Correction Debugging Loops -> GCPP Promotion to Card Database -> Semantic Graph Linking -> Model Router Hot-Swapping -> RSS resource limits telemetry.
   3. Form a fully automated perpetual learning loop capable of learning and implementing verified capabilities offline autonomously.
 
+### Phase XX: Active Context Budgeting
+* **Objective**: Enforce dynamic sliding-window size constraints on conversation history to avoid out-of-memory crashes.
+* **Action Steps**:
+  1. Define strict prompt character caps (e.g. 10,000 characters maximum) inside `app.py`'s `/chat` endpoint.
+  2. If the user message or conversation history exceeds this limit, automatically compress the text by slicing and compiling key summaries from active database memory cards to preserve high-fidelity retrieval context under restricted memory footprints.
+
+### Phase XXI: Visual Memory Card Trace Graph Render Sync
+* **Objective**: Sync and render conversational consoles, server metrics, and dynamic sport pick boards visually in real-time.
+* **Action Steps**:
+  1. Implement HTML templates and routes (`GET /workspace`) inside `app.py` using Tailwind CSS.
+  2. Design interactive sections for conversational chat input/output, execution trace monitors, and dynamic Loki Sports Betting Picks Boards rendering optimal selections retrieved from `/api/picks`.
+  3. Keep the operator fully synchronized with visual execution traces of Solomon's background workers.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the GGUF Modelfile compiler and the unified closed-loop learning sequence orchestrator.
-2. CREATE `test_app.py` to assert correct Modelfile outputs and successful continuous cognitive learning sequences.
+1. OVERWRITE `app.py` with the active context budgeting filters and the workspace HTML rendering endpoints.
+2. CREATE `test_app.py` to assert correct history slicing, size budgeting, and visual layout routes.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add the GGUF Modelfile compiler and closed-loop perpetual learning sequence orchestrator so Solomon can autonomously compile, verify, and run his entire offline-first learning system.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add context budgeting and visual workspace sync so Solomon can safely regulate prompt constraints and serve high-fidelity operator consoles offline.**
