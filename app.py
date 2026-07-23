@@ -13,14 +13,16 @@ from solomon_recursive_crucible import RecursiveCrucible
 from solomon_ast_injector import ASTInjector
 from solomon_observational_simulator import ObservationalSimulator
 from solomon_skill_graph import SkillGraph, SandboxExecutor
+from solomon_self_repair import SelfRepairEngine
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-# Instantiate our Relational Mnemosyne SQLite Database, Model Router, and active Skill Graph
+# Instantiate our Relational Mnemosyne SQLite Database, Model Router, Skill Graph, and Self-Repair Engine
 db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
 router = ModelRouter(db)
 skills_graph = SkillGraph()
+repair_engine = SelfRepairEngine(db)
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -689,6 +691,44 @@ def execute_sandbox_skill():
         )
     }
     return jsonify(execution_response)
+
+
+@app.route("/api/mnemosyne/repair/evaluate", methods=["POST"])
+def evaluate_self_repair_feedback():
+    """
+    Receives failure results from a quarantined sandbox skill run, extracts
+    Failure SOK Cards, establishes directed links to fallback procedures,
+    and coordinates an automatic state-rollback sequence.
+    """
+    data = request.json or {}
+    skill_id = data.get("skill_id", "")
+    success = bool(data.get("success", False))
+    error_msg = data.get("error_msg", "")
+    traceback_str = data.get("traceback", "")
+
+    if not skill_id or success:
+        return jsonify({"error": "Evaluation endpoint requires failed 'skill_id' and success parameter set to false."}), 400
+
+    # Trigger self-healing and SOSS Failure Card compilation
+    repair_report = repair_engine.evaluate_and_repair(skill_id, error_msg, traceback_str)
+
+    # Structure output response
+    repair_response = {
+        "status": "success",
+        "evaluation_feedback": {
+            "skill_id": skill_id,
+            "success_status": success,
+            "error_msg_captured": error_msg
+        },
+        "self_repair_action_report": repair_report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Instantly query the /api/mnemosyne/cards endpoint to traverse the Relational "
+            "SQLite database and verify the newly compiled SOK Failure and Repair links!</span>"
+        )
+    }
+    return jsonify(repair_response)
 
 
 if __name__ == "__main__":

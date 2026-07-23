@@ -491,3 +491,55 @@ class TestMnemosyneAPIIntegration:
         assert sandbox["success"] is False
         assert "TimeoutExpired" in sandbox["error"] or "timeout" in sandbox["error"]
         assert "prevented" in sandbox["error"] or "killed" in sandbox["error"]
+
+    def test_self_repair_evaluation_endpoint(self, client):
+        """
+        Verifies POST /api/mnemosyne/repair/evaluate successfully parses execution errors,
+        extracts Failure SOK cards, creates directed links to Repair cards, and triggers
+        automatic state-rollback simulations successfully.
+        """
+        payload = {
+            "skill_id": "SKILL-DIB-001",
+            "success": False,
+            "error_msg": "TimeoutExpired: Subprocess exceeded maximum execution bounds.",
+            "traceback": "Traceback (most recent call): file solomon_skill_graph.py line 85"
+        }
+        response = client.post("/api/mnemosyne/repair/evaluate", data=json.dumps(payload), content_type="application/json")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+
+        feedback = data["evaluation_feedback"]
+        assert feedback["skill_id"] == "SKILL-DIB-001"
+        assert feedback["success_status"] is False
+
+        rep = data["self_repair_action_report"]
+        assert rep["status"] == "self_repaired"
+        assert rep["anomaly_detected"] == "TimeoutExpired"
+        assert rep["failure_card_created"] == "SOK-FAILURE-001"
+        assert rep["repair_card_created"] == "SOK-REPAIR-PROCEDURE-001"
+
+        # Verify rollback triggers
+        rollback = rep["rollback_status"]
+        assert rollback["rollback_triggered"] is True
+        assert rollback["rollback_type"] == "GitRevertSimulation"
+        assert rollback["active_development_branch_alignment"] == "commit_143e109"
+
+        # Verify cards were persisted inside Mnemosyne SQLite DB using GET cards
+        res_cards = client.get("/api/mnemosyne/cards")
+        assert res_cards.status_code == 200
+        all_cards = res_cards.get_json()["cards"]
+
+        # Assert SOK-FAILURE-001 card was created
+        assert "SOK-FAILURE-001" in all_cards
+        fail_card = all_cards["SOK-FAILURE-001"]
+        assert fail_card["family"] == "Failure"
+        assert "TimeoutExpired" in fail_card["content"]
+
+        # Assert SOK-REPAIR-PROCEDURE-001 card was created and linked
+        assert "SOK-REPAIR-PROCEDURE-001" in all_cards
+        repair_card = all_cards["SOK-REPAIR-PROCEDURE-001"]
+        assert repair_card["family"] == "Repair"
+        assert len(repair_card["outgoing_links"]) > 0
+        assert repair_card["outgoing_links"][0]["target_id"] == "SOK-FAILURE-001"
+        assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
