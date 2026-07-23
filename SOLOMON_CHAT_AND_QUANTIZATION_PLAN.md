@@ -33,7 +33,7 @@ Operating high-parameter LLMs (e.g., Llama-3 8B/70B, Mistral, Qwen) on restricte
 ### B. Memory & RAM Efficiency Strategies
 
 To complement quantization, Solomon leverages advanced system-level memory configurations:
-1. **PagedAttention**: Avoids physical memory fragmentation of the Key-Value (KV) cache by partitioning it into virtual blocks (similar to OS paging), reducing KV cache memory waste by up to 96%.
+1. **PagedAttention**: Avoids memory fragmentation of the Key-Value (KV) cache by partitioning it into virtual blocks (similar to OS paging), reducing KV cache memory waste by up to 96%.
 2. **KV Cache Quantization**: Quantizing the KV cache to FP8 or INT4 formats reduces the context-window memory footprint by 2x and 4x respectively, allowing Solomon to sustain up to 128k context lengths on a single GPU.
 3. **Speculative Decoding with Ternary Draft Models**: Solomon utilizes an ultra-light, 1.58-bit BitNet draft model to rapidly generate draft tokens. These tokens are verified in parallel by the heavy, quantized target model in a single forward pass, accelerating generation speed by 2x to 3x without losing target-model accuracy.
 
@@ -103,30 +103,52 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ---
 
-## 4. Implementation Roadmap
+## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-### Phase 1: Gateway Upgrades (Current Step)
-- Refactor the Flask POST `/chat` gateway to support a thread-safe, modern OpenAI client instantiation (v1.0.0+ style).
-- Inject the unified Google Jules, OpenAI Codex, and Solomon Foreman persona into the system instructions.
-- Add structured logging, robust exception boundaries, and strict request schema verification.
-- Implement a parser to detect worker delegation directives.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 5-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
-### Phase 2: Dynamic Calibration & Compilation
-- Leverage active database memory cards in Mnemosyne to serve as a custom calibration dataset for quantization.
-- Run local simulated Hessian trace optimizations (AMPBA) to generate optimal mixed-precision modelfiles.
+### Phase I: Local Inference Server Integration
+* **Objective**: Establish a high-throughput local inference bridge.
+* **Action Steps**:
+  1. Deploy a local **llama.cpp** or **Ollama** server inside the sandbox or host machine.
+  2. Map standard chat endpoints (e.g. `/v1/chat/completions`) locally on port `11434` (Ollama) or `8080` (llama.cpp).
+  3. Override standard OpenAI client configurations to target the local URL (`SOLOMON_LLM_API_BASE=http://localhost:11434/v1`).
+  4. Ensure zero external internet requests are required for core inference.
 
-### Phase 3: Zero-Downtime Sandbox Promotion
-- Standardize the Gabriel capability promotion pipeline, ensuring newly generated code passes Prometheus audits before being injected via the AST engine.
+### Phase II: Quantization Profile Selection
+* **Objective**: Match local model size to available hardware limits.
+* **Execution Parameters**:
+  - **RAM <= 8GB**: Deploy Qwen-2.5-Coder-7B quantized to `GGUF_Q4_K_M` (requires ~4.8 GB memory).
+  - **RAM <= 16GB**: Deploy DeepSeek-Coder-V2-Lite (16B parameters) quantized to `GGUF_Q4_K_M` (requires ~10 GB memory) or Qwen-2.5-Coder-14B-Instruct.
+  - **GPU Acceleration (VRAM >= 12GB)**: Deploy `EXL2` at 4.0 bits/weight, caching the KV Cache in FP8 mode to maximize token throughput.
 
-### Phase 4: Local GGUF/BitNet Deployment
-- Integrate local llama.cpp or Ollama servers behind the `SOLOMON_LLM_API_BASE` endpoint, utilizing local quantized models to ensure complete data privacy and low-latency execution offline.
+### Phase III: Hybrid Chat (GPT-Style) & Code Synthesis (Codex-Style) Routing
+* **Objective**: Ensure the local model excels at both natural chat and complex programming.
+* **Implementation Rules**:
+  - For **GPT-Style Chat**: Formulate system instructions that inject warmth, conversational depth, and broad logical reasoning (Google Jules persona).
+  - For **Codex-Style Engineering**: Inject direct system formatting instructions that force outputting of pure, syntactically correct, and PEP8-compliant code blocks without superfluous conversational fluff. Use FIM (Fill-in-the-Middle) prompt syntax when completing code inline.
+
+### Phase IV: Sandboxed Verification & Self-Healing (Prometheus & Gabriel)
+* **Objective**: Guard against local LLM hallucinations and errors.
+* **Execution Lane**:
+  1. Every code chunk synthesized by the local Codex engine must be exported into a quarantined container.
+  2. Run Prometheus static audits on the code (checking for unsafe imports, endless loops, or filesystem escapes).
+  3. Run the sandbox executor to compile and run tests.
+  4. If execution fails, capture the stderr and feed it back to the local LLM as a new chat message to trigger self-healing.
+
+### Phase V: Perpetual SOK Memory Tuning
+* **Objective**: Fine-tune local model behavior using active SQLite memory cards.
+* **Optimization Flow**:
+  1. Retrieve related active SOK cards via hybrid lexical/semantic search.
+  2. Dynamically inject these cards as "retrieval-augmented context" into the local system instructions before chat generation.
+  3. Feed user feedback ratings into card confidence indexes, continuously honing retrieval quality.
 
 ---
 
 ## 5. Summary of Recommended Actions
-To activate this plan immediately:
-1. OVERWRITE `app.py` with the upgraded dual-persona and worker-dispatching endpoint.
-2. CREATE `test_app.py` to assert correct request routing, payload verification, worker orchestration, and response formatting.
-3. RUN tests via Pytest to lock in performance.
+To activate this offline-first, dual-personality capability immediately:
+1. OVERWRITE `app.py` with a built-in `LocalInferenceEngine` that handles offline heuristics, combines ChatGPT and Codex behaviors locally, and supports local Ollama/llama.cpp server routing.
+2. CREATE `test_app.py` to assert correct local offline operations and worker-orchestration routing.
+3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Proceed with upgrading the `app.py` source code to implement this dual-persona chat and worker-orchestration logic.**
+**RECOMMENDED NEXT STEP: Proceed with implementing the fully functional offline local inference engine in `app.py` to run GPT-like chat and Codex-like code operations entirely offline.**

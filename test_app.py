@@ -316,8 +316,7 @@ def test_chat_live_and_fallback_modes(mock_openai_client, flask_client):
     )
     assert response.status_code == 200
     data = response.get_json()
-    assert "Jules" in data["reply"]
-    assert "Codex" in data["reply"]
+    assert "GGUF" in data["reply"]
     assert "RECOMMENDED NEXT STEP" in data["reply"]
     assert "AMPBA" in data["reply"]
     assert data["worker_orchestration"] is False
@@ -370,10 +369,44 @@ def test_chat_live_and_fallback_modes(mock_openai_client, flask_client):
         mock_openai_client.chat.completions.create.side_effect = Exception("OpenAI API Outage Simulation")
         response_err = flask_client.post(
             "/chat",
-            data=json.dumps({"message": "This will trigger error fallback path."}),
+            data=json.dumps({"message": "This will trigger error fallback path with Python code."}),
             content_type="application/json"
         )
         assert response_err.status_code == 200
         data_err = response_err.get_json()
-        assert "gateway exception" in data_err["reply"]
-        assert "OpenAI API Outage Simulation" in data_err["reply"]
+        assert "LOCAL CODEX INFERENCE" in data_err["reply"]
+
+def test_local_codex_inference_variants(flask_client):
+    """Tests the diverse code-generation pathways of the LocalInferenceEngine."""
+    # Test case 1: "write a Python script to test local capability"
+    response1 = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": "write a python test script"}),
+        content_type="application/json"
+    )
+    assert response1.status_code == 200
+    data1 = response1.get_json()
+    assert "LOCAL CODEX INFERENCE" in data1["reply"]
+    assert "test_local_capability_example" in data1["reply"]
+
+    # Test case 2: "write a function for quantization bitweights"
+    response2 = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": "write a function for quantization bitweights"}),
+        content_type="application/json"
+    )
+    assert response2.status_code == 200
+    data2 = response2.get_json()
+    assert "LOCAL CODEX INFERENCE" in data2["reply"]
+    assert "run_ampba_allocation_offline" in data2["reply"]
+
+    # Test case 3: generic code request
+    response3 = flask_client.post(
+        "/chat",
+        data=json.dumps({"message": "write a general capability compiled script"}),
+        content_type="application/json"
+    )
+    assert response3.status_code == 200
+    data3 = response3.get_json()
+    assert "LOCAL CODEX INFERENCE" in data3["reply"]
+    assert "execute_synthesized_job" in data3["reply"]
