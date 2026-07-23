@@ -43,6 +43,10 @@ from solomon_wisdom_layer import SOSS_WisdomLayer
 from solomon_meta_learning import MetaLearningEngine
 from solomon_meta_architect import MetaArchitect
 
+# Import Phase 14 and 15 SOSS Engines
+from solomon_neural_synapse_mapper import NeuralSynapseMapper
+from solomon_self_evolving_codex import SelfEvolvingCodex
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -66,6 +70,8 @@ node_ledger = DistributedNodeLedger("solomon_mnemosyne_demo.db")
 wisdom_layer = SOSS_WisdomLayer()
 meta_learning_engine = MetaLearningEngine(db)
 meta_architect = MetaArchitect(db)
+synapse_mapper = NeuralSynapseMapper(db)
+self_evolving_codex = SelfEvolvingCodex(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1205,6 +1211,48 @@ def run_meta_architect_epoch():
     report = meta_architect.execute_autonomous_evolution_epoch(
         simulated_memory_mb=simulated_memory_mb,
         simulated_sql_ms=simulated_sql_ms
+    )
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 14 & 15 SOSS SYNAPSE MAPPER AND SELF-EVOLVING CODEX ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/synapse/blend", methods=["POST"])
+def run_neural_synapse_blend():
+    """
+    Ingests two SOK cards and dynamically merges them into a consolidated high-level concept node.
+    """
+    data = request.json or {}
+    card_id_1 = data.get("card_id_1")
+    card_id_2 = data.get("card_id_2")
+
+    if not card_id_1 or not card_id_2:
+        return jsonify({"error": "Missing required fields 'card_id_1' or 'card_id_2' in request payload."}), 400
+
+    report = synapse_mapper.blend_knowledge_cards(card_id_1, card_id_2)
+    return jsonify(report)
+
+
+@app.route("/api/command-center/codex/compile", methods=["POST"])
+def run_self_evolving_codex_compile():
+    """
+    Ingests natural language instructions, compiles them into a validated Python skill in sandboxes,
+    and registers successful outcomes to SQLite.
+    """
+    data = request.json or {}
+    tool_name = data.get("tool_name")
+    natural_language_intent = data.get("natural_language_intent")
+    expected_output_assertion = data.get("expected_output_assertion")
+
+    if not tool_name or not natural_language_intent or not expected_output_assertion:
+        return jsonify({"error": "Missing required parameters 'tool_name', 'natural_language_intent', or 'expected_output_assertion'."}), 400
+
+    report = self_evolving_codex.compile_natural_language_intent(
+        tool_name=tool_name,
+        natural_language_intent=natural_language_intent,
+        expected_output_assertion=expected_output_assertion
     )
     return jsonify(report)
 
