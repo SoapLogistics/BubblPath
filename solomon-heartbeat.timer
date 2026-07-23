@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for Solomon Heartbeat
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Unit=solomon-heartbeat.service
+
+[Install]
+WantedBy=timers.target

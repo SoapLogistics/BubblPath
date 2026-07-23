@@ -1,0 +1,14 @@
+[Unit]
+Description=Solomon Autonomous Heartbeat Scheduler
+After=network.target
+
+[Service]
+Type=simple
+User=solomon
+WorkingDirectory=/opt/solomon
+ExecStart=/usr/bin/python3 -m solomon_heartbeat
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -60,6 +60,7 @@ class KnowledgeCard:
         why_created: str = "",
         problem_solved: str = "",
         future_work_dependent: str = "",
+        embedding: Optional[List[float]] = None,
         extra_metadata: Optional[Dict[str, Any]] = None
     ):
         self.card_id = card_id
@@ -86,6 +87,7 @@ class KnowledgeCard:
         self.why_created = why_created
         self.problem_solved = problem_solved
         self.future_work_dependent = future_work_dependent
+        self.embedding = embedding or []
         self.extra_metadata = extra_metadata or {}
 
         self.validate()
@@ -166,6 +168,7 @@ class KnowledgeCard:
             "why_created": self.why_created,
             "problem_solved": self.problem_solved,
             "future_work_dependent": self.future_work_dependent,
+            "embedding": self.embedding,
             "extra_metadata": self.extra_metadata
         }
 
@@ -197,5 +200,6 @@ class KnowledgeCard:
             why_created=data.get("why_created", ""),
             problem_solved=data.get("problem_solved", ""),
             future_work_dependent=data.get("future_work_dependent", ""),
+            embedding=data.get("embedding", []),
             extra_metadata=data.get("extra_metadata")
         )

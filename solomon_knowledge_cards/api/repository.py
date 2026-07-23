@@ -2,13 +2,18 @@ import re
 from typing import List, Dict, Any, Optional
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
+from solomon_knowledge_cards.api.embeddings import SemanticEmbedder
 
 class CardRepository:
     def __init__(self, db_manager: DatabaseManager):
+        self.embedder = SemanticEmbedder()
         self.db_manager = db_manager
 
     def create_card(self, card: KnowledgeCard, creator: str = "system", reason: Optional[str] = None) -> None:
         """Creates a new card in the storage layer."""
+        if not card.embedding:
+            combined_text = f"{card.title} {card.summary} {card.why_created} {card.problem_solved} {card.body}"
+            card.embedding = self.embedder.generate_embedding(combined_text)
         self.db_manager.store_card(card, updater=creator, reason=reason or "Initial creation")
 
     def get_card(self, card_id: str) -> Optional[KnowledgeCard]:
@@ -20,6 +25,11 @@ class CardRepository:
         existing = self.db_manager.get_card(card.card_id)
         if not existing:
             raise ValueError(f"Card {card.card_id} does not exist. Use create_card first.")
+
+        # Re-generate embedding on update
+        combined_text = f"{card.title} {card.summary} {card.why_created} {card.problem_solved} {card.body}"
+        card.embedding = self.embedder.generate_embedding(combined_text)
+
         self.db_manager.store_card(card, updater=updater, reason=reason or "Card update")
 
     def deprecate_card(self, card_id: str, updater: str = "system", reason: Optional[str] = None) -> bool:
@@ -45,6 +55,15 @@ class CardRepository:
         elif link_type == "RELATED":
             if target_id not in source_card.related_card_ids:
                 source_card.related_card_ids.append(target_id)
+        elif link_type in ("DEPENDS_ON", "PREVENTS", "ENHANCES"):
+            with self.db_manager._lock:
+                conn = self.db_manager._get_connection()
+                try:
+                    conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, ?)", (source_id, target_id, link_type))
+                    conn.commit()
+                finally:
+                    conn.close()
+            return # Don't need to re-save the source card fully
         else:
             raise ValueError(f"Unsupported link type: {link_type}")
 
@@ -64,6 +83,21 @@ class CardRepository:
             r_card = self.get_card(r_id)
             if r_card:
                 related.append(r_card)
+
+        # Also grab any semantic relationships from the DB directly
+        with self.db_manager._lock:
+            conn = self.db_manager._get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT target_id FROM card_links WHERE source_id = ? AND link_type IN ('DEPENDS_ON', 'PREVENTS', 'ENHANCES')", (card_id,))
+                for row in cursor.fetchall():
+                    target_id = row[0]
+                    t_card = self.get_card(target_id)
+                    if t_card and target_id not in [c.card_id for c in related]:
+                        related.append(t_card)
+            finally:
+                conn.close()
+
         return related
 
     def retrieve_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
@@ -113,8 +147,12 @@ class CardRepository:
         all_cards = self.list_cards()
         ranked_results = []
 
+
         # Tokenize query
         terms = [t.lower() for t in re.findall(r'\w+', query)] if query else []
+
+        # Generate query embedding if terms exist
+        query_embedding = self.embedder.generate_embedding(query) if query else None
 
         for card in all_cards:
             # Type filter
@@ -132,7 +170,16 @@ class CardRepository:
             score = 0.0
             explanations = []
 
+
             # Keyword matching and scoring
+            semantic_score = 0.0
+            if query_embedding and card.embedding:
+                semantic_similarity = self.embedder.compute_similarity(query_embedding, card.embedding)
+                if semantic_similarity > 0.5:  # Threshold
+                    semantic_score = semantic_similarity * 20.0
+                    explanations.append(f"Semantic similarity match (+{semantic_score:.1f} pts)")
+                    score += semantic_score
+
             if terms:
                 title_matches = 0
                 summary_matches = 0
