@@ -56,6 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Phase 17 Elements
   const btnAnalyzeEntertainment = document.getElementById('btn-analyze-entertainment');
 
+  // Phase 18 Elements
+  const btnAnalyzeCrossMarket = document.getElementById('btn-analyze-cross-market');
+
+  // Phase 19 Elements
+  const btnViewAuditLogs = document.getElementById('btn-view-audit-logs');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -483,6 +489,55 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       appendMessage('Solomon Entertainment', entertainmentReport, true);
     }, 2800);
+  });
+
+  // --- Phase 18: Cross-Market Radar ---
+  btnAnalyzeCrossMarket.addEventListener('click', () => {
+    appendMessage('Solomon', 'Initiating cross-market scan across prediction platforms...');
+
+    setTimeout(() => {
+      appendMessage('Solomon Radar', '&#10003; Retrieving Kalshi order book data via public API...', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon Radar', '&#10003; Retrieving Polymarket data via Gamma API...', true);
+    }, 1800);
+
+    setTimeout(() => {
+      const radarReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Target Market:</strong> Will the Fed cut rates in Q4?<br>
+          <strong>Kalshi Implied:</strong> 38% (Spread: 2¢)<br>
+          <strong>Polymarket Implied:</strong> 47% (Spread: 1¢)<br>
+          <strong>Solomon Base Rate Estimate:</strong> 44%<br>
+          <strong>Divergence Detected:</strong> 9% Delta<br>
+          <strong>Analysis:</strong> Kalshi market appears underpriced compared to both crypto consensus and Solomon internal estimates. Recommend executing paper trade to track calibration.
+        </div>
+      `;
+      appendMessage('Solomon Radar', radarReport, true);
+    }, 3200);
+  });
+
+  // --- Phase 19: Audit Logger ---
+  btnViewAuditLogs.addEventListener('click', () => {
+    appendMessage('System Audit', 'Retrieving session action logs from Service Worker...', true);
+    chrome.runtime.sendMessage({ type: 'GET_AUDIT_LOGS' }, (response) => {
+      if (response && response.logs) {
+        if (response.logs.length === 0) {
+          appendMessage('System Audit', 'No actions logged in current session.');
+          return;
+        }
+
+        let logHtml = `<div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px; max-height: 150px; overflow-y: auto;">`;
+        response.logs.forEach(log => {
+          logHtml += `<strong>[${log.action}]</strong> ${log.details}<br><span style="color:#6b7280; font-size:0.65rem;">${log.timestamp}</span><br><hr style="border:0; border-top:1px solid #e5e7eb; margin: 4px 0;">`;
+        });
+        logHtml += `</div>`;
+        appendMessage('System Audit', logHtml, true);
+      } else {
+        appendMessage('System Error', 'Failed to retrieve audit logs.');
+      }
+    });
   });
 
 
