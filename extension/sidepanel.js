@@ -50,6 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Phase 15 Elements
   const btnAnalyzeEdu = document.getElementById('btn-analyze-edu');
 
+  // Phase 16 Elements
+  const btnAnalyzeEmail = document.getElementById('btn-analyze-email');
+
+  // Phase 17 Elements
+  const btnAnalyzeEntertainment = document.getElementById('btn-analyze-entertainment');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -424,6 +430,58 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
       appendMessage('Solomon Edu', eduReport, true);
+    }, 2800);
+  });
+
+  // --- Phase 16: Email & Comms Companion ---
+  btnAnalyzeEmail.addEventListener('click', () => {
+    appendMessage('Solomon', 'Scanning email thread and parsing attachments...');
+
+    setTimeout(() => {
+      appendMessage('Solomon Comms', '&#10003; Extracting unresolved questions from previous messages...', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon Comms', '&#10003; Generating suggested reply draft...', true);
+    }, 1800);
+
+    setTimeout(() => {
+      const emailReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Unresolved Action Items:</strong> 2 (Send Q3 report, confirm meeting time).<br>
+          <strong>Attachment Scan:</strong> Safe (1 PDF detected).<br>
+          <strong>Suggested Reply Draft:</strong><br>
+          <em>"Hi team, please find the Q3 report attached. I am available to meet at 2:00 PM EST tomorrow."</em><br><br>
+          <strong>Note:</strong> I have prepared the draft. <strong>I cannot click send.</strong>
+        </div>
+      `;
+      appendMessage('Solomon Comms', emailReport, true);
+    }, 2800);
+  });
+
+  // --- Phase 17: Entertainment Companion ---
+  btnAnalyzeEntertainment.addEventListener('click', () => {
+    appendMessage('Solomon', 'Scanning page for media titles, actors, and dates...');
+
+    setTimeout(() => {
+      appendMessage('Solomon Entertainment', '&#10003; Aggregating spoiler-free reviews...', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon Entertainment', '&#10003; Checking local streaming availability...', true);
+    }, 1800);
+
+    setTimeout(() => {
+      const entertainmentReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Title Detected:</strong> Dune: Part Two<br>
+          <strong>Release Date:</strong> March 1, 2024<br>
+          <strong>Spoiler-Free Consensus:</strong> "A visually stunning epic that improves upon the first installment. Pacing is excellent."<br>
+          <strong>Streaming On:</strong> Max (Included in your subscription)<br>
+          <strong>Action:</strong> Added to Solomon Watch List.
+        </div>
+      `;
+      appendMessage('Solomon Entertainment', entertainmentReport, true);
     }, 2800);
   });
 
