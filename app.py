@@ -19,6 +19,8 @@ from solomon_prometheus_curiosity import PrometheusCuriosityEngine
 from solomon_experiment_engine import ExperimentEngine
 from solomon_skill_factory import SkillFactory
 from solomon_skill_graph_navigator import SkillGraphNavigator
+from solomon_self_study import SelfStudyOptimizer
+from solomon_autonomous_research import AutonomousResearcher
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -30,6 +32,7 @@ skills_graph = SkillGraph()
 perpetual_loop = SolomonPerpetualLearningLoop(db, router, skills_graph)
 experiment_engine = ExperimentEngine(db)
 graph_navigator = SkillGraphNavigator()
+autonomous_researcher = AutonomousResearcher(db)
 
 # Seed default capabilities inside the Graph Navigator
 graph_navigator.register_skill_node(
@@ -880,6 +883,78 @@ def analyze_skills_graph_dependencies():
             "missing dependency indicated in next_learning_recommendations!</span>"
         )
     })
+
+
+@app.route("/api/mnemosyne/study/optimize", methods=["POST"])
+def optimize_study_parameters():
+    """
+    Analyzes active retrieval and routing success trends to autonomously adjust active RAG and Model Router hyperparameters.
+    """
+    data = request.json or {}
+    success_rate = float(data.get("retrieval_success_rate", 0.85))
+    accuracy_rate = float(data.get("router_accuracy_rate", 0.92))
+
+    current_params = {
+        "base_threshold": float(data.get("current_base_threshold", 0.40)),
+        "similarity_decay": float(data.get("current_similarity_decay", 0.98))
+    }
+
+    report = SelfStudyOptimizer.optimize_hyperparameters(success_rate, accuracy_rate, current_params)
+    return jsonify({
+        "status": "success",
+        "study_optimizer_report": report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'> "
+            "Call POST /api/mnemosyne/route again to confirm that routing decisions "
+            "comply with the newly calculated safety thresholds!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/research/evaluate", methods=["POST"])
+def evaluate_autonomous_research_project():
+    """
+    Initiates an autonomous research study, benchmarking competing candidate algorithms inside the sandbox,
+    and promoting the winning implementation directly to the SQLite active ledger.
+    """
+    data = request.json or {}
+    project_id = data.get("project_id", "RES-MATH-01")
+    topic = data.get("topic", "Vector distance normalization speedup")
+
+    # Simple default candidates
+    candidates = data.get("candidates", [
+        {
+            "name": "Linear iterative math normalizer",
+            "source_code": "def norm_x():\n    total = 0\n    for i in range(100):\n        total += i\n    return total\n",
+            "entry_call": "norm_x()"
+        },
+        {
+            "name": "Analytical algebraic sum normalizer",
+            "source_code": "def norm_x():\n    return (99 * 100) // 2\n",
+            "entry_call": "norm_x()"
+        }
+    ])
+
+    try:
+        report = autonomous_researcher.execute_research_project(project_id, topic, candidates)
+        return jsonify({
+            "status": "success",
+            "research_project_report": report,
+            "recommended_next_step": (
+                "RECOMMENDED NEXT STEP:\n"
+                "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+                "Trigger POST /api/mnemosyne/study/optimize to automatically adapt "
+                "evaluation parameters following new capability insertions!</span>"
+            )
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
 
 
 @app.route("/api/mnemosyne/skills/execute", methods=["POST"])

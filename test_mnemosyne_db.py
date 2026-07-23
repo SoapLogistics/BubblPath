@@ -281,6 +281,75 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_self_study_optimizer(self):
+        """
+        Directly asserts that the SelfStudyOptimizer tunes active vector weights
+        and routing thresholds based on retrieval feedback metrics.
+        """
+        from solomon_self_study import SelfStudyOptimizer
+        current_params = {
+            "base_threshold": 0.40,
+            "similarity_decay": 0.98
+        }
+        res = SelfStudyOptimizer.optimize_hyperparameters(
+            retrieval_success_rate=0.85,
+            router_accuracy_rate=0.90,
+            current_params=current_params
+        )
+
+        assert res["status"] == "PARAMETERS_OPTIMIZED"
+        assert res["optimized_hyperparameters"]["base_threshold"] == 0.45
+        assert res["optimized_hyperparameters"]["similarity_decay"] == 0.96
+        assert len(res["adjustments_made"]) == 2
+
+    def test_study_and_research_api_routes(self, client):
+        """
+        Verifies POST /api/mnemosyne/study/optimize and POST /api/mnemosyne/research/evaluate
+        endpoints process requests, tune RAG params, and promote research winners to SQLite.
+        """
+        # 1. POST Study Optimize
+        payload_study = {
+            "retrieval_success_rate": 0.88,
+            "router_accuracy_rate": 0.91,
+            "current_base_threshold": 0.50,
+            "current_similarity_decay": 0.95
+        }
+        res_study = client.post(
+            "/api/mnemosyne/study/optimize",
+            data=json.dumps(payload_study),
+            content_type="application/json"
+        )
+        assert res_study.status_code == 200
+        data_study = res_study.get_json()
+        assert data_study["status"] == "success"
+        assert data_study["study_optimizer_report"]["status"] == "PARAMETERS_OPTIMIZED"
+
+        # 2. POST Research Evaluate
+        payload_res = {
+            "project_id": "RES-NORM-999",
+            "topic": "Cosine normalization performance sum",
+            "candidates": [
+                {
+                    "name": "Normal sum method A",
+                    "source_code": "def solve(): return 123",
+                    "entry_call": "solve()"
+                }
+            ]
+        }
+        res_research = client.post(
+            "/api/mnemosyne/research/evaluate",
+            data=json.dumps(payload_res),
+            content_type="application/json"
+        )
+        assert res_research.status_code == 200
+        data_research = res_research.get_json()
+        assert data_research["status"] == "success"
+
+        report = data_research["research_project_report"]
+        assert report["project_id"] == "RES-NORM-999"
+        assert report["winning_candidate_name"] == "Normal sum method A"
+        assert report["promoted_card_id"] == "SOK-RESEARCH-WINNER-RES_NORM_999"
+
     def test_skill_factory_package_compilation(self):
         """
         Directly asserts that Gabriel's Skill Factory correctly compiles learned scripts
