@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 11-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 13-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -186,12 +186,27 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Support defining relationship bonds such as `DEPENDS_ON`, `PREVENTS`, and `ENHANCES` between cards.
   3. Implement graph endpoints (`POST /api/mnemosyne/cards/links` and `GET /api/mnemosyne/cards/graph`) to create and traverse linked relational paths, ensuring Solomon topologically resolves dependency safety before attempting sandboxed code execution.
 
+### Phase XII: Model Hot-Swapping Router
+* **Objective**: Dynamically route queries to either high-precision target models or ultra-light quantized models.
+* **Action Steps**:
+  1. Build a multi-tier `ModelRouter` inside `app.py`.
+  2. Parse user query semantic indicators and SOK confidence scores.
+  3. If SOK card confidence for the topic is extremely high (>=1.5), route automatically to the ultra-light INT4 quantized local model to save RAM and minimize latency.
+  4. If topic confidence is low (< 1.5), hot-swap the execution context to the high-precision target model (FP16/INT8) to prevent errors.
+
+### Phase XIII: Dynamic AST Class-Method Injection
+* **Objective**: Dynamically compile and hot-inject newly verified python methods into live classes at runtime.
+* **Action Steps**:
+  1. Overwrite the `POST /api/mnemosyne/ast-inject` endpoint in `app.py`.
+  2. Read class definitions, compile new method source codes on the fly using python's built-in `compile()` AST parser, and dynamically bind methods using `setattr()` on live targets.
+  3. Achieve zero-downtime capability updates to hot-reload class memories without restarting the gateway web server.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the complete resource guardrails, logging, and semantic graph linking endpoints.
-2. CREATE `test_app.py` to assert correct telemetry logging, memory compaction, and card link graph traversals.
+1. OVERWRITE `app.py` with the complete hot-swapping router and dynamic AST method injector core.
+2. CREATE `test_app.py` to assert correct model hot-swapping routing and live AST injections.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add resource guardrails, telemetry logging, and semantic graph card link traversals so Solomon can autonomously map dependencies and safeguard system resources.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add model hot-swapping routers and live AST class-method injection so Solomon can dynamically route queries and hot-reload code libraries offline.**

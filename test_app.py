@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 from unittest.mock import MagicMock, patch
-from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE, SOK_LINKS_FILE, TELEMETRY_LOG_FILE
+from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE, SOK_LINKS_FILE, TELEMETRY_LOG_FILE, TargetSynthesizedClass
 
 @pytest.fixture
 def flask_client():
@@ -179,19 +179,22 @@ def test_mnemosyne_search_endpoint(flask_client):
         assert -1.0 <= item["similarity_score"] <= 1.0
 
 def test_mnemosyne_route_endpoint(flask_client):
-    """Verifies dynamic operator routing based on confidence."""
+    """Verifies dynamic model router hot-swapping based on SOK card confidence."""
+    # Match high confidence card (BitNet b1.58 confidence is 2.0 >= 1.5) -> INT4
     response1 = flask_client.post(
         "/api/mnemosyne/route",
-        data=json.dumps({"query": "How to optimize Quantization?"}),
+        data=json.dumps({"query": "Explain BitNet b1.58 ternary weights"}),
         content_type="application/json"
     )
     assert response1.status_code == 200
     data1 = response1.get_json()
     assert data1["routed_model"] == "Ultra-Light INT4 Quantized Model"
+    assert data1["confidence"] == 2.0
 
+    # Match low confidence or no matched cards -> FP16
     response2 = flask_client.post(
         "/api/mnemosyne/route",
-        data=json.dumps({"query": "Unknown query topic"}),
+        data=json.dumps({"query": "Completely unknown query subject"}),
         content_type="application/json"
     )
     assert response2.status_code == 200
@@ -230,25 +233,53 @@ def test_crucible_endpoint(flask_client):
     assert data["crucible_mode"] == "AST-FUSION"
 
 def test_ast_inject_endpoint(flask_client):
-    """Verifies AST Injection."""
-    # Failure case
+    """Verifies AST compiling and live class-method injection at runtime."""
+    # Failure case: missing key
     response1 = flask_client.post(
         "/api/mnemosyne/ast-inject",
-        data=json.dumps({"class_name": "SolomonGateway"}),
+        data=json.dumps({"class_name": "TargetSynthesizedClass"}),
         content_type="application/json"
     )
     assert response1.status_code == 400
 
-    # Success case
+    # Failure case: bad code compilation error
+    response_bad = flask_client.post(
+        "/api/mnemosyne/ast-inject",
+        data=json.dumps({
+            "class_name": "TargetSynthesizedClass",
+            "method_name": "broken_syntax",
+            "method_code": "def broken_syntax(self):\n   return (123\n" # Missing closing paren
+        }),
+        content_type="application/json"
+    )
+    assert response_bad.status_code == 500
+    assert "AST Compilation Exception" in response_bad.get_json()["error"]
+
+    # Success case: live compilation and attr binding
+    success_code = (
+        "def dynamic_add(self, a, b):\n"
+        "    return a + b\n"
+    )
     response2 = flask_client.post(
         "/api/mnemosyne/ast-inject",
-        data=json.dumps({"class_name": "SolomonGateway", "method_name": "dynamic_test_call"}),
+        data=json.dumps({
+            "class_name": "TargetSynthesizedClass",
+            "method_name": "dynamic_add",
+            "method_code": success_code
+        }),
         content_type="application/json"
     )
     assert response2.status_code == 200
     data = response2.get_json()
     assert data["status"] == "SUCCESS"
-    assert data["injected_method"] == "dynamic_test_call"
+    assert data["injected_method"] == "dynamic_add"
+    assert data["hot_reload_complete"] is True
+
+    # Real target evaluation: instantiate the class and call our dynamically compiled method!
+    obj = TargetSynthesizedClass()
+    assert hasattr(obj, "dynamic_add")
+    res_val = obj.dynamic_add(15, 25) # 15 + 25 = 40
+    assert res_val == 40
 
 def test_observe_endpoint(flask_client):
     """Verifies blackbox profiling synthesis."""

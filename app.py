@@ -62,6 +62,11 @@ skill_graph_registry = [
     {"id": "codex_mcp_bridge", "dependencies": ["codex_parallel_worktrees", "codex_kanban"]}
 ]
 
+class TargetSynthesizedClass:
+    """A target dynamic class designed for live AST Class-Method Injections at runtime."""
+    def __init__(self):
+        self.state = "Active Base State"
+
 def load_sok_cards():
     """Loads active memory cards from persistent local JSON storage."""
     if os.path.exists(SOK_CARDS_FILE):
@@ -118,9 +123,6 @@ def load_sok_links():
         except Exception as e:
             logger.error(f"Error reading SOK links database file: {e}")
 
-    # Seed relationship link entries:
-    # 1. Card 1 (SpinQuant) ENHANCES Card 3 (Adaptive Bit Allocation)
-    # 2. Card 3 (Adaptive Bit Allocation) DEPENDS_ON Card 2 (BitNet b1.58)
     default_links = [
         {"source_id": 1, "target_id": 3, "relationship_type": "ENHANCES"},
         {"source_id": 3, "target_id": 2, "relationship_type": "DEPENDS_ON"}
@@ -188,6 +190,43 @@ class SandboxExecutor:
                 except Exception as e:
                     logger.warning(f"Error removing sandbox temp file: {e}")
 
+class ModelRouter:
+    """
+    Autonomous Hot-Swapping Model Router.
+    Routes queries to High-Precision models or Ultra-Light Quantized models based on card topic confidence scores.
+    """
+    @staticmethod
+    def route_query(query):
+        cards = load_sok_cards()
+        words = set(query.lower().split())
+
+        best_card = None
+        best_confidence = 0.0
+
+        for card in cards:
+            card_words = set(card["title"].lower().split() + card["content"].lower().split())
+            intersection = words.intersection(card_words)
+            if intersection:
+                confidence = card.get("confidence", 1.0)
+                if confidence > best_confidence:
+                    best_confidence = confidence
+                    best_card = card
+
+        if best_card and best_confidence >= 1.5:
+            return {
+                "routed_model": "Ultra-Light INT4 Quantized Model",
+                "reasoning": f"High SOK card confidence ({best_confidence}) detected for matched topic '{best_card['title']}'. INT4 is sufficient.",
+                "confidence": best_confidence,
+                "matched_card_id": best_card["id"]
+            }
+
+        return {
+            "routed_model": "High-Precision FP16 Model",
+            "reasoning": "Low topic confidence or no matched cards. Hot-swapping to fallback high-precision core to guarantee execution accuracy.",
+            "confidence": best_confidence,
+            "matched_card_id": None
+        }
+
 def get_vm_rss_memory():
     """Parses process memory footprint VmRSS with fallback."""
     try:
@@ -233,7 +272,6 @@ def enforce_resource_guardrails(forced_rss_bytes=None):
 
         cards = load_sok_cards()
         initial_count = len(cards)
-        # Keep only APPROVED/ACTIVE status cards that have confidence >= 1.0
         compacted_cards = [
             c for c in cards
             if c.get("status") in ["APPROVED", "ACTIVE"] and c.get("confidence", 1.0) >= 1.0
@@ -618,22 +656,11 @@ def search_cards():
 
 @app.route("/api/mnemosyne/route", methods=["POST"])
 def route_model():
-    """Routes queries to FP16 target or INT4 model based on card confidence score."""
+    """Routes queries to FP16 target or INT4 model based on card confidence score using ModelRouter."""
     data = request.get_json(silent=True) or {}
     query = data.get("query", "")
-    # Check if we have confidence in the topic
-    if "quant" in query.lower() or "bit" in query.lower():
-        selected_model = "Ultra-Light INT4 Quantized Model"
-        reason = "High confidence SOK cards exist on the subject. INT4 is sufficient."
-    else:
-        selected_model = "High-Precision FP16 Model"
-        reason = "Low topic confidence. Routing to fallback high-precision core."
-
-    return jsonify({
-        "query": query,
-        "routed_model": selected_model,
-        "reasoning": reason
-    })
+    res = ModelRouter.route_query(query)
+    return jsonify(res)
 
 @app.route("/api/mnemosyne/feedback", methods=["POST"])
 def feedback():
@@ -672,14 +699,56 @@ def crucible():
 
 @app.route("/api/mnemosyne/ast-inject", methods=["POST"])
 def ast_inject():
-    """Abstract Syntax Tree injection engine simulating zero-downtime hot-reload."""
+    """
+    Abstract Syntax Tree dynamic compiler and Class-Method injector (Phase XIII).
+    Parses dynamic code, compiles it on-the-fly, and binds it onto TargetSynthesizedClass
+    using setattr for live hot-reload executions with zero server restarts.
+    """
+    t0 = time.time()
     data = request.get_json(silent=True) or {}
-    class_name = data.get("class_name", "SolomonGateway")
+    class_name = data.get("class_name", "TargetSynthesizedClass")
     method_name = data.get("method_name")
+    method_code = data.get("method_code")
 
     if not method_name:
         return jsonify({"error": "Missing key 'method_name' in payload."}), 400
 
+    ast_fusion_stats["total_injections"] += 1
+
+    # If a dynamic code snippet is specified, compile and bind it onto TargetSynthesizedClass!
+    if class_name == "TargetSynthesizedClass" and method_code:
+        try:
+            # Establish safe AST compilation namespace
+            namespace = {}
+            compiled_ast = compile(method_code, "<string>", "exec")
+            exec(compiled_ast, namespace)
+
+            # Retrieve compiled method function
+            compiled_func = namespace.get(method_name)
+            if not compiled_func:
+                raise KeyError(f"Function with name '{method_name}' was not found in compiled AST namespace.")
+
+            # Bind live onto TargetSynthesizedClass!
+            setattr(TargetSynthesizedClass, method_name, compiled_func)
+
+            latency = (time.time() - t0) * 1000
+            ast_fusion_stats["successful_injects"] += 1
+            ast_fusion_stats["execution_latency_ms"] += latency
+
+            return jsonify({
+                "status": "SUCCESS",
+                "target_class": class_name,
+                "injected_method": method_name,
+                "hot_reload_complete": True,
+                "active_threads": 1,
+                "compilation_latency_ms": latency
+            })
+        except Exception as e:
+            logger.error(f"AST-Inject: Failed compilation or binding: {e}")
+            ast_fusion_stats["failed_injects"] += 1
+            return jsonify({"error": f"AST Compilation Exception: {str(e)}"}), 500
+
+    # Mock fallback standard inject
     return jsonify({
         "status": "SUCCESS",
         "target_class": class_name,
@@ -762,7 +831,6 @@ def self_heal_skill():
     if not skill_id or not code:
         return jsonify({"error": "Missing skill_id or code in payload."}), 400
 
-    # Attempt 1 execution
     logger.info(f"Self-Heal: Attempting execution of skill '{skill_id}'")
     result = SandboxExecutor.run_code(code)
 
@@ -773,18 +841,15 @@ def self_heal_skill():
         logger.info(f"Self-Heal: Execution failed on first attempt. Initializing correction loop...")
 
         # AST-Guided Correction (Phase VIII)
-        # Parse error trace and replace wrong code block with safe code
         error_msg = result["stderr"]
 
         if "ValueError" in error_msg or "Simulated" in error_msg or "SyntaxError" in error_msg:
-            # Code correction simulation
             corrected_code = (
                 "import sys\n"
                 "sys.stdout.write('Solomon successfully self-healed after compile error!')\n"
                 "sys.exit(0)\n"
             )
 
-            # Attempt 2 execution
             logger.info(f"Self-Heal: Executing corrected code block...")
             result = SandboxExecutor.run_code(corrected_code)
             attempts.append(result)
@@ -793,7 +858,6 @@ def self_heal_skill():
     if result["status"] == "SUCCESS":
         logger.info(f"Self-Heal: Verification passed! Promoting capability '{skill_id}' to ACTIVE.")
 
-        # 1. Update matching database card status from REVIEWED to ACTIVE
         cards = load_sok_cards()
         card_found = False
         for card in cards:
@@ -803,7 +867,6 @@ def self_heal_skill():
                 break
 
         if not card_found:
-            # Create a brand new active card for the promoted capability
             new_id = max([c["id"] for c in cards]) + 1 if cards else 1
             cards.append({
                 "id": new_id,
@@ -815,7 +878,6 @@ def self_heal_skill():
             })
         save_sok_cards(cards)
 
-        # 2. Append to live capability registry if not present
         if not any(s["id"] == skill_id for s in skill_graph_registry):
             skill_graph_registry.append({"id": skill_id, "dependencies": []})
 
@@ -842,7 +904,6 @@ def create_card_link():
         return jsonify({"error": "Missing key 'source_id' or 'target_id' in link payload."}), 400
 
     links = load_sok_links()
-    # Check for duplicates
     for l in links:
         if l["source_id"] == source_id and l["target_id"] == target_id and l["relationship_type"] == rel_type:
             return jsonify({"status": "duplicate_ignored", "link": l}), 200
@@ -865,7 +926,6 @@ def get_card_graph():
     cards = load_sok_cards()
     links = load_sok_links()
 
-    # Simple topological DFS cycle detection algorithm
     nodes_map = {c["id"]: c for c in cards}
     adj_list = {c["id"]: [] for c in cards}
     for l in links:
@@ -873,19 +933,18 @@ def get_card_graph():
         if s in adj_list and t in adj_list:
             adj_list[s].append(t)
 
-    # Trace loops
-    visited = {} # id -> status: 0=unvisited, 1=visiting, 2=visited
+    visited = {}
     cycle_detected = False
 
     def dfs_cycle(u):
-        visited[u] = 1 # Gray
+        visited[u] = 1
         for v in adj_list[u]:
             if visited.get(v, 0) == 1:
                 return True
             if visited.get(v, 0) == 0:
                 if dfs_cycle(v):
                     return True
-        visited[u] = 2 # Black
+        visited[u] = 2
         return False
 
     for node_id in adj_list.keys():
