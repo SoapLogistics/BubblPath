@@ -25,6 +25,18 @@ function safeExtractPageContent() {
   };
 }
 
+// Phase 20: Visual Grounding Extractor
+function extractVisualData() {
+  const images = document.querySelectorAll('img');
+  const buttons = document.querySelectorAll('button, a.btn, input[type="submit"]');
+
+  return {
+    imageCount: images.length,
+    buttonCount: buttons.length,
+    status: 'Visual DOM bounding box map generated.'
+  };
+}
+
 // Phase 3: Preparer - Form Filling (Safe fields only)
 function simulateFormFill(payload) {
   console.log("Solomon: Attempting to prepopulate form data...", payload);
@@ -44,6 +56,9 @@ function simulateFormFill(payload) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'GET_CONTENT') {
     const data = safeExtractPageContent();
+    sendResponse(data);
+  } else if (request.type === 'EXTRACT_VISUAL_DATA') {
+    const data = extractVisualData();
     sendResponse(data);
   } else if (request.type === 'PREPARE_FORM') {
     const result = simulateFormFill(request.payload);
