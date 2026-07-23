@@ -35,6 +35,10 @@ from solomon_autonomous_research import AutonomousResearchEngine
 from solomon_autonomous_tool_creator import AutonomousToolCreator
 from solomon_self_repair import SelfAuditProbes, SelfRepairEngine
 
+# Import Phase 10 and 11 SOSS Engines
+from solomon_distributed_ledger import DistributedNodeLedger
+from solomon_wisdom_layer import SOSS_WisdomLayer
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -54,6 +58,8 @@ research_engine = AutonomousResearchEngine(db)
 tool_creator = AutonomousToolCreator(db)
 self_repair_probes = SelfAuditProbes(db)
 self_repair_engine = SelfRepairEngine(db)
+node_ledger = DistributedNodeLedger("solomon_mnemosyne_demo.db")
+wisdom_layer = SOSS_WisdomLayer()
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1098,6 +1104,64 @@ def run_autonomous_self_repair():
         route_latency_ms=route_latency
     )
     report = self_repair_engine.execute_self_repair_loops(findings)
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 10 & 11 SOSS DISTRIBUTED LEDGER AND WISDOM LAYER ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/ledger/sync", methods=["POST"])
+def run_distributed_ledger_sync():
+    """
+    Syncs a node's event (knowledge acquisition, failures, or repairs) to the central cryptographic ledger.
+    """
+    data = request.json or {}
+    node_id = data.get("node_id")
+    node_type = data.get("node_type")
+    event_type = data.get("event_type")
+    payload = data.get("payload")
+
+    if not node_id or not node_type or not event_type or payload is None:
+        return jsonify({"error": "Missing required fields 'node_id', 'node_type', 'event_type', or 'payload'."}), 400
+
+    if not isinstance(payload, dict):
+        return jsonify({"error": "'payload' must be a valid JSON dictionary."}), 400
+
+    report = node_ledger.sync_node_event(
+        node_id=node_id,
+        node_type=node_type,
+        event_type=event_type,
+        payload=payload
+    )
+    return jsonify(report)
+
+
+@app.route("/api/command-center/wisdom/evaluate", methods=["POST"])
+def run_wisdom_vector_evaluate():
+    """
+    Evaluates a dynamic skill package's wisdom vector, risk ratios, and ethics rules before execution.
+    """
+    data = request.json or {}
+    skill_name = data.get("skill_name")
+    try:
+        confidence = float(data.get("confidence", 1.0))
+        risks = float(data.get("risks", 0.1))
+        ethics_limits = float(data.get("ethics_limits", 0.0))
+        human_overrides = bool(data.get("human_overrides", False))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid parameter type or value: {str(e)}"}), 400
+
+    if not skill_name:
+        return jsonify({"error": "Missing required parameter 'skill_name'."}), 400
+
+    report = wisdom_layer.evaluate_wisdom_vector(
+        skill_name=skill_name,
+        confidence=confidence,
+        risks=risks,
+        ethics_limits=ethics_limits,
+        human_overrides=human_overrides
+    )
     return jsonify(report)
 
 
