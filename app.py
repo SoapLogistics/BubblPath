@@ -39,6 +39,10 @@ from solomon_self_repair import SelfAuditProbes, SelfRepairEngine
 from solomon_distributed_ledger import DistributedNodeLedger
 from solomon_wisdom_layer import SOSS_WisdomLayer
 
+# Import Phase 12 and 13 SOSS Engines
+from solomon_meta_learning import MetaLearningEngine
+from solomon_meta_architect import MetaArchitect
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -60,6 +64,8 @@ self_repair_probes = SelfAuditProbes(db)
 self_repair_engine = SelfRepairEngine(db)
 node_ledger = DistributedNodeLedger("solomon_mnemosyne_demo.db")
 wisdom_layer = SOSS_WisdomLayer()
+meta_learning_engine = MetaLearningEngine(db)
+meta_architect = MetaArchitect(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1161,6 +1167,44 @@ def run_wisdom_vector_evaluate():
         risks=risks,
         ethics_limits=ethics_limits,
         human_overrides=human_overrides
+    )
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 12 & 13 SOSS META-LEARNING AND META-ARCHITECT ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/meta-learning/optimize", methods=["POST"])
+def run_meta_learning_optimize():
+    """
+    Ingests execution history and self-tunes curiosity/wisdom loop algorithm coefficients.
+    """
+    data = request.json or {}
+    execution_history = data.get("execution_history")
+
+    if not execution_history or not isinstance(execution_history, list):
+        return jsonify({"error": "Missing or invalid 'execution_history' list in request payload."}), 400
+
+    report = meta_learning_engine.optimize_learning_algorithms(execution_history)
+    return jsonify(report)
+
+
+@app.route("/api/command-center/orchestrator/epoch", methods=["POST"])
+def run_meta_architect_epoch():
+    """
+    Executes a unified, self-evolving system epoch, orchestrating all 12 prior SOSS phases.
+    """
+    data = request.json or {}
+    try:
+        simulated_memory_mb = float(data.get("simulated_memory_mb", 1410.0))
+        simulated_sql_ms = float(data.get("simulated_sql_ms", 1.1))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid arguments. Values must be numeric."}), 400
+
+    report = meta_architect.execute_autonomous_evolution_epoch(
+        simulated_memory_mb=simulated_memory_mb,
+        simulated_sql_ms=simulated_sql_ms
     )
     return jsonify(report)
 

@@ -90,7 +90,6 @@ class SelfRepairEngine:
 
             elif probe == "database_health":
                 # Execute database indexing compression
-                conn = self.db.lock # access the DB lock for safe access
                 with self.db.lock:
                     import sqlite3
                     conn_sqlite = sqlite3.connect(self.db.db_path)
