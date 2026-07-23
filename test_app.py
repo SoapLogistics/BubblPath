@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 from unittest.mock import MagicMock, patch
-from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE, SOK_LINKS_FILE, TELEMETRY_LOG_FILE, TargetSynthesizedClass
+from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE, SOK_LINKS_FILE, TELEMETRY_LOG_FILE, TargetSynthesizedClass, sql_query_latency_speeds
 
 @pytest.fixture
 def flask_client():
@@ -14,6 +14,9 @@ def flask_client():
                 os.remove(f)
             except Exception:
                 pass
+
+    # Reset latency metrics
+    sql_query_latency_speeds.clear()
 
     with app.test_client() as client:
         yield client
@@ -220,17 +223,31 @@ def test_mnemosyne_feedback_endpoint(flask_client):
     )
     assert response_err.status_code == 404
 
-def test_crucible_endpoint(flask_client):
-    """Verifies AST crucible optimization."""
-    response = flask_client.post(
+def test_crucible_dynamic_adaptation(flask_client):
+    """Verifies that the performance crucible dynamically selects AST pruning modes when latency increases."""
+    # Scenario A: Normal database search latency
+    response_norm = flask_client.post(
         "/api/mnemosyne/crucible",
-        data=json.dumps({"mode": "AST-FUSION"}),
+        data=json.dumps({}),
         content_type="application/json"
     )
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "SUCCESS"
-    assert data["crucible_mode"] == "AST-FUSION"
+    assert response_norm.status_code == 200
+    data_norm = response_norm.get_json()
+    assert data_norm["crucible_mode"] == "AST-FUSION"
+
+    # Seed heavy query latency speeds
+    sql_query_latency_speeds.extend([12.5, 15.0, 11.2, 9.8, 14.5, 16.2])
+
+    # Scenario B: Delayed search latency triggers active AST-PRUNE to release bottleneck
+    response_delay = flask_client.post(
+        "/api/mnemosyne/crucible",
+        data=json.dumps({}),
+        content_type="application/json"
+    )
+    assert response_delay.status_code == 200
+    data_delay = response_delay.get_json()
+    assert data_delay["crucible_mode"] == "AST-PRUNE"
+    assert "dead-path" in data_delay["optimization_delta"]
 
 def test_ast_inject_endpoint(flask_client):
     """Verifies AST compiling and live class-method injection at runtime."""
@@ -350,6 +367,39 @@ def test_skills_endpoint_and_sandbox_run(flask_client):
     assert data5["execution_status"] == "FAILED"
     assert data5["exit_code"] != 0
     assert "Simulated compilation error" in data5["stderr"]
+
+def test_topological_skill_graph_execution(flask_client):
+    """Verifies sequential sandboxed execution in exact topologically sorted chronological order."""
+    # Build execution codes where dependency runs first, followed by dependent
+    dependency_code = "import sys; sys.stdout.write('Ran Jules Test Loop \\n')"
+    dependent_code = "import sys; sys.stdout.write('Ran Parallel Worktree')"
+
+    payload = {
+        "skill_id": "codex_parallel_worktrees",
+        "codes": {
+            "jules_test_runner_loop": dependency_code,
+            "codex_parallel_worktrees": dependent_code
+        }
+    }
+
+    response = flask_client.post(
+        "/api/mnemosyne/skills/execute-graph",
+        data=json.dumps(payload),
+        content_type="application/json"
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["graph_execution_status"] == "SUCCESS"
+    assert data["target_skill_id"] == "codex_parallel_worktrees"
+
+    # Assert sequence order of results: dependency 'jules_test_runner_loop' must execute BEFORE 'codex_parallel_worktrees'
+    history = data["execution_history"]
+    assert len(history) == 2
+    assert history[0]["skill_id"] == "jules_test_runner_loop"
+    assert history[1]["skill_id"] == "codex_parallel_worktrees"
+    assert "Ran Jules Test Loop" in history[0]["stdout"]
+    assert "Ran Parallel Worktree" in history[1]["stdout"]
 
 def test_self_heal_endpoint(flask_client):
     """Verifies that the AST Self-Correction and Capability Promotion GCPP works."""

@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 13-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 15-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -201,12 +201,26 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Read class definitions, compile new method source codes on the fly using python's built-in `compile()` AST parser, and dynamically bind methods using `setattr()` on live targets.
   3. Achieve zero-downtime capability updates to hot-reload class memories without restarting the gateway web server.
 
+### Phase XIV: Performance Crucible Optimization
+* **Objective**: Parse telemetry performance logs and latencies to dynamically alter active AST crucible configurations.
+* **Action Steps**:
+  1. Monitor active SQL latency times and code compilation latencies.
+  2. If execution speed drops, the Crucible shifts configurations dynamically (e.g., from `AST-SAFETY` to `AST-FUSION` or `AST-PRUNE` to strip dead paths).
+  3. Returns optimized runtime deltas demonstrating up to 35% improvements in operating memory pressure.
+
+### Phase XV: Topological Skill Graph Sandboxed Resolution
+* **Objective**: Topologically resolve and execute complex multi-skill capability dependency chains safely inside sandboxes.
+* **Action Steps**:
+  1. Read dependencies defined inside our dynamic active capability skill graph registry.
+  2. Implement an execution router `/api/mnemosyne/skills/execute-graph` that performs a topological sort using Kahn's algorithm or DFS back-tracing.
+  3. Run the complete chain of codes safely inside quarantined subprocess sandboxes in exact topological order, capturing execution outputs for comprehensive multi-capability rollouts.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the complete hot-swapping router and dynamic AST method injector core.
-2. CREATE `test_app.py` to assert correct model hot-swapping routing and live AST injections.
+1. OVERWRITE `app.py` with the performance crucible controls and topological multi-skill graph sandbox execution lane.
+2. CREATE `test_app.py` to assert correct dynamic crucible adjustments and topologically sorted multi-skill sandboxed execution sequences.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add model hot-swapping routers and live AST class-method injection so Solomon can dynamically route queries and hot-reload code libraries offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add performance crucible optimizations and topological skill graph sandboxed resolution so Solomon can topologically sort and execute complex multi-skill chains offline.**
