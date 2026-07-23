@@ -27,6 +27,10 @@ from solomon_experiment_engine import ExperimentEngine
 # Import Phase 4 SOSS Skill Factory
 from solomon_skill_factory import SkillFactory, SkillPackage
 
+# Import Phase 6 and 7 SOSS Engines
+from solomon_self_study_optimizer import SelfStudyOptimizer
+from solomon_autonomous_research import AutonomousResearchEngine
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -41,6 +45,8 @@ perpetual_loop = SolomonPerpetualLearningLoop(db)
 curiosity_engine = PrometheusCuriosityEngine(db)
 experiment_engine = ExperimentEngine(db)
 skill_factory = SkillFactory(db)
+self_study_optimizer = SelfStudyOptimizer(db)
+research_engine = AutonomousResearchEngine(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -991,6 +997,48 @@ def run_skills_graph_analyze():
         "graph_diagnostics": analysis,
         "recommendation": recommendation
     })
+
+
+# ==========================================
+# PHASE 6 & 7 SOSS SELF-STUDY AND AUTONOMOUS RESEARCH ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/self-study/tune", methods=["POST"])
+def run_self_study_tune():
+    """
+    Ingests operational metrics and runs the self-study hyperparameter optimization.
+    """
+    data = request.json or {}
+    metrics = data.get("metrics")
+
+    if not metrics or not isinstance(metrics, dict):
+        return jsonify({"error": "Missing or invalid 'metrics' dictionary in request payload."}), 400
+
+    report = self_study_optimizer.tune_system_hyperparameters(metrics)
+    return jsonify(report)
+
+
+@app.route("/api/command-center/research/run", methods=["POST"])
+def run_autonomous_research_endpoint():
+    """
+    Ingests a research topic and list of code candidates, benchmarks them inside isolated
+    sandboxes, and promotes the optimal winner to SQL.
+    """
+    data = request.json or {}
+    research_topic = data.get("research_topic")
+    candidates = data.get("candidates")
+
+    if not research_topic or not candidates:
+        return jsonify({"error": "Missing required fields 'research_topic' or 'candidates' in payload."}), 400
+
+    if not isinstance(candidates, list) or len(candidates) == 0:
+        return jsonify({"error": "'candidates' must be a non-empty list of algorithm dictionaries."}), 400
+
+    report = research_engine.execute_independent_benchmark_research(
+        research_topic=research_topic,
+        candidates=candidates
+    )
+    return jsonify(report)
 
 
 if __name__ == "__main__":
