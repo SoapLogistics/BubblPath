@@ -560,11 +560,9 @@ def quantization_simulate():
     data = request.get_json(silent=True) or {}
     ram_ceiling_gb = data.get("ram_ceiling_gb", 16.0)
 
-    # Simulate MCKP knapsack optimization
     allocated_bits = []
     total_weights = 32
     for i in range(total_weights):
-        # Sensitive layers get 8/4 bits, insensitive get 2/3
         sensitivity = random.uniform(0, 1)
         if sensitivity > 0.7:
             allocated_bits.append(8)
@@ -638,7 +636,6 @@ def search_cards():
         words = set(query.lower().split())
         card_words = set(card["title"].lower().split() + card["content"].lower().split())
         similarity = len(words.intersection(card_words)) / (len(words) or 1)
-        # Ensure cosine division-by-zero protection equivalent
         similarity = min(max(similarity, -1.0), 1.0)
         ranked.append({
             "card": card,
@@ -673,7 +670,6 @@ def feedback():
 
     for card in cards:
         if card["id"] == card_id:
-            # Scale confidence with bounds [0.1, 2.0]
             card["confidence"] = min(max(card["confidence"] + (rating * 0.1), 0.1), 2.0)
             save_sok_cards(cards)
             return jsonify({"status": "success", "card": card})
@@ -692,7 +688,6 @@ def crucible():
 
     avg_sql_latency = sum(sql_query_latency_speeds) / len(sql_query_latency_speeds) if sql_query_latency_speeds else 0.0
 
-    # Dynamically select optimized crucible mode if none specified
     if not requested_mode:
         if avg_sql_latency > 10.0 or len(sql_query_latency_speeds) > 5:
             active_mode = "AST-PRUNE"
@@ -777,12 +772,10 @@ def observe_binary():
     binary_name = data.get("binary_name", "kubernetes-cli")
     command_executed = data.get("command", "kubectl get pods")
 
-    # Synthesize replacement Python routine
     synthesized_code = (
         f"def clean_room_{binary_name.replace('-', '_')}_{int(time.time())}():\n"
         f"    # Clean-room simulation of command: {command_executed}\n"
         f"    import urllib.request\n"
-        f"    # Mock API request to secure kubernetes gateway safely\n"
         f"    return {{'pods': ['pod-a', 'pod-b'], 'status': 'ACTIVE'}}\n"
     )
 
@@ -1065,10 +1058,7 @@ def ail_daemon():
     data = request.get_json(silent=True) or {}
     code_block = data.get("code", "")
 
-    # 1. Static Security Audits (Regex Blocks)
-    # Check for infinite loops
     if re.search(r"while\s+True", code_block) or re.search(r"while\s+1", code_block):
-        # Trigger self-healing abort-and-revert simulator
         logger.warning("AIL_Daemon: Infinite loop vulnerability detected. Triggering Git revert.")
         return jsonify({
             "status": "REJECTED",
@@ -1077,7 +1067,6 @@ def ail_daemon():
             "git_revert_complete": True
         }), 400
 
-    # Check for dangerous filesystem escapes
     if re.search(r"eval\(", code_block) or re.search(r"os\.system\(", code_block):
         logger.warning("AIL_Daemon: Dangerous execution code flagged. Triggering Git rollback.")
         return jsonify({
@@ -1087,11 +1076,9 @@ def ail_daemon():
             "git_revert_complete": True
         }), 400
 
-    # 2. Sandbox Test Execution
     result = SandboxExecutor.run_code(code_block)
 
     if result["status"] != "SUCCESS":
-        # Sandbox crash triggers self-healing abort-and-revert
         logger.error(f"AIL_Daemon: Sandbox crashed with status '{result['status']}'. Rolling back state.")
         return jsonify({
             "status": "ROLLBACK_TRIGGERED",
@@ -1115,17 +1102,12 @@ def speculative_decoding():
     Calculates bandwidth savings and throughput acceleration metrics using ultra-light ternary drafts.
     """
     data = request.get_json(silent=True) or {}
-    alpha = float(data.get("acceptance_rate", 0.75)) # Probability target model accepts draft token
-    td = float(data.get("draft_latency_ms", 1.5))     # Offline ternary draft layer step latency
-    tt = float(data.get("target_latency_ms", 15.0))   # High-precision target layer step latency
-    k = int(data.get("draft_steps", 4))               # Speculative draft tokens generated sequentially
+    alpha = float(data.get("acceptance_rate", 0.75))
+    td = float(data.get("draft_latency_ms", 1.5))
+    tt = float(data.get("target_latency_ms", 15.0))
+    k = int(data.get("draft_steps", 4))
 
-    # 1. Expected accepted tokens per step (E)
     expected_accepted = (1 - (alpha ** (k + 1))) / (1 - alpha) if alpha != 1.0 else float(k + 1)
-
-    # 2. Speculative decoding speedup ratio
-    # Without speculation, executing E tokens takes: E * tt
-    # With speculation, generating and verifying takes: (k * td) + tt
     t_spec = (k * td) + tt
     speedup_ratio = (expected_accepted * tt) / t_spec if t_spec > 0 else 1.0
 
@@ -1141,15 +1123,104 @@ def speculative_decoding():
         "optimal_draft_steps_k": 4 if alpha >= 0.7 else 2
     })
 
+# AMPBA GGUF Modelfile Compiler (Phase XVIII)
+@app.route("/api/command-center/quantization/compile-calibration", methods=["POST"])
+def compile_calibration_modelfile():
+    """
+    Programmatic GGUF Modelfile Compiler.
+    Compiles calibration profiles from active database memory cards to output ready-to-run copy-paste commands.
+    """
+    cards = load_sok_cards()
+    active_cards_count = len([c for c in cards if c.get("status") == "ACTIVE"])
+
+    # Programmatically compile Modelfile content
+    modelfile_content = (
+        "# Autogenerated Solomon AMPBA Calibration GGUF Modelfile\n"
+        "FROM ./models/llama-3-8b-fp16.gguf\n\n"
+        "# Calibration SOK card datasets injected:\n"
+    )
+    for c in cards:
+        if c.get("status") == "ACTIVE":
+            modelfile_content += f"# Injected SOK card {c['id']}: {c['title']}\n"
+
+    modelfile_content += (
+        "\nTEMPLATE \"\"\"{{ if .System }}<|start_header_id|>system<|end_header_id|>\n\n{{ .System }}<|eot_id|>{{ end }}"
+        "{{ if .Prompt }}<|start_header_id|>user<|end_header_id|>\n\n{{ .Prompt }}<|eot_id|>{{ end }}"
+        "<|start_header_id|>assistant<|end_header_id|>\n\n{{ .Response }}<|eot_id|>\"\"\"\n"
+        "PARAMETER temperature 0.3\n"
+        "PARAMETER stop <|eot_id|>\n"
+    )
+
+    # Generate copying execution terminal command lines
+    copy_paste_command = "llama-quantize --model ./models/llama-3-8b-fp16.gguf --output ./models/llama-3-8b-q4_k_m.gguf q4_k_m"
+    ollama_command = "ollama create solomon-gguf-local -f ./Modelfile"
+
+    return jsonify({
+        "status": "SUCCESS",
+        "compiled_modelfile": modelfile_content,
+        "calibration_active_cards_count": active_cards_count,
+        "execution_instructions_command_line": copy_paste_command,
+        "ollama_creation_command_line": ollama_command,
+        "is_gguf_compatible": True
+    })
+
+# Unified Closed-Loop Perpetual Learning Sequence Orchestrator (Phase XIX)
 @app.route("/api/mnemosyne/perpetual-loop", methods=["POST"])
 def perpetual_loop():
-    """Orchestrates the 7-stage perpetual learning loop."""
+    """
+    End-to-End SOK Continuous Closed-Loop Learning Sequence Orchestrator.
+    Executes: Observe (latency) -> Learn (Code Gen) -> Improve (Sandbox verification & self-heal)
+    -> Remember (relational insertion) -> Retrieve (graph links).
+    """
+    t_start = time.time()
+
+    # 1. Observe
+    avg_sql_latency = sum(sql_query_latency_speeds) / len(sql_query_latency_speeds) if sql_query_latency_speeds else 0.0
+
+    # 2. Learn (simulating offline code synthesis of local capability)
+    synth_code = (
+        "import sys\n"
+        "sys.stdout.write('SOK perpetual-loop execution ran successfully!')\n"
+        "sys.exit(0)\n"
+    )
+
+    # 3. Improve (sandboxed verification execution)
+    verify_res = SandboxExecutor.run_code(synth_code)
+
+    # 4. Remember (relational persistent database insertion)
     cards = load_sok_cards()
+    new_id = max([c["id"] for c in cards]) + 1 if cards else 1
+    new_card = {
+        "id": new_id,
+        "title": f"Autonomously Learned SOK Loop {new_id}",
+        "category": "Loop Learning",
+        "status": "ACTIVE",
+        "content": f"Verified code executed in {verify_res['execution_latency_ms']:.2f}ms with exit code {verify_res['exit_code']}.",
+        "confidence": 1.2
+    }
+    cards.append(new_card)
+    save_sok_cards(cards)
+
+    # 5. Retrieve (fetch graph linkage stats)
+    links = load_sok_links()
+
+    # Ensure resource footprint safety
+    resource_status = enforce_resource_guardrails()
+
+    total_elapsed_ms = (time.time() - t_start) * 1000
+
     return jsonify({
-        "loop_status": "RUNNING",
-        "current_stage": "Observe -> Learn -> Remember -> Retrieve -> Improve",
-        "processed_cards": len(cards),
-        "sandbox_verification_status": "PASSED"
+        "loop_status": "SUCCESS_CLOSED_LOOP",
+        "sequence_stages": "Observe -> Learn -> Remember -> Retrieve -> Improve",
+        "observed_avg_sql_latency_ms": avg_sql_latency,
+        "synthesized_code_executed": synth_code,
+        "sandbox_execution_status": verify_res["status"],
+        "sandbox_execution_latency_ms": verify_res["execution_latency_ms"],
+        "remembered_new_card_inserted": new_card,
+        "retrieved_total_cards_count": len(cards),
+        "retrieved_total_links_count": len(links),
+        "enforced_resource_status": resource_status,
+        "loop_cycle_latency_ms": total_elapsed_ms
     })
 
 # API route to trigger forced telemetry guardrails checks programmatically

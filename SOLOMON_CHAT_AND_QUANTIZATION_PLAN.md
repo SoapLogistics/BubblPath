@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 17-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 19-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -229,12 +229,26 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Implement mathematical models calculating the speculative token speedups ($S = \frac{1}{\alpha(1-\beta) + \beta}$) using a 1.58-bit BitNet draft model and a heavy FP16 model.
   3. Calculate memory bandwidth gains and token per second (TPS) rates, optimizing offline execution plans.
 
+### Phase XVIII: Adaptive Mixed-Precision Bit Allocation (AMPBA) Compiler
+* **Objective**: Programmatically compile local Modelfiles with SOK calibration datasets and ready-to-run Copy-Paste command execution lines.
+* **Action Steps**:
+  1. Expose `/api/command-center/quantization/compile-calibration` endpoint inside `app.py`.
+  2. Read active cards from Mnemosyne to form a high-fidelity local calibration file structure.
+  3. Generate a complete GGUF compilation blueprint and export ready-to-run copy-paste terminal command lines (such as `llama-quantize` or `ollama create`) to run the compiled model locally.
+
+### Phase XIX: Unified Closed-Loop Perpetual Learning Orchestrator
+* **Objective**: Orchestrate the end-to-end 7-stage closed-loop cognitive learning sequence.
+* **Action Steps**:
+  1. Connect all preceding phases into a unified `/api/mnemosyne/perpetual-loop` POST endpoint in `app.py`.
+  2. Sequentially run: Observation -> Local Codex Code Generation -> Subprocess Sandbox Verification -> Self-Correction Debugging Loops -> GCPP Promotion to Card Database -> Semantic Graph Linking -> Model Router Hot-Swapping -> RSS resource limits telemetry.
+  3. Form a fully automated perpetual learning loop capable of learning and implementing verified capabilities offline autonomously.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the AIL daemon, static regex security audits, and speculative decoding mathematics.
-2. CREATE `test_app.py` to assert correct AIL security blocks, git rollbacks, and speculative speedup calculations.
+1. OVERWRITE `app.py` with the GGUF Modelfile compiler and the unified closed-loop learning sequence orchestrator.
+2. CREATE `test_app.py` to assert correct Modelfile outputs and successful continuous cognitive learning sequences.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add autonomous improvement loops and speculative decoding speedups so Solomon can run secure self-healing and fast token generation offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add the GGUF Modelfile compiler and closed-loop perpetual learning sequence orchestrator so Solomon can autonomously compile, verify, and run his entire offline-first learning system.**

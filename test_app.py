@@ -589,12 +589,34 @@ def test_speculative_decoding_calculations(flask_client):
     assert "speculative_speedup_ratio" in data
     assert data["optimal_draft_steps_k"] == 4
 
-def test_perpetual_loop_endpoint(flask_client):
-    """Verifies end-to-end continuous loop orchestration."""
-    response = flask_client.post("/api/mnemosyne/perpetual-loop")
+def test_gguf_modelfile_compiler(flask_client):
+    """Verifies GGUF Modelfile compiler parameter outputs and terminal instructions."""
+    response = flask_client.post(
+        "/api/command-center/quantization/compile-calibration",
+        data=json.dumps({}),
+        content_type="application/json"
+    )
     assert response.status_code == 200
     data = response.get_json()
-    assert data["loop_status"] == "RUNNING"
+    assert data["status"] == "SUCCESS"
+    assert "FROM ./models/llama-3-8b-fp16.gguf" in data["compiled_modelfile"]
+    assert "llama-quantize" in data["execution_instructions_command_line"]
+    assert "ollama create" in data["ollama_creation_command_line"]
+
+def test_unified_closed_loop_perpetual_orchestrator(flask_client):
+    """Verifies the unified 7-stage closed-loop perpetual learning sequence orchestrations."""
+    response = flask_client.post(
+        "/api/mnemosyne/perpetual-loop",
+        data=json.dumps({}),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["loop_status"] == "SUCCESS_CLOSED_LOOP"
+    assert "Observe -> Learn -> Remember -> Retrieve -> Improve" in data["sequence_stages"]
+    assert data["sandbox_execution_status"] == "SUCCESS"
+    assert "remembered_new_card_inserted" in data
+    assert data["retrieved_total_cards_count"] >= 4
 
 def test_chat_payload_validation(flask_client):
     """Ensures strict JSON body, string validation, and query logging are enforced."""
