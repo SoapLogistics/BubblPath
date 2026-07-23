@@ -1090,6 +1090,10 @@ def execute_cognitive_perpetual_loop():
     """
     Triggers a full round of Solomon's unified 7-Stage Perpetual Learning Cycle.
     """
+    # [SECURITY FIX]: Hard-block external access. Only allow internal mock invocations.
+    if request.remote_addr != "127.0.0.1":
+        return jsonify({"error": "Unauthorized access. Endpoint locked to loopback adapter only.", "status": "blocked"}), 403
+
     data = request.json or {}
     try:
         simulated_memory_mb = float(data.get("simulated_memory_mb", 1410.0))
