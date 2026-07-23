@@ -24,6 +24,10 @@ from solomon_experiment_engine import ExperimentEngine
 from solomon_skill_factory import SkillFactory, SkillPackage
 from solomon_skill_graph import SkillGraph
 
+# From Self-Study & Autonomous Research (Phases 6 & 7):
+from solomon_self_study import SelfStudyOptimizer
+from solomon_autonomous_research import AutonomousResearcher, ResearchCandidate
+
 app = Flask(__name__, template_folder="templates")
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -41,6 +45,10 @@ experiment_engine = ExperimentEngine(db)
 # Instantiate Skill Factory and Skill Graph (Phases 4 and 5)
 skill_factory = SkillFactory()
 skill_graph = SkillGraph()
+
+# Instantiate Self-Study and Autonomous Research (Phases 6 and 7)
+study_optimizer = SelfStudyOptimizer()
+autonomous_researcher = AutonomousResearcher()
 
 # State caches for dynamically running Codex & Jules power objects
 codex_worktree_instance = None
@@ -1466,6 +1474,57 @@ def analyze_skill_graph():
             "status": "error",
             "message": f"Graph analysis failed: {str(e)}"
         }), 500
+
+
+# ==========================================
+# SELF-STUDY & AUTONOMOUS RESEARCH (PHASES 6 & 7)
+# ==========================================
+
+@app.route("/api/mnemosyne/study/optimize", methods=["POST"])
+def optimize_study_parameters():
+    """
+    Submits rolling relevance search accuracy metrics and dynamically self-tunes SOSS thresholds and search weights.
+    """
+    data = request.json or {}
+    try:
+        avg_cosine = float(data.get("avg_cosine_similarity", 0.35))
+        success_rate = float(data.get("user_feedback_success_rate", 0.80))
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "Parameters 'avg_cosine_similarity' and 'user_feedback_success_rate' must be valid floats."}), 400
+
+    study_optimizer.record_search_telemetry(avg_cosine, success_rate)
+    result = study_optimizer.execute_self_study_optimization()
+    return jsonify(result)
+
+
+@app.route("/api/mnemosyne/research/evaluate", methods=["POST"])
+def run_autonomous_research():
+    """
+    Triggers independent research comparative evaluation, returning the winning promoted option and archiving lower performers.
+    """
+    data = request.json or {}
+    project_name = data.get("project_name")
+    candidates_list = data.get("candidates", [])
+
+    if not project_name or not candidates_list:
+        return jsonify({"status": "error", "message": "Parameters 'project_name' and 'candidates' list are required."}), 400
+
+    try:
+        candidates = []
+        for c in candidates_list:
+            cand = ResearchCandidate(
+                name=c["name"],
+                code_implementation=c.get("code_implementation", ""),
+                expected_latency_ms=float(c.get("latency_ms", 100.0)),
+                accuracy=float(c.get("accuracy", 0.90))
+            )
+            candidates.append(cand)
+
+        report = autonomous_researcher.conduct_comparative_research(project_name, candidates)
+        return jsonify(report)
+
+    except (ValueError, KeyError, TypeError) as e:
+        return jsonify({"status": "error", "message": f"Invalid candidate evaluation parameters: {str(e)}"}), 400
 
 
 if __name__ == "__main__":
