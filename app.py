@@ -23,6 +23,8 @@ from solomon_self_study import SelfStudyOptimizer
 from solomon_autonomous_research import AutonomousResearcher
 from solomon_autonomous_tool_creator import AutonomousToolCreator
 from solomon_self_repair import SelfRepairEngine
+from solomon_distributed_ledger import DistributedNodeLedger
+from solomon_wisdom_layer import WisdomLayer
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -37,6 +39,7 @@ graph_navigator = SkillGraphNavigator()
 autonomous_researcher = AutonomousResearcher(db)
 autonomous_tool_creator = AutonomousToolCreator(db, skills_graph)
 self_repair_engine = SelfRepairEngine(db)
+distributed_ledger = DistributedNodeLedger(db)
 
 # Seed default capabilities inside the Graph Navigator
 graph_navigator.register_skill_node(
@@ -1003,6 +1006,67 @@ def run_autonomous_self_repair():
             "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
             "A repair playbook has been registered! Retrieve it semantically "
             "to automatically resolve subsequent performance warnings.</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/ledger/sync", methods=["POST"])
+def sync_distributed_node_ledger():
+    """
+    Syncs remote node cards delta back to the primary SQLite Mnemosyne ledger using timestamp resolution.
+    """
+    data = request.json or {}
+    node_id = data.get("node_id", "UBUNTU-LOCAL-NODE-01")
+    remote_cards = data.get("remote_cards", [])
+
+    if not remote_cards:
+        return jsonify({"error": "Missing remote_cards array payload."}), 400
+
+    report = distributed_ledger.sync_node_ledger_deltas(node_id, remote_cards)
+    return jsonify({
+        "status": "success",
+        "ledger_sync_report": report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'> "
+            "Trigger GET /api/mnemosyne/cards to verify that synced remote cards "
+            "have been successfully merged into the local relational SQLite database!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/wisdom/evaluate", methods=["POST"])
+def evaluate_wisdom_constraints():
+    """
+    Evaluates proposed system actions and dynamic code modifications against the Wisdom Vector limits.
+    """
+    data = request.json or {}
+
+    try:
+        confidence = float(data.get("confidence", 0.95))
+        risks_rating = float(data.get("risks_rating", 2.5))
+        limits_within_bounds = bool(data.get("limits_within_bounds", True))
+        has_human_override = bool(data.get("has_human_override", False))
+        is_ethically_compliant = bool(data.get("is_ethically_compliant", True))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid parameter format: {str(e)}"}), 400
+
+    report = WisdomLayer.evaluate_wisdom_vector(
+        confidence=confidence,
+        risks_rating=risks_rating,
+        limits_within_bounds=limits_within_bounds,
+        has_human_override=has_human_override,
+        is_ethically_compliant=is_ethically_compliant
+    )
+
+    return jsonify({
+        "status": "success",
+        "wisdom_vector_report": report,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Always pipe dynamic capability executions through this Wisdom validation gate "
+            "to enforce system ethics, safety bounds, and human override checks!</span>"
         )
     })
 

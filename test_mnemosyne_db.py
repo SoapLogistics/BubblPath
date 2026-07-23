@@ -281,6 +281,137 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_distributed_node_ledger_sync(self, test_db):
+        """
+        Directly asserts that DistributedNodeLedger merges peer node cards delta
+        back to the primary SQLite store based on confidence conflict resolution.
+        """
+        from solomon_distributed_ledger import DistributedNodeLedger
+        ledger = DistributedNodeLedger(test_db)
+
+        remote_cards = [
+            {
+                "card_id": "SOK-SYNC-NEW-CARD",
+                "family": "Knowledge",
+                "focus": "Synced focus",
+                "content": "Synced content block from remote node.",
+                "confidence": 1.0
+            }
+        ]
+
+        # First sync inserts new card
+        res = ledger.sync_node_ledger_deltas("macOS-Node-01", remote_cards)
+        assert res["sync_summary"]["inserted_new_cards"] == 1
+        assert res["sync_summary"]["updated_existing_cards"] == 0
+
+        # Assert card was saved
+        card = test_db.get_card("SOK-SYNC-NEW-CARD")
+        assert card is not None
+        assert "remote node" in card["content"]
+
+        # Syncing again with same/lower confidence gets ignored
+        res2 = ledger.sync_node_ledger_deltas("macOS-Node-01", remote_cards)
+        assert res2["sync_summary"]["ignored_stale_cards"] == 1
+
+        # Syncing with higher confidence triggers update
+        remote_cards[0]["confidence"] = 1.8
+        res3 = ledger.sync_node_ledger_deltas("macOS-Node-01", remote_cards)
+        assert res3["sync_summary"]["updated_existing_cards"] == 1
+
+    def test_wisdom_layer_vector_eval(self):
+        """
+        Directly asserts that SOSS WisdomLayer validates or blocks proposed system actions
+        against the multi-dimensional Wisdom Vector safely.
+        """
+        from solomon_wisdom_layer import WisdomLayer
+
+        # Safe operation passes
+        res = WisdomLayer.evaluate_wisdom_vector(
+            confidence=0.90,
+            risks_rating=2.0,
+            limits_within_bounds=True,
+            has_human_override=False,
+            is_ethically_compliant=True
+        )
+        assert res["decision"] == "APPROVED_FOR_EXECUTION"
+
+        # Unethical operation is hard blocked
+        res_eth = WisdomLayer.evaluate_wisdom_vector(
+            confidence=0.90,
+            risks_rating=2.0,
+            limits_within_bounds=True,
+            has_human_override=False,
+            is_ethically_compliant=False
+        )
+        assert res_eth["decision"] == "BLOCKED"
+        assert "Ethical" in res_eth["reason"]
+
+        # High risk block, override allows bypass
+        res_risk = WisdomLayer.evaluate_wisdom_vector(
+            confidence=0.95,
+            risks_rating=9.5, # extreme risk
+            limits_within_bounds=True,
+            has_human_override=False,
+            is_ethically_compliant=True
+        )
+        assert res_risk["decision"] == "BLOCKED"
+
+        res_risk_override = WisdomLayer.evaluate_wisdom_vector(
+            confidence=0.95,
+            risks_rating=9.5,
+            limits_within_bounds=True,
+            has_human_override=True, # bypassed
+            is_ethically_compliant=True
+        )
+        assert res_risk_override["decision"] == "APPROVED_FOR_EXECUTION"
+
+    def test_ledger_and_wisdom_api_routes(self, client):
+        """
+        Verifies POST /api/mnemosyne/ledger/sync and POST /api/mnemosyne/wisdom/evaluate
+        endpoints process correct payloads, parse deltas, and output wisdom vectors.
+        """
+        # 1. POST Ledger Sync
+        payload_sync = {
+            "node_id": "UBUNTU-LOCAL-NODE-99",
+            "remote_cards": [
+                {
+                    "card_id": "SOK-LEDGER-SYNC-ROUTE-TEST",
+                    "family": "Knowledge",
+                    "focus": "Route test focus",
+                    "content": "Direct test content",
+                    "confidence": 1.2
+                }
+            ]
+        }
+        res_sync = client.post(
+            "/api/mnemosyne/ledger/sync",
+            data=json.dumps(payload_sync),
+            content_type="application/json"
+        )
+        assert res_sync.status_code == 200
+        data_sync = res_sync.get_json()
+        assert data_sync["status"] == "success"
+        assert data_sync["ledger_sync_report"]["sync_summary"]["inserted_new_cards"] == 1
+
+        # 2. POST Wisdom Evaluate
+        payload_wisdom = {
+            "confidence": 0.45, # sub-threshold
+            "risks_rating": 3.0,
+            "limits_within_bounds": True,
+            "has_human_override": False,
+            "is_ethically_compliant": True
+        }
+        res_wisdom = client.post(
+            "/api/mnemosyne/wisdom/evaluate",
+            data=json.dumps(payload_wisdom),
+            content_type="application/json"
+        )
+        assert res_wisdom.status_code == 200
+        data_wisdom = res_wisdom.get_json()
+        assert data_wisdom["status"] == "success"
+        assert data_wisdom["wisdom_vector_report"]["decision"] == "BLOCKED"
+        assert "override" in data_wisdom["wisdom_vector_report"]["reason"]
+
     def test_autonomous_tool_creation_direct(self, test_db):
         """
         Directly asserts that AutonomousToolCreator prototypes, audits, and registers
