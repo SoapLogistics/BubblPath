@@ -24,6 +24,9 @@ from solomon_skill_graph import SandboxExecutor
 from solomon_curiosity_engine import PrometheusCuriosityEngine
 from solomon_experiment_engine import ExperimentEngine
 
+# Import Phase 4 SOSS Skill Factory
+from solomon_skill_factory import SkillFactory, SkillPackage
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -37,6 +40,7 @@ strategy_engine = QuantizationStrategyEngine(db)
 perpetual_loop = SolomonPerpetualLearningLoop(db)
 curiosity_engine = PrometheusCuriosityEngine(db)
 experiment_engine = ExperimentEngine(db)
+skill_factory = SkillFactory(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -935,6 +939,58 @@ def run_command_center_experiment():
         execution_script=execution_script
     )
     return jsonify(report)
+
+
+# ==========================================
+# PHASE 4 & 5 SOSS SKILL FACTORY AND GRAPH ANALYSIS ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/skills/factory/create", methods=["POST"])
+def run_skill_factory_create():
+    """
+    Ingests parameters to synthesize, template, validate in sandboxes,
+    and register a modular skill package.
+    """
+    data = request.json or {}
+    name = data.get("name")
+    purpose = data.get("purpose")
+    inputs = data.get("inputs", {})
+    outputs = data.get("outputs", "None")
+    source_code = data.get("source_code")
+    unit_tests = data.get("unit_tests")
+    safety_constraints = data.get("safety_constraints")
+
+    if not name or not purpose or not source_code or not unit_tests:
+        return jsonify({"error": "Missing required fields 'name', 'purpose', 'source_code', or 'unit_tests'."}), 400
+
+    package = SkillPackage(
+        name=name,
+        purpose=purpose,
+        inputs=inputs,
+        outputs=outputs,
+        source_code=source_code,
+        unit_tests=unit_tests,
+        safety_constraints=safety_constraints
+    )
+
+    report = skill_factory.validate_and_register_skill(package)
+    return jsonify(report)
+
+
+@app.route("/api/command-center/skills/graph/analyze", methods=["GET"])
+def run_skills_graph_analyze():
+    """
+    Performs Phase 5 graph analysis: prerequisite mapping, missing vectors,
+    redundancy audits, and generates next-learn recommendations.
+    """
+    analysis = perpetual_loop.skill_graph.analyze_graph_structures()
+    recommendation = perpetual_loop.skill_graph.generate_learning_recommendation()
+
+    return jsonify({
+        "status": "success",
+        "graph_diagnostics": analysis,
+        "recommendation": recommendation
+    })
 
 
 if __name__ == "__main__":
