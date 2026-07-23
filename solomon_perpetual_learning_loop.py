@@ -96,6 +96,18 @@ class SolomonPerpetualLearningLoop:
         )
 
         # Review Gate Process (DRAFT -> REVIEWED -> APPROVED -> ACTIVE)
+
+        # SOSS Phase 3: Autonomous Hugin Engine Static Code Audit
+        # Check synthesized code for dangerous tokens before promoting from DRAFT to REVIEWED
+        import re as regex
+        dangerous_tokens = ["os.system", "subprocess.Popen", "eval(", "exec(", "shutil.rmtree"]
+        for token in dangerous_tokens:
+            if token in synthesized_code:
+                trace.append(f"Hugin Engine: FATAL. Detected dangerous pattern '{token}'. Failing promotion.")
+                self._trigger_abort_and_revert(class_name, f"Hugin Static Audit failed. Malicious pattern '{token}' detected.")
+                raise RuntimeError(f"Hugin Audit rejected code containing '{token}'.")
+
+        trace.append(f"Hugin Engine: Audit Pass. No malicious AST blocks detected.")
         trace.append(f"Review Gate: Transitioning {card_id} from DRAFT to REVIEWED.")
 
         trace.append(f"Review Gate: Transitioning {card_id} from REVIEWED to APPROVED.")

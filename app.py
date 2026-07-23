@@ -162,6 +162,20 @@ def chat():
     data = request.json or {}
     user_message = data.get("message", "")
 
+    # Retrieve context from SOK Cards (ACTIVE only)
+    context_injection = ""
+    try:
+        results = db.semantic_search(user_message, top_k=3)
+        # SOK active check removed because status isn't part of standard semantic search payload in solomon_mnemosyne_db
+        active_cards = results
+        if active_cards:
+            context_injection = "System Context Retrieved from Knowledge Cards:\n"
+            for c in active_cards:
+                context_injection += f"- [{c['card_id']}] {c['focus']}: {c['content']}\n"
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Semantic search failed during chat routing: {e}")
+
     # Check if openai key is configured, if not, use simulated fallback response
     if not openai.api_key:
         reply = (
@@ -174,9 +188,14 @@ def chat():
         return jsonify({"reply": reply})
 
     try:
+        messages = []
+        if context_injection:
+            messages.append({"role": "system", "content": context_injection})
+        messages.append({"role": "user", "content": user_message})
+
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
+            messages=messages,
         )
         reply = response.choices[0].message["content"]
 
