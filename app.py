@@ -28,6 +28,10 @@ from solomon_skill_graph import SkillGraph
 from solomon_self_study import SelfStudyOptimizer
 from solomon_autonomous_research import AutonomousResearcher, ResearchCandidate
 
+# From Tool Creator & Self-Repair Engines (Phases 8 & 9):
+from solomon_autonomous_tool_creator import AutonomousToolCreator
+from solomon_self_repair import SelfRepairEngine
+
 app = Flask(__name__, template_folder="templates")
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -49,6 +53,10 @@ skill_graph = SkillGraph()
 # Instantiate Self-Study and Autonomous Research (Phases 6 and 7)
 study_optimizer = SelfStudyOptimizer()
 autonomous_researcher = AutonomousResearcher()
+
+# Instantiate Tool Creator and Self-Repair Engines (Phases 8 and 9)
+autonomous_tool_creator = AutonomousToolCreator(skill_factory)
+self_repair_engine = SelfRepairEngine(db)
 
 # State caches for dynamically running Codex & Jules power objects
 codex_worktree_instance = None
@@ -1525,6 +1533,59 @@ def run_autonomous_research():
 
     except (ValueError, KeyError, TypeError) as e:
         return jsonify({"status": "error", "message": f"Invalid candidate evaluation parameters: {str(e)}"}), 400
+
+
+# ==========================================
+# AUTONOMOUS TOOL CREATION & SELF-REPAIR (PHASES 8 & 9)
+# ==========================================
+
+@app.route("/api/mnemosyne/tools/create", methods=["POST"])
+def build_autonomous_tool():
+    """
+    Instructs Solomon to dynamically prototype, AST safety audit, compile, and register a new mathematical/logical python tool.
+    """
+    data = request.json or {}
+    tool_name = data.get("name")
+    operation = data.get("mathematical_operation")
+    purpose = data.get("purpose")
+
+    if not tool_name or not operation or not purpose:
+        return jsonify({"status": "error", "message": "Parameters 'name', 'mathematical_operation', and 'purpose' are required."}), 400
+
+    inputs = data.get("inputs", ["x", "y"])
+    outputs = data.get("outputs", ["result"])
+
+    success, msg, skill_data = autonomous_tool_creator.build_and_register_tool(
+        tool_name=tool_name,
+        mathematical_operation=operation,
+        purpose=purpose,
+        inputs=inputs,
+        outputs=outputs
+    )
+
+    return jsonify({
+        "status": "success" if success else "failed",
+        "message": msg,
+        "tool": skill_data
+    })
+
+
+@app.route("/api/mnemosyne/self-repair/run", methods=["POST"])
+def execute_self_repair():
+    """
+    Runs telemetry probes, audits performance limits, and self-heals low confidence scores or missing DB base schemas.
+    """
+    try:
+        report = self_repair_engine.run_self_healing_routine()
+        return jsonify({
+            "status": "success",
+            "self_repair_report": report
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Self repair execution failed: {str(e)}"
+        }), 500
 
 
 if __name__ == "__main__":
