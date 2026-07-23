@@ -150,15 +150,30 @@ def initialize_model_loading_pipeline():
 initialize_model_loading_pipeline()
 
 
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json or {}
     user_message = data.get("message", "")
 
+    # Phase 1: Retrieve semantically relevant context from Mnemosyne Database
+    relevant_cards = db.semantic_search(user_message, top_k=3)
+    context_text = "\n".join([f"- {card['card_id']} ({card['focus']}): {card['content']}" for card in relevant_cards])
+
+    # Phase 2: Persona and Communication Infusion
+    system_prompt = (
+        "You are Solomon, a highly advanced, fluid, and natural conversational AI assistant orchestrated by Google Jules and OpenAI Codex. "
+        "Your goal is to communicate with the clarity, articulation, and nuance of top-tier models like Gemini and GPT-4. "
+        "Be engaging, helpful, and highly perceptive. Do not act like a rigid database or task-runner unless explicitly asked. "
+        "Always synthesize information beautifully.\n\n"
+        f"Relevant Context from Solomon's local Mnemosyne memory:\n{context_text}"
+    )
+
     # Check if openai key is configured, if not, use simulated fallback response
     if not openai.api_key:
         reply = (
             f"Simulated Solomon Response to: '{user_message}'.\n\n"
+            f"**Retrieved Local Context:**\n{context_text}\n\n"
             "**RECOMMENDED NEXT STEP**\n"
             "<span style='color: #4CAF50; font-weight: bold; font-size: 1.2em;'>"
             "Configure your SOLOMON_LLM_API_BASE environment variable to link a local "
@@ -169,7 +184,10 @@ def chat():
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
         )
         reply = response.choices[0].message["content"]
 
