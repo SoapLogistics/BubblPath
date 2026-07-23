@@ -25,6 +25,7 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Instantiate our Relational Mnemosyne SQLite Database and Model Router
 db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
+model_router = ModelRouter(db)
 router = ModelRouter(db)
 
 # Instantiate new capabilities
@@ -151,6 +152,9 @@ initialize_model_loading_pipeline()
 
 
 
+
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json or {}
@@ -169,11 +173,24 @@ def chat():
         f"Relevant Context from Solomon's local Mnemosyne memory:\n{context_text}"
     )
 
+    # Phase 3: Adaptive Conversational Routing
+    routing_decision = router.route_query(user_message)
+    active_model = routing_decision["routed_model"]
+
+    # Phase 4: Structured Output Telemetry
+    telemetry_block = (
+        f"\n\n**[TELEMETRY]**\n"
+        f"- **Model Routed:** {active_model}\n"
+        f"- **Latency (Est):** {routing_decision['estimated_latency_ms']} ms\n"
+        f"- **Confidence:** {routing_decision['best_match_confidence']}"
+    )
+
     # Check if openai key is configured, if not, use simulated fallback response
     if not openai.api_key:
         reply = (
             f"Simulated Solomon Response to: '{user_message}'.\n\n"
-            f"**Retrieved Local Context:**\n{context_text}\n\n"
+            f"**Retrieved Local Context:**\n{context_text}\n"
+            f"{telemetry_block}\n\n"
             "**RECOMMENDED NEXT STEP**\n"
             "<span style='color: #4CAF50; font-weight: bold; font-size: 1.2em;'>"
             "Configure your SOLOMON_LLM_API_BASE environment variable to link a local "
@@ -191,9 +208,10 @@ def chat():
         )
         reply = response.choices[0].message["content"]
 
-        # Append the mandated RECOMMENDED NEXT STEP section
+        # Append telemetry and mandated RECOMMENDED NEXT STEP section
         reply += (
-            "\n\n**RECOMMENDED NEXT STEP**\n"
+            f"{telemetry_block}\n\n"
+            "**RECOMMENDED NEXT STEP**\n"
             "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
             "Compile custom calibration datasets using /api/command-center/quantization/compile-calibration "
             "to ground your mixed-precision weights in Solomon's active relational database knowledge cards.</span>"
@@ -201,7 +219,6 @@ def chat():
         return jsonify({"reply": reply})
     except Exception as e:
         return jsonify({"error": str(e), "status": "openai_api_error"}), 500
-
 
 @app.route("/api/quantization/blueprint", methods=["GET"])
 def get_blueprint():
