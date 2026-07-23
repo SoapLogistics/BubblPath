@@ -371,6 +371,30 @@ def test_skills_endpoint_and_sandbox_run(flask_client):
     assert data5["exit_code"] != 0
     assert "Simulated compilation error" in data5["stderr"]
 
+def test_sandbox_hard_timeout_guard(flask_client):
+    """Verifies that Prometheus hard-timeout subprocess constraints terminate runaway loops successfully."""
+    # POST execution with a runaway loop and custom timeout limit of 1.0 second
+    runaway_code = (
+        "import time\n"
+        "while True:\n"
+        "    time.sleep(0.1)\n"
+    )
+    response = flask_client.post(
+        "/api/mnemosyne/skills/execute",
+        data=json.dumps({
+            "skill_id": "jules_endless_runaway",
+            "code": runaway_code,
+            "timeout_seconds": 1.0
+        }),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["execution_status"] == "TIMEOUT"
+    assert data["exit_code"] == -1
+    assert "TimeoutExpired" in data["stderr"]
+    assert "Runaway process terminated" in data["stderr"]
+
 def test_topological_skill_graph_execution(flask_client):
     """Verifies sequential sandboxed execution in exact topologically sorted chronological order."""
     # Build execution codes where dependency runs first, followed by dependent
@@ -483,6 +507,57 @@ def test_semantic_graph_links_endpoints(flask_client):
     data_cycle = response_cycle.get_json()
     assert data_cycle["cycle_detected_in_linkage_graph"] is True
     assert data_cycle["is_safe_for_topological_execution"] is False
+
+def test_directed_linkage_blocker_traversal(flask_client):
+    """Verifies recursive traversal detection of multi-layer PREVENTS execution linkage blockers."""
+    # Linkage setup:
+    # Node 1 -> Node 3 is ENHANCES (Not a blocker)
+    # Node 3 -> Node 2 is PREVENTS relationship blocker
+    flask_client.post(
+        "/api/mnemosyne/cards/links",
+        data=json.dumps({"source_id": 1, "target_id": 3, "relationship_type": "ENHANCES"}),
+        content_type="application/json"
+    )
+    flask_client.post(
+        "/api/mnemosyne/cards/links",
+        data=json.dumps({"source_id": 3, "target_id": 2, "relationship_type": "PREVENTS"}),
+        content_type="application/json"
+    )
+
+    # 1. Validation check (missing keys)
+    response_val = flask_client.post(
+        "/api/mnemosyne/cards/links/traversal",
+        data=json.dumps({"source_id": 1}),
+        content_type="application/json"
+    )
+    assert response_val.status_code == 400
+
+    # 2. Assert multi-layer block detection (1 -> 3 -> 2 contains PREVENTS blocker)
+    response_block = flask_client.post(
+        "/api/mnemosyne/cards/links/traversal",
+        data=json.dumps({"source_id": 1, "target_id": 2}),
+        content_type="application/json"
+    )
+    assert response_block.status_code == 200
+    assert response_block.get_json()["blocked"] is True
+
+    # 3. Assert direct blocker detection (3 -> 2 contains PREVENTS blocker)
+    response_direct = flask_client.post(
+        "/api/mnemosyne/cards/links/traversal",
+        data=json.dumps({"source_id": 3, "target_id": 2}),
+        content_type="application/json"
+    )
+    assert response_direct.status_code == 200
+    assert response_direct.get_json()["blocked"] is True
+
+    # 4. Assert clean non-blocking route (1 -> 1)
+    response_clean = flask_client.post(
+        "/api/mnemosyne/cards/links/traversal",
+        data=json.dumps({"source_id": 1, "target_id": 1}),
+        content_type="application/json"
+    )
+    assert response_clean.status_code == 200
+    assert response_clean.get_json()["blocked"] is False
 
 def test_resource_guardrails_compaction(flask_client):
     """Verifies telemetry RSS tracking and automatic memory compaction triggers."""

@@ -182,7 +182,7 @@ def save_sok_links(links):
 class SandboxExecutor:
     """
     Quarantined Sandbox Execution Engine.
-    Runs synthesized Python scripts in a timed-out, resource-capped subprocess execution lane.
+    Runs synthesized Python scripts in a timed-out, resource-capped subprocess execution lane (Phase XXVIII).
     """
     @staticmethod
     def run_code(python_code, timeout_seconds=5.0):
@@ -211,7 +211,7 @@ class SandboxExecutor:
             return {
                 "exit_code": -1,
                 "stdout": e.stdout or "",
-                "stderr": e.stderr or f"TimeoutExpired: Execution exceeded safety ceiling of {timeout_seconds} seconds.",
+                "stderr": f"TimeoutExpired: Execution exceeded safety resource ceiling of {timeout_seconds} seconds. Runaway process terminated.",
                 "execution_latency_ms": elapsed_ms,
                 "status": "TIMEOUT"
             }
@@ -900,17 +900,18 @@ def execute_skill():
     data = request.get_json(silent=True) or {}
     skill_id = data.get("skill_id")
     code = data.get("code")
+    timeout = float(data.get("timeout_seconds", 5.0)) # Accept custom timeout trigger for Phase XXVIII
 
     if not skill_id:
         return jsonify({"error": "Missing skill_id"}), 400
 
     if code:
-        result = SandboxExecutor.run_code(code)
+        result = SandboxExecutor.run_code(code, timeout_seconds=timeout)
         return jsonify({
             "skill_id": skill_id,
             "execution_status": result["status"],
             "sandbox_memory_limit_mb": 128,
-            "sandbox_timeout_seconds": 5.0,
+            "sandbox_timeout_seconds": timeout,
             "exit_code": result["exit_code"],
             "stdout": result["stdout"],
             "stderr": result["stderr"],
@@ -921,7 +922,7 @@ def execute_skill():
         "skill_id": skill_id,
         "execution_status": "SUCCESS",
         "sandbox_memory_limit_mb": 128,
-        "sandbox_timeout_seconds": 5.0,
+        "sandbox_timeout_seconds": timeout,
         "execution_output": f"Executed capability '{skill_id}' inside isolated sandbox."
     })
 
@@ -1163,20 +1164,17 @@ def get_card_graph_visual_pipeline():
     num_nodes = len(cards)
     num_edges = len(links)
 
-    # 1. Compute Graph Density: D = 2 * |E| / (|V| * (|V|-1))
     if num_nodes > 1:
         graph_density = (2 * num_edges) / (num_nodes * (num_nodes - 1))
     else:
         graph_density = 0.0
 
-    # 2. Layout Coordinate Generation (Circular layout algorithm)
     visual_nodes = []
     for i, card in enumerate(cards):
         angle = (2 * math.pi * i) / (num_nodes or 1)
         x_coord = 400 + 250 * math.cos(angle)
         y_coord = 300 + 250 * math.sin(angle)
 
-        # Color codes corresponding to status types
         color = "#00FFCC" if card.get("status") == "ACTIVE" else "#FF9900"
 
         visual_nodes.append({
@@ -1204,6 +1202,57 @@ def get_card_graph_visual_pipeline():
         "render_engine": "Tailwind-2D-Canvas-Layout"
     })
 
+# Directed Multi-Layer Semantic SOK Linkage Blocker Traversal (Phase XXIX)
+@app.route("/api/mnemosyne/cards/links/traversal", methods=["POST"])
+def traverse_card_linkage_blockers():
+    """
+    Recursively traverses semantic linkage paths between source and target cards.
+    Topologically blocks execution sequences if any connected pathway contains a PREVENTS relationship blocker.
+    """
+    data = request.get_json(silent=True) or {}
+    source_id = data.get("source_id")
+    target_id = data.get("target_id")
+
+    if source_id is None or target_id is None:
+        return jsonify({"error": "Missing source_id or target_id inside payload."}), 400
+
+    source_id = int(source_id)
+    target_id = int(target_id)
+
+    links = load_sok_links()
+
+    # Standard BFS path search finder
+    adj = {}
+    for l in links:
+        s, t, rel = int(l["source_id"]), int(l["target_id"]), l["relationship_type"]
+        if s not in adj:
+            adj[s] = []
+        adj[s].append((t, rel))
+
+    queue = [(source_id, False)]
+    visited = set()
+    blocked = False
+
+    while queue:
+        curr, is_blocked = queue.pop(0)
+        if curr == target_id:
+            if is_blocked:
+                blocked = True
+                break
+
+        if curr not in visited:
+            visited.add(curr)
+            for neighbor, rel in adj.get(curr, []):
+                neighbor_blocked = is_blocked or (rel == "PREVENTS")
+                queue.append((neighbor, neighbor_blocked))
+
+    return jsonify({
+        "source_id": source_id,
+        "target_id": target_id,
+        "blocked": blocked,
+        "reason": f"Execution path blocked by a PREVENTS relationship constraint between Card {source_id} and Card {target_id}." if blocked else "No blocking execution constraints found."
+    })
+
 # Autonomous Multi-Agent Planner and Gabriel Assimilation Core (Phase XXVII)
 @app.route("/api/command-center/planner/draft", methods=["POST"])
 def draft_planner_task():
@@ -1214,7 +1263,6 @@ def draft_planner_task():
     if not prompt:
         return jsonify({"error": "Missing key 'prompt' inside payload."}), 400
 
-    # Analyze prompt and draft task lists
     task_pipeline = [
         {"step": 1, "task": "Synthesize Python prototype for: " + prompt, "worker": "Codex", "status": "PENDING"},
         {"step": 2, "task": "Apply Prometheus regex checks for security", "worker": "Prometheus", "status": "PENDING"},
@@ -1222,7 +1270,6 @@ def draft_planner_task():
         {"step": 4, "task": "Promote dynamic capability to ACTIVE in registry", "worker": "Mnemosyne", "status": "PENDING"}
     ]
 
-    # Save a DRAFT memory card for this planner
     cards = load_sok_cards()
     new_id = max([c["id"] for c in cards]) + 1 if cards else 1
     draft_card = {
@@ -1253,7 +1300,6 @@ def execute_planner_task():
     if not code:
         return jsonify({"error": "Missing key 'code' inside payload."}), 400
 
-    # 1. Prometheus Security Regex Scan
     if re.search(r"while\s+True", code) or re.search(r"eval\(", code):
         return jsonify({
             "status": "FAILED",
@@ -1261,7 +1307,6 @@ def execute_planner_task():
             "reason": "Vulnerability flagged in code block."
         }), 400
 
-    # 2. Sandbox Subprocess Execution Verification
     res = SandboxExecutor.run_code(code)
 
     if res["status"] != "SUCCESS":
@@ -1271,7 +1316,6 @@ def execute_planner_task():
             "reason": res["stderr"]
         }), 200
 
-    # 3. GCPP Capability Promotion (Draft -> ACTIVE)
     cards = load_sok_cards()
     card_found = False
     for card in cards:
@@ -1295,7 +1339,6 @@ def execute_planner_task():
         })
     save_sok_cards(cards)
 
-    # 4. Append to Live graph registry
     if not any(s["id"] == skill_id for s in skill_graph_registry):
         skill_graph_registry.append({"id": skill_id, "dependencies": []})
 

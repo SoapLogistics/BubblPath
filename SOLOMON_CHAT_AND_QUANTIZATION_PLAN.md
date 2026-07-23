@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 27-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 29-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -297,12 +297,25 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Expose `/api/command-center/planner/execute` (POST) to sequentially compile draft codes, execute tests inside quarantined sandboxes, and promote verified codes to ACTIVE.
   3. Fully automate capability drafting and self-healing deployment workflows.
 
+### Phase XXVIII: Prometheus Timed-Out Subprocess Hard Resource Guard
+* **Objective**: Guard against runaway infinite loops and endless subprocess resource leak allocations inside sandboxes.
+* **Action Steps**:
+  1. Configure `SandboxExecutor`'s timeout constraints dynamically inside `app.py`.
+  2. Ensure processes that exceed the allotted time (e.g., infinite loops like `while True: pass`) are forcefully terminated, capturing standard system subprocess timeout signals and cleanup tracebacks.
+
+### Phase XXIX: Directed Multi-Layer Semantic SOK Linkage Blocker Traversal
+* **Objective**: Topologically block unsafe capability executions by recursively traversing multi-layer directed SOK card relation blocks.
+* **Action Steps**:
+  1. Expose `POST /api/mnemosyne/cards/links/traversal` in `app.py`.
+  2. Accept `source_id` and `target_id`. Recursively traverse relational edges inside the SOK linkage graph.
+  3. If a relationship block of type `PREVENTS` or equivalent execution block is discovered along any connected traversal path, halt the pipeline and return a restricted block flag status.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the visual graph network pipeline and the multi-agent planner drafting/execution engines.
-2. CREATE `test_app.py` to assert correct layout coordinates, planner task breakdowns, and sequential capability promotion outputs.
+1. OVERWRITE `app.py` with the Prometheus hard-timeout subprocess guard and the directed multi-layer semantic linkage blocker check route.
+2. CREATE `test_app.py` to assert correct sandbox process terminations on timeout, and block status responses on recursive link traversal checks.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add visual graph pipelines and multi-agent planners so Solomon can autonomously draft, verify, and promote complex capabilities offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add sandbox resource guard constraints and relational blockage check traversals so Solomon can safely regulate executing script times and block conflicting operations offline.**
