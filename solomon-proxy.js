@@ -87,7 +87,8 @@ const server = http.createServer((req, res) => {
         '/api/command-center/solomon-chat',
         '/api/command-center/worker-report',
         '/api/command-center/review',
-        '/api/command-center/cards'
+        '/api/command-center/cards',
+        '/api/command-center/worker-modes'
     ];
 
     if (protectedRoutes.includes(pathname)) {

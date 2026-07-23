@@ -148,6 +148,35 @@ def cc_preferences():
         }
     })
 
+@app.route("/api/command-center/worker-modes", methods=["GET", "POST"])
+def cc_worker_modes():
+    """
+    Exposes and allows updating active operational modes for cognitive helpers.
+    Transitions worker modes from safe dry-runs to live execution dynamically.
+    """
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    if request.method == "POST":
+        data = request.json or {}
+        worker_id = data.get("worker_id")
+        mode = data.get("mode")
+
+        if not worker_id or not mode:
+            return jsonify({"ok": False, "error": "Missing worker_id or mode"}), 400
+
+        updated = runtime.update_worker_mode(worker_id, mode)
+        if not updated:
+            return jsonify({"ok": False, "error": f"Worker '{worker_id}' not found."}), 404
+
+        logger.info(f"Operator updated worker '{worker_id}' operational mode to '{mode.upper()}'.")
+
+    modes = runtime.get_worker_modes()
+    return jsonify({
+        "ok": True,
+        "worker_modes": modes
+    })
+
 @app.route("/api/command-center/solomon-chat", methods=["POST"])
 def cc_solomon_chat():
     """
@@ -254,6 +283,23 @@ def cc_solomon_chat():
         "you MUST NOT delegate, route, or fallback to Codex. Instead, you must immediately report the task as BLOCKED with a structured reasoning.\n"
         "-------------------------------------------\n"
     )
+
+    # Retrieve active worker modes to inject into system instructions
+    active_modes_list = []
+    try:
+        modes = runtime.get_worker_modes()
+        for m in modes:
+            active_modes_list.append(f"- {m['worker_name']} ({m['role']}): MODE={m['mode']}")
+    except Exception:
+        pass
+    modes_prompt = "\n".join(active_modes_list) if active_modes_list else "No active worker modes detected."
+
+    routing_constraints += (
+        "\n--- COGNITIVE WORKER REGISTRY MODES ---\n"
+        f"{modes_prompt}\n"
+        "-----------------------------------------\n"
+    )
+
     system_instruction += routing_constraints
 
     # Mandatory RECOMMENDED NEXT STEP formatting rule instruction

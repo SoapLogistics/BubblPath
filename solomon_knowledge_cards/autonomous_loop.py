@@ -65,9 +65,28 @@ class AutonomousImprovementLoop:
         """
         logger.warning(f"[Self-Healing] Candidate {candidate_name} broke compilation/tests! Initiating roll back...")
 
-        # Revert simulated codebase changes (Git checkout rollback mock)
+        # Check active worker mode for Gabriel
+        gabriel_mode = "READ_ONLY"
+        try:
+            modes = self.runtime.get_worker_modes()
+            for m in modes:
+                if m["worker_id"] == "gabriel":
+                    gabriel_mode = m["mode"].upper()
+                    break
+        except Exception as ex:
+            logger.error(f"Failed to query Gabriel worker mode: {str(ex)}")
+
         rollback_action = f"git checkout main -- . && git branch -D AIL-task-{int(time.time())}"
-        logger.info(f"[Self-Healing] Revert state executed: {rollback_action}")
+        if gabriel_mode in ("LIVE", "READ_WRITE"):
+            import subprocess
+            logger.info("[Self-Healing] Gabriel is in LIVE/READ_WRITE mode! Executing real Git rollback command.")
+            try:
+                subprocess.run(["git", "checkout", "main", "--", "."], check=True, capture_output=True)
+                logger.info("[Self-Healing] Real Git rollback completed successfully.")
+            except Exception as se:
+                logger.error(f"[Self-Healing] Real Git rollback failed: {str(se)}")
+        else:
+            logger.info(f"[Self-Healing] Gabriel is in {gabriel_mode} mode. Simulated Git rollback completed: {rollback_action}")
 
         # Ingest failure context as a FAILURE card in Project Mnemosyne
         report_id = f"WR-FAIL-{int(time.time())}"
@@ -118,6 +137,22 @@ class AutonomousImprovementLoop:
         If any test fails, triggers abort-and-revert.
         """
         logger.info("Executing Autonomous Improvement Loop cycle...")
+
+        # Check active worker mode
+        gabriel_mode = "READ_ONLY"
+        try:
+            modes = self.runtime.get_worker_modes()
+            for m in modes:
+                if m["worker_id"] == "gabriel":
+                    gabriel_mode = m["mode"].upper()
+                    break
+        except Exception:
+            pass
+
+        if gabriel_mode in ("LIVE", "READ_WRITE"):
+            logger.info("[AIL] Gabriel is in LIVE/READ_WRITE mode. Ready to ingest real external packages.")
+        else:
+            logger.info("[AIL] Gabriel is in READ_ONLY mode. Ingesting fallback/mock candidate packages.")
 
         candidate = mock_candidate or {
             "name": "Date Utility Helper",

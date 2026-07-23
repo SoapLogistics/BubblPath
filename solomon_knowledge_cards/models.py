@@ -151,5 +151,28 @@ class DatabaseManager:
                         conn.execute("ALTER TABLE revisions ADD COLUMN embedding TEXT;")
 
                     conn.execute("INSERT INTO migrations (version) VALUES (3);")
+
+                # Migration 4: Adding worker_modes table
+                if current_v < 4:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS worker_modes (
+                            worker_id TEXT PRIMARY KEY,
+                            worker_name TEXT NOT NULL,
+                            role TEXT NOT NULL,
+                            mode TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    now_str = datetime.utcnow().isoformat()
+                    conn.execute("""
+                        INSERT OR IGNORE INTO worker_modes (worker_id, worker_name, role, mode, updated_at)
+                        VALUES
+                        ('gabriel', 'Gabriel', 'COMMAND_CENTER_RELAY', 'READ_ONLY', ?),
+                        ('mnemosyne', 'Mnemosyne', 'MEMORY_CONTEXT', 'READ_ONLY', ?),
+                        ('prometheus', 'Prometheus', 'BUILD_PLANNER', 'DRY_RUN_ONLY', ?),
+                        ('loki', 'Loki', 'SPORTS_RESEARCH_MODEL', 'RESEARCH_ONLY', ?);
+                    """, (now_str, now_str, now_str, now_str))
+
+                    conn.execute("INSERT INTO migrations (version) VALUES (4);")
         finally:
             conn.close()

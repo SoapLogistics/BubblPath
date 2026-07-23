@@ -486,6 +486,38 @@ class MnemosyneRuntime:
         finally:
             conn.close()
 
+    def get_worker_modes(self) -> List[Dict[str, Any]]:
+        """Retrieves all registered worker modes from the database."""
+        conn = self.db.get_connection()
+        try:
+            cursor = conn.execute("SELECT * FROM worker_modes")
+            return [dict(r) for r in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to fetch worker modes: {str(e)}")
+            return []
+        finally:
+            conn.close()
+
+    def update_worker_mode(self, worker_id: str, mode: str) -> bool:
+        """Dynamically updates the operational mode of a specific worker."""
+        conn = self.db.get_connection()
+        try:
+            with conn:
+                cursor = conn.execute("SELECT worker_id FROM worker_modes WHERE worker_id = ?", (worker_id.lower(),))
+                if not cursor.fetchone():
+                    return False
+                conn.execute("""
+                    UPDATE worker_modes
+                    SET mode = ?, updated_at = ?
+                    WHERE worker_id = ?
+                """, (mode.upper(), datetime.utcnow().isoformat(), worker_id.lower()))
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update worker mode for {worker_id}: {str(e)}")
+            return False
+        finally:
+            conn.close()
+
     def health(self) -> Dict[str, Any]:
         """Returns connection status, database statistics, and migration information."""
         try:
