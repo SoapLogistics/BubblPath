@@ -17,16 +17,33 @@ from solomon_perpetual_learning_loop import SolomonPerpetualLearningLoop
 from solomon_docker_executor import DockerSandboxExecutor
 from solomon_prometheus_curiosity import PrometheusCuriosityEngine
 from solomon_experiment_engine import ExperimentEngine
+from solomon_skill_factory import SkillFactory
+from solomon_skill_graph_navigator import SkillGraphNavigator
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-# Instantiate our Relational Mnemosyne SQLite Database, Model Router, active Skill Graph, and Experiment Engine
+# Instantiate our Relational Mnemosyne SQLite Database, Model Router, active Skill Graph, Experiment Engine, and Graph Navigator
 db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
 router = ModelRouter(db)
 skills_graph = SkillGraph()
 perpetual_loop = SolomonPerpetualLearningLoop(db, router, skills_graph)
 experiment_engine = ExperimentEngine(db)
+graph_navigator = SkillGraphNavigator()
+
+# Seed default capabilities inside the Graph Navigator
+graph_navigator.register_skill_node(
+    skill_id="SKILL-ARRAY-SORT-001",
+    name="Quicksort Array Optimizer",
+    prerequisites=["SKILL-MATH-BASE-001"],
+    signatures={"inputs": "list", "outputs": "list"}
+)
+graph_navigator.register_skill_node(
+    skill_id="SKILL-DIB-001",
+    name="Infinite Loop Preventative Test",
+    prerequisites=["SKILL-TIMEOUT-BASE-001"],
+    signatures={"inputs": "none", "outputs": "none"}
+)
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -787,6 +804,80 @@ def execute_docker_sandbox():
             "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
             "Migrate this dynamic execution lane as the default solver backend "
             "for Prometheus build-planners and Gabriel code extractors!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/skills/factory/create", methods=["POST"])
+def create_skill_package():
+    """
+    Synthesizes and compiles learned code templates into modular Skill Packages.
+    """
+    data = request.json or {}
+    skill_id = data.get("skill_id", "SKILL-AUTO-01")
+    name = data.get("name", "Auto-compiled micro-capability")
+    purpose = data.get("purpose", "Performs mathematical optimizations.")
+    source_code = data.get("source_code", "def solve(): return 42")
+
+    inputs_schema = data.get("inputs_schema", {"x": "integer"})
+    outputs_schema = data.get("outputs_schema", {"return": "integer"})
+    safety_constraints = data.get("safety_constraints", ["CPU <= 50%", "RAM <= 256MB"])
+
+    package = SkillFactory.compile_skill_package(
+        skill_id=skill_id,
+        name=name,
+        purpose=purpose,
+        source_code=source_code,
+        inputs_schema=inputs_schema,
+        outputs_schema=outputs_schema,
+        safety_constraints=safety_constraints
+    )
+
+    # Automatically register inside active Skill Graph if successful
+    global skills_graph
+    skills_graph.register_skill(
+        skill_id=skill_id,
+        name=name,
+        source_code=source_code
+    )
+
+    # Register in our topological graph navigator
+    graph_navigator.register_skill_node(
+        skill_id=skill_id,
+        name=name,
+        prerequisites=data.get("prerequisites", []),
+        signatures={"inputs": str(inputs_schema), "outputs": str(outputs_schema)}
+    )
+
+    return jsonify({
+        "status": "success",
+        "compiled_skill_package": package,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'> "
+            "Call GET /api/mnemosyne/skills/graph/analyze to recalculate the "
+            "topological resolution path and confirm dependency health!</span>"
+        )
+    })
+
+
+@app.route("/api/mnemosyne/skills/graph/analyze", methods=["GET"])
+def analyze_skills_graph_dependencies():
+    """
+    Analyzes active topological dependency mappings and recommends forward learning paths.
+    """
+    health = graph_navigator.analyze_graph_health()
+    execution_order = graph_navigator.topological_sort()
+
+    return jsonify({
+        "status": "success",
+        "graph_health_report": health,
+        "recommended_topological_execution_order": execution_order,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Direct the Prometheus Curiosity Engine to focus on the highest-priority "
+            "missing dependency indicated in next_learning_recommendations!</span>"
         )
     })
 
