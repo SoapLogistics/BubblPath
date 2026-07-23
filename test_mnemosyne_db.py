@@ -302,8 +302,9 @@ class TestMnemosyneAPIIntegration:
         card_id = "SOK-MISSION-QUANT-001"
         query_text = "VRAM metrics during high-throughput edge execution"
 
-        # Robustly Reset the active database card's confidence score to exactly 1.0 before test run
+        # Robustly Reset the active database card's confidence score to exactly 1.0 and clear test pollution
         conn = sqlite3.connect("solomon_mnemosyne_demo.db")
+        conn.execute("DELETE FROM knowledge_cards WHERE card_id LIKE 'SOK-EXPERIMENT-%'")
         conn.execute("UPDATE knowledge_cards SET confidence = 1.0 WHERE card_id = ?", (card_id,))
         conn.commit()
         conn.close()

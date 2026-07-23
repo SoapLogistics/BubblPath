@@ -20,6 +20,10 @@ from solomon_knowledge_cards.quantization_strategy_engine import QuantizationStr
 from solomon_perpetual_learning_loop import SolomonPerpetualLearningLoop
 from solomon_skill_graph import SandboxExecutor
 
+# Import Phase 2 and Phase 3 SOSS Engines
+from solomon_curiosity_engine import PrometheusCuriosityEngine
+from solomon_experiment_engine import ExperimentEngine
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -31,6 +35,8 @@ router = ModelRouter(db)
 monitor = InfrastructureResourceMonitor(ram_cap_gb=1.5)
 strategy_engine = QuantizationStrategyEngine(db)
 perpetual_loop = SolomonPerpetualLearningLoop(db)
+curiosity_engine = PrometheusCuriosityEngine(db)
+experiment_engine = ExperimentEngine(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -878,6 +884,57 @@ def get_metrics():
         }
     }
     return jsonify(metrics_report)
+
+
+# ==========================================
+# PHASE 2 & 3 SOSS CURIOSITY AND EXPERIMENT ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/curiosity/queue", methods=["GET"])
+def get_curiosity_queue():
+    """
+    Scans execution metrics and card bases to compile ranked learning opportunities.
+    """
+    try:
+        sim_rss = float(request.args.get("simulated_rss_mb", 1420.0))
+        sim_sql = float(request.args.get("simulated_sql_ms", 1.2))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid arguments. Values must be numeric."}), 400
+
+    queue = curiosity_engine.scan_for_opportunities(
+        simulated_rss_mb=sim_rss,
+        simulated_sql_ms=sim_sql
+    )
+    return jsonify({
+        "status": "success",
+        "total_opportunities_found": len(queue),
+        "learning_queue": queue
+    })
+
+
+@app.route("/api/command-center/curiosity/experiment", methods=["POST"])
+def run_command_center_experiment():
+    """
+    Ingests a selected opportunity, runs an isolated scientific experiment,
+    and promotes successful outcomes to APPROVED database cards.
+    """
+    data = request.json or {}
+    opportunity = data.get("opportunity")
+    hypothesis = data.get("hypothesis")
+    execution_script = data.get("execution_script")
+
+    if not opportunity or not hypothesis or not execution_script:
+        return jsonify({"error": "Missing required fields 'opportunity', 'hypothesis', or 'execution_script' in payload."}), 400
+
+    if not isinstance(opportunity, dict) or "name" not in opportunity or "category" not in opportunity:
+        return jsonify({"error": "Invalid opportunity layout. Must be a dict with name and category."}), 400
+
+    report = experiment_engine.execute_reproducible_experiment(
+        opportunity=opportunity,
+        hypothesis=hypothesis,
+        execution_script=execution_script
+    )
+    return jsonify(report)
 
 
 if __name__ == "__main__":
