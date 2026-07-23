@@ -115,7 +115,7 @@ class SolomonPerpetualLearningLoop:
         # -------------------------------------------------------------
         trace.append("Stage 5 & 6 (Retrieve & Improve): Querying similar tasks.")
 
-        similar_query = f"Retrieve status metrics and node states of {target_service} container setup"
+        similar_query = f"Assimilated native Python equivalent for the closed-source '{target_service}' binary."
         routing_decision = self.router.route_query(similar_query, threshold=0.60)
 
         # Verify that our newly registered card was matched and used for routing
