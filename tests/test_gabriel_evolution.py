@@ -123,17 +123,35 @@ def test_evolutionary_api_endpoints():
     assert "optimized_code" in data_opt
     assert "lease_duration_sec: int = 2" in data_opt["optimized_code"]
 
-    # 3. Test AST Inject Endpoint
+    # 3. Test AST Inject Endpoint with correct authorization and correct paths
     dummy_source = "class TargetModel:\n    pass\n"
     func_source = "def predict(self):\n    return 1.0\n"
 
-    with tempfile.NamedTemporaryFile(suffix=".py", delete=False, mode="w") as f:
+    # Use a file inside the current working directory to pass the sandbox check
+    current_dir_file = os.path.join(os.getcwd(), "test_ast_inject_target.py")
+    with open(current_dir_file, "w") as f:
         f.write(dummy_source)
-        temp_path = f.name
 
     try:
-        res_ast = client.post("/api/gabriel/ast-inject", json={
-            "file_path": temp_path,
+        # Check unauthorized block (no headers)
+        res_unauth = client.post("/api/gabriel/ast-inject", json={
+            "file_path": current_dir_file,
+            "class_name": "TargetModel",
+            "function_source": func_source
+        })
+        assert res_unauth.status_code == 401
+
+        # Check path traversal block (outside directory)
+        res_traversal = client.post("/api/gabriel/ast-inject", headers={"Authorization": "Bearer solomon_super_secure_auth_key_2026"}, json={
+            "file_path": "/etc/passwd",
+            "class_name": "TargetModel",
+            "function_source": func_source
+        })
+        assert res_traversal.status_code == 403
+
+        # Check authorized success
+        res_ast = client.post("/api/gabriel/ast-inject", headers={"Authorization": "Bearer solomon_super_secure_auth_key_2026"}, json={
+            "file_path": current_dir_file,
             "class_name": "TargetModel",
             "function_source": func_source
         })
@@ -141,8 +159,9 @@ def test_evolutionary_api_endpoints():
         data_ast = json.loads(res_ast.data)
         assert data_ast["status"] == "success"
 
-        with open(temp_path, "r") as f:
+        with open(current_dir_file, "r") as f:
             mutated_code = f.read()
         assert "def predict(self):" in mutated_code
     finally:
-        os.remove(temp_path)
+        if os.path.exists(current_dir_file):
+            os.remove(current_dir_file)

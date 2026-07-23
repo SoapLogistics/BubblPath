@@ -38,6 +38,11 @@ class DynamicCapabilityRegistry:
         Saves the compiled Python code to a file in the assimilated capabilities directory.
         Returns the absolute filepath. Protected by reentrant locks.
         """
+        # Defend against path traversal
+        clean_name = os.path.basename(capability_name)
+        if clean_name != capability_name or ".." in capability_name or "/" in capability_name or "\\" in capability_name:
+            raise ValueError(f"Path traversal detected in capability name: {capability_name}")
+
         with self._lock:
             filename = f"{capability_name}.py"
             filepath = os.path.join(self.target_dir, filename)
@@ -52,6 +57,11 @@ class DynamicCapabilityRegistry:
         Dynamically imports the capability module from disk and returns it.
         Employs threading locks for safety, and an LRU eviction strategy to prevent memory leaks.
         """
+        # Defend against path traversal
+        clean_name = os.path.basename(capability_name)
+        if clean_name != capability_name or ".." in capability_name or "/" in capability_name or "\\" in capability_name:
+            raise ValueError(f"Path traversal detected in capability name: {capability_name}")
+
         with self._lock:
             module_name = f"gabriel_engine.assimilated_capabilities.{capability_name}"
             filepath = os.path.join(self.target_dir, f"{capability_name}.py")
