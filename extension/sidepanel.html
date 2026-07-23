@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Solomon Companion</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #f9fafb;
+      color: #111827;
+    }
+    h1 {
+      font-size: 1.25rem;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .status-bar {
+      font-size: 0.875rem;
+      color: #4b5563;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .chat-box {
+      background-color: white;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 12px;
+      min-height: 200px;
+      margin-bottom: 12px;
+      overflow-y: auto;
+      font-size: 0.875rem;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    .btn-stop {
+      background-color: #ef4444;
+    }
+    .btn-stop:hover {
+      background-color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <h1>Solomon Lens</h1>
+  <div class="status-bar" id="status">Mode: Observer (Read-Only)</div>
+
+  <div class="chat-box" id="chat">
+    <p><em>Waiting for context...</em></p>
+  </div>
+
+  <button id="btn-read-page">Read Current Page</button>
+  <button id="btn-kalshi-test">Query Kalshi Markets (Simulated)</button>
+  <button class="btn-stop" id="btn-stop">EMERGENCY STOP</button>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
