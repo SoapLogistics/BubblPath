@@ -194,7 +194,9 @@ def chat():
         "If the user asks you to trigger your background cognitive or learning cycles, output `[INITIATE_LEARNING_CYCLE]`.\n"
         "If the user asks you to reverse-engineer or profile a binary executable, output `[OBSERVE_BINARY: <binary_name>]`.\n"
         "If the user asks you to map out or orchestrate a skill pipeline, output `[ORCHESTRATE_SKILLS: <root_skill>]`.\n"
-        "If the user asks you to elevate or demote a helper sub-agent (Gabriel, Mnemosyne, Prometheus, Loki), output `[UPDATE_WORKER_MODE: <worker_name>:<mode>]`.\n\n"
+        "If the user asks you to elevate or demote a helper sub-agent (Gabriel, Mnemosyne, Prometheus, Loki), output `[UPDATE_WORKER_MODE: <worker_name>:<mode>]`.\n"
+        "If you discover a valuable piece of knowledge that should be permanently saved, output `[MEMORIZE: <family>|<focus>|<content>]`.\n"
+        "If you need to dispatch a task to a specialized helper swarm worker, output `[DELEGATE: <worker_name>|<task_description>]`.\n\n"
         f"Relevant Context from Solomon's local Mnemosyne memory:\n{context_text}"
     )
 
@@ -370,6 +372,42 @@ def chat():
                     reply += f"\n\n**[WORKER MODE UPDATE]**\nSuccessfully elevated sub-agent `{worker_name}` to execution mode `{new_mode}`."
             except Exception as e:
                 reply += f"\n\n**[WORKER MODE ERROR]** Failed to update worker mode: {str(e)}"
+
+        # Phase 13: Active Memory Consolidation Hook
+        if "[MEMORIZE:" in reply:
+            try:
+                mem_match = re.search(r"\[MEMORIZE:\s*([^\|]+)\|([^\|]+)\|([^\]]+)\]", reply)
+                if mem_match:
+                    family = mem_match.group(1).strip()
+                    focus = mem_match.group(2).strip()
+                    content = mem_match.group(3).strip()
+                    import uuid
+                    new_card_id = f"SOK-LEARNED-{str(uuid.uuid4())[:8].upper()}"
+
+                    db.upsert_card(new_card_id, family, focus, content, status="ACTIVE")
+
+                    reply += f"\n\n**[MNEMOSYNE CONSOLIDATION]**\nSuccessfully anchored new knowledge card `{new_card_id}` to active local memory. Focus: {focus}."
+            except Exception as e:
+                reply += f"\n\n**[MNEMOSYNE ERROR]** Failed to write active memory card: {str(e)}"
+
+        # Phase 14: Sub-Agent Delegation Hook
+        if "[DELEGATE:" in reply:
+            try:
+                del_match = re.search(r"\[DELEGATE:\s*([^\|]+)\|([^\]]+)\]", reply)
+                if del_match:
+                    worker_name = del_match.group(1).strip()
+                    task_desc = del_match.group(2).strip()
+
+                    # Fetch active worker mode state
+                    worker_modes = db.get_worker_modes()
+                    worker_state = worker_modes.get(worker_name, "UNREGISTERED")
+
+                    if worker_state in ["LIVE", "READ_WRITE"]:
+                        reply += f"\n\n**[SWARM DELEGATION: {worker_name}]**\nSuccessfully routed task to {worker_name} (State: {worker_state}):\n`{task_desc}`"
+                    else:
+                        reply += f"\n\n**[SWARM DELEGATION BLOCKED: {worker_name}]**\nTask routing failed. {worker_name} is currently in locked execution state (`{worker_state}`). Please elevate execution clearances via `[UPDATE_WORKER_MODE: {worker_name}:LIVE]` before delegating."
+            except Exception as e:
+                reply += f"\n\n**[SWARM ERROR]** Failed to delegate task: {str(e)}"
 
         # Append telemetry and mandated RECOMMENDED NEXT STEP section
         reply += (
