@@ -196,7 +196,9 @@ def chat():
         "If the user asks you to map out or orchestrate a skill pipeline, output `[ORCHESTRATE_SKILLS: <root_skill>]`.\n"
         "If the user asks you to elevate or demote a helper sub-agent (Gabriel, Mnemosyne, Prometheus, Loki), output `[UPDATE_WORKER_MODE: <worker_name>:<mode>]`.\n"
         "If you discover a valuable piece of knowledge that should be permanently saved, output `[MEMORIZE: <family>|<focus>|<content>]`.\n"
-        "If you need to dispatch a task to a specialized helper swarm worker, output `[DELEGATE: <worker_name>|<task_description>]`.\n\n"
+        "If you need to dispatch a task to a specialized helper swarm worker, output `[DELEGATE: <worker_name>|<task_description>]`.\n"
+        "If you want to reinforce or penalize a specific historical procedure based on an outcome, output `[REINFORCE: <card_id>|<outcome>]` where outcome is 'success' or 'failure'.\n"
+        "If you need to inject a missing node into your topological skill dependency graph, output `[INJECT_SKILL_NODE: <skill_name>|<dependency1,dependency2,...>]`.\n\n"
         f"Relevant Context from Solomon's local Mnemosyne memory:\n{context_text}"
     )
 
@@ -408,6 +410,41 @@ def chat():
                         reply += f"\n\n**[SWARM DELEGATION BLOCKED: {worker_name}]**\nTask routing failed. {worker_name} is currently in locked execution state (`{worker_state}`). Please elevate execution clearances via `[UPDATE_WORKER_MODE: {worker_name}:LIVE]` before delegating."
             except Exception as e:
                 reply += f"\n\n**[SWARM ERROR]** Failed to delegate task: {str(e)}"
+
+        # Phase 15: Reflection and Confidence Reinforcement Hook
+        if "[REINFORCE:" in reply:
+            try:
+                reinforce_match = re.search(r"\[REINFORCE:\s*([^\|]+)\|([^\]]+)\]", reply)
+                if reinforce_match:
+                    card_id = reinforce_match.group(1).strip()
+                    outcome = reinforce_match.group(2).strip().lower()
+
+                    if outcome in ["success", "failure"]:
+                        success, new_conf = db.update_card_confidence(card_id, outcome)
+                        if success:
+                            reply += f"\n\n**[MNEMOSYNE REINFORCEMENT]**\nSuccessfully applied {outcome} weight to `{card_id}`. New confidence score: {round(new_conf, 4)}."
+                        else:
+                            reply += f"\n\n**[MNEMOSYNE ERROR]** Card `{card_id}` not found for reinforcement."
+                    else:
+                        reply += f"\n\n**[MNEMOSYNE ERROR]** Invalid reinforcement outcome: {outcome}. Must be 'success' or 'failure'."
+            except Exception as e:
+                reply += f"\n\n**[MNEMOSYNE ERROR]** Failed to reinforce memory card: {str(e)}"
+
+        # Phase 16: Zero-Shot Skill Graph Node Injection
+        if "[INJECT_SKILL_NODE:" in reply:
+            try:
+                inject_match = re.search(r"\[INJECT_SKILL_NODE:\s*([^\|]+)\|([^\]]+)\]", reply)
+                if inject_match:
+                    skill_name = inject_match.group(1).strip()
+                    deps_raw = inject_match.group(2).strip()
+                    dependencies = [d.strip() for d in deps_raw.split(",")] if deps_raw else []
+
+                    loop = SolomonPerpetualLearningLoop(db)
+                    loop.skill_graph.register_skill(skill_name, "Zero-shot conversational skill injection", dependencies)
+
+                    reply += f"\n\n**[SKILL GRAPH INJECTION]**\nSuccessfully appended dynamic node `{skill_name}` to topological sequence with dependencies: {dependencies}."
+            except Exception as e:
+                reply += f"\n\n**[SKILL GRAPH ERROR]** Failed to inject skill node: {str(e)}"
 
         # Append telemetry and mandated RECOMMENDED NEXT STEP section
         reply += (
