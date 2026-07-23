@@ -31,6 +31,10 @@ from solomon_skill_factory import SkillFactory, SkillPackage
 from solomon_self_study_optimizer import SelfStudyOptimizer
 from solomon_autonomous_research import AutonomousResearchEngine
 
+# Import Phase 8 and 9 SOSS Engines
+from solomon_autonomous_tool_creator import AutonomousToolCreator
+from solomon_self_repair import SelfAuditProbes, SelfRepairEngine
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -47,6 +51,9 @@ experiment_engine = ExperimentEngine(db)
 skill_factory = SkillFactory(db)
 self_study_optimizer = SelfStudyOptimizer(db)
 research_engine = AutonomousResearchEngine(db)
+tool_creator = AutonomousToolCreator(db)
+self_repair_probes = SelfAuditProbes(db)
+self_repair_engine = SelfRepairEngine(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1038,6 +1045,59 @@ def run_autonomous_research_endpoint():
         research_topic=research_topic,
         candidates=candidates
     )
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 8 & 9 SOSS AUTONOMOUS TOOL CREATION AND SELF-REPAIR ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/tools/create", methods=["POST"])
+def run_autonomous_tool_create():
+    """
+    Ingests parameters to prototype, safety-audit, validate inside sandboxes,
+    and register a new dynamic python utility as an active reusable skill.
+    """
+    data = request.json or {}
+    tool_name = data.get("tool_name")
+    purpose = data.get("purpose")
+    inputs = data.get("inputs", {})
+    outputs = data.get("outputs", "None")
+    source_code = data.get("source_code")
+    unit_tests = data.get("unit_tests")
+
+    if not tool_name or not purpose or not source_code or not unit_tests:
+        return jsonify({"error": "Missing required fields 'tool_name', 'purpose', 'source_code', or 'unit_tests'."}), 400
+
+    report = tool_creator.prototype_and_register_tool(
+        tool_name=tool_name,
+        purpose=purpose,
+        inputs=inputs,
+        outputs=outputs,
+        source_code=source_code,
+        unit_tests=unit_tests
+    )
+    return jsonify(report)
+
+
+@app.route("/api/command-center/self-repair/run", methods=["POST"])
+def run_autonomous_self_repair():
+    """
+    Runs continuous system self-audit probes and executes dynamic self-repair
+    templates on detected failures.
+    """
+    data = request.json or {}
+    try:
+        current_rss = float(data.get("current_rss_mb", 1400.0))
+        route_latency = float(data.get("route_latency_ms", 45.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid arguments. Values must be numeric."}), 400
+
+    findings = self_repair_probes.perform_system_self_audit(
+        current_rss_mb=current_rss,
+        route_latency_ms=route_latency
+    )
+    report = self_repair_engine.execute_self_repair_loops(findings)
     return jsonify(report)
 
 
