@@ -38,4 +38,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (request.type === 'EMERGENCY_STOP') {
+    console.warn('SYSTEM-GUARD: EMERGENCY STOP received. Purging transient memory states.');
+    // In a real integration, we would clear chrome.storage.session and drop WebSocket connections here.
+    sendResponse({ status: 'halted' });
+    return false; // synchronous response
+  }
 });

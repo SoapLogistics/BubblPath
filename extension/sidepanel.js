@@ -34,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Phase 9 Elements
   const btnAnalyzeShopping = document.getElementById('btn-analyze-shopping');
 
+  // Phase 10 Elements
+  const btnAnalyzeJob = document.getElementById('btn-analyze-job');
+  const btnPrepareJobForm = document.getElementById('btn-prepare-job-form');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -277,13 +281,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2800);
   });
 
+  // --- Phase 10: Job Application Companion ---
+  btnAnalyzeJob.addEventListener('click', () => {
+    appendMessage('Solomon', 'Scanning Job Description against local resume profile...');
 
-  // --- Emergency ---
+    setTimeout(() => {
+      const jobReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Match Score:</strong> 85%<br>
+          <strong>Strong Matches:</strong> Python, React, System Architecture.<br>
+          <strong>Missing Qualifications:</strong> 5+ years AWS (Profile has 3 yrs).<br>
+          <strong>Recommendation:</strong> Draft cover letter highlighting rapid upskilling in AWS.
+        </div>
+      `;
+      appendMessage('Solomon Jobs', jobReport, true);
+      btnPrepareJobForm.classList.remove('hidden');
+    }, 1500);
+  });
+
+  btnPrepareJobForm.addEventListener('click', () => {
+    appendMessage('Solomon', 'Preparing safe form auto-fill for job application.');
+    chrome.runtime.sendMessage({ type: 'PREPARE_FORM', payload: { action: 'job.fill', fields: ['name', 'email', 'linkedin'] } }, (response) => {
+      appendMessage('Solomon', '&#10003; Routine fields populated. <strong>I cannot click Submit.</strong> Please review and finalize the application.', true);
+      btnPrepareJobForm.classList.add('hidden');
+    });
+  });
+
+
+  // --- Phase 11: Security & Emergency Systems ---
   btnStop.addEventListener('click', () => {
-    statusDiv.innerText = "Mode: STOPPED";
-    statusDiv.style.color = "red";
+    // 1. Update UI Status
+    statusDiv.innerText = "Mode: EMERGENCY STOP";
+    statusDiv.style.color = "white";
+    statusDiv.style.backgroundColor = "red";
     statusDiv.style.fontWeight = "bold";
-    appendMessage('SYSTEM', 'All Solomon activities halted. Connection to local runtime severed.');
+    statusDiv.style.padding = "4px";
+
+    // 2. Hide all active contextual forms
     kalshiOrderForm.classList.add('hidden');
+    bjDrillArea.classList.add('hidden');
+    memoryApprovalArea.classList.add('hidden');
+    btnPrepareJobForm.classList.add('hidden');
+
+    // 3. Clear transient memory (simulated)
+    chrome.runtime.sendMessage({ type: 'EMERGENCY_STOP' }, (response) => {
+      appendMessage('SYSTEM-GUARD', '&#9888; EMERGENCY STOP INITIATED.', true);
+      appendMessage('SYSTEM-GUARD', '1. Disconnecting from Solomon Runtime...', true);
+      appendMessage('SYSTEM-GUARD', '2. Revoking ActiveTab scripting permissions...', true);
+      appendMessage('SYSTEM-GUARD', '3. Clearing ephemeral session memory...', true);
+      appendMessage('SYSTEM-GUARD', '4. Financial Action locks engaged globally.', true);
+      appendMessage('SYSTEM-GUARD', 'Solomon is now offline. Please close the panel.', true);
+
+      // Disable further interactions in UI
+      const buttons = document.querySelectorAll('button:not(#btn-stop)');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      });
+    });
   });
 });
