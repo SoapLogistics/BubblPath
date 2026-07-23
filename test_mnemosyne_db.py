@@ -281,6 +281,73 @@ class TestMnemosyneAPIIntegration:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
+    def test_self_audit_probes_direct(self, test_db):
+        """
+        Directly asserts that SelfAuditProbes successfully runs SQLite integrity audits
+        and calculates a valid Semantic Drift Ratio (SDR) of the database memory.
+        """
+        from solomon_self_audit_probes import SelfAuditProbes
+        probes = SelfAuditProbes(test_db.db_path)
+
+        # SQLite integrity
+        integrity = probes.run_sqlite_integrity_check()
+        assert integrity["status"] == "HEALTHY"
+        assert integrity["integrity_check_raw"] == "ok"
+
+        # Semantic Drift Ratio
+        drift = probes.calculate_semantic_drift_ratio()
+        assert drift["status"] == "STABLE" or drift["status"] == "DRIFT_DETECTED"
+        assert drift["total_cards_profiled"] == 0 # no cards with embeddings in temp test db
+
+    def test_self_healing_ail_daemon_direct(self, test_db):
+        """
+        Directly asserts that SelfHealingAILDaemon executes SQLite compaction vacuuming and
+        analyzes, and handles programmatic Git rollback on compile errors safely.
+        """
+        from solomon_self_healing_ail import SelfHealingAILDaemon
+        daemon = SelfHealingAILDaemon(test_db.db_path)
+
+        # Compaction
+        res = daemon.run_database_vacuum_and_compaction()
+        assert res["success"] is True
+
+        # Rollback
+        res_roll = daemon.trigger_programmatic_git_rollback("test-rebuilt-broken-service", "SyntaxError: invalid syntax")
+        assert res_roll["success"] is True
+        assert "git checkout main" in res_roll["revert_command_executed"]
+
+        # Check failure card was saved in Mnemosyne
+        card = test_db.get_card("SOK-FAIL-TEST_REBUILT_BROKEN_SERVICE")
+        assert card is not None
+        assert "SyntaxError" in card["content"]
+
+    def test_audit_and_self_healing_api_routes(self, client):
+        """
+        Verifies POST /api/mnemosyne/audit/run and POST /api/mnemosyne/heal/loop
+        endpoints process correct payloads, return success reports, and compile templates.
+        """
+        # 1. POST Audit Run
+        res_audit = client.post("/api/mnemosyne/audit/run", data=json.dumps({}), content_type="application/json")
+        assert res_audit.status_code == 200
+        data_audit = res_audit.get_json()
+        assert data_audit["status"] == "success"
+        assert "semantic_memory_drift" in data_audit["self_audit_report"]
+
+        # 2. POST Self-Heal Run
+        payload_heal = {
+            "candidate_name": "broken-test-mcp-service",
+            "error_msg": "TimeoutExpired: Process terminated"
+        }
+        res_heal = client.post("/api/mnemosyne/heal/loop", data=json.dumps(payload_heal), content_type="application/json")
+        assert res_heal.status_code == 200
+        data_heal = res_heal.get_json()
+        assert data_heal["status"] == "success"
+
+        maint = data_heal["maintenance_report"]
+        assert maint["sqlite_compaction"]["success"] is True
+        assert maint["programmatic_git_rollback"]["success"] is True
+        assert maint["programmatic_git_rollback"]["candidate_aborted"] == "broken-test-mcp-service"
+
     def test_meta_learning_engine_tuning(self):
         """
         Directly asserts that SOSS Phase 12 MetaLearningEngine dynamically tunes
