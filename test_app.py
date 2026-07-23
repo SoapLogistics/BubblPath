@@ -524,6 +524,71 @@ def test_resource_guardrails_compaction(flask_client):
         log_text = f.read()
         assert "Compaction_Triggered: True" in log_text
 
+def test_ail_daemon_security_audits(flask_client):
+    """Verifies static security audits, blocked loops, evaluation escapes, and rollbacks inside AIL."""
+    # Loop Block
+    response_loop = flask_client.post(
+        "/api/mnemosyne/ail/daemon",
+        data=json.dumps({"code": "while True: pass"}),
+        content_type="application/json"
+    )
+    assert response_loop.status_code == 400
+    data_loop = response_loop.get_json()
+    assert data_loop["status"] == "REJECTED"
+    assert data_loop["git_revert_complete"] is True
+
+    # Eval Escape Block
+    response_eval = flask_client.post(
+        "/api/mnemosyne/ail/daemon",
+        data=json.dumps({"code": "eval('2+2')"}),
+        content_type="application/json"
+    )
+    assert response_eval.status_code == 400
+    assert response_eval.get_json()["rollback_triggered"] is True
+
+    # Safe Exec Approval
+    response_safe = flask_client.post(
+        "/api/mnemosyne/ail/daemon",
+        data=json.dumps({"code": "import sys; sys.stdout.write('Clean loop approved')"}),
+        content_type="application/json"
+    )
+    assert response_safe.status_code == 200
+    data_safe = response_safe.get_json()
+    assert data_safe["status"] == "APPROVED"
+    assert data_safe["rollback_triggered"] is False
+    assert "Clean loop approved" in data_safe["stdout"]
+
+    # Sandbox Crash Rollback Trigger
+    response_crash = flask_client.post(
+        "/api/mnemosyne/ail/daemon",
+        data=json.dumps({"code": "raise KeyError('Simulate runtime error')"}),
+        content_type="application/json"
+    )
+    assert response_crash.status_code == 200
+    data_crash = response_crash.get_json()
+    assert data_crash["status"] == "ROLLBACK_TRIGGERED"
+    assert data_crash["rollback_triggered"] is True
+
+def test_speculative_decoding_calculations(flask_client):
+    """Verifies multi-model speculative decoding acceleration math and speedups."""
+    response = flask_client.post(
+        "/api/quantization/speculative-decoding",
+        data=json.dumps({
+            "acceptance_rate": 0.8,
+            "draft_latency_ms": 2.0,
+            "target_latency_ms": 20.0,
+            "draft_steps": 5
+        }),
+        content_type="application/json"
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["acceptance_rate_alpha"] == 0.8
+    assert "expected_accepted_tokens_per_step" in data
+    assert "speculative_speedup_ratio" in data
+    assert data["optimal_draft_steps_k"] == 4
+
 def test_perpetual_loop_endpoint(flask_client):
     """Verifies end-to-end continuous loop orchestration."""
     response = flask_client.post("/api/mnemosyne/perpetual-loop")

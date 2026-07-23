@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 15-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 17-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -215,12 +215,26 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Implement an execution router `/api/mnemosyne/skills/execute-graph` that performs a topological sort using Kahn's algorithm or DFS back-tracing.
   3. Run the complete chain of codes safely inside quarantined subprocess sandboxes in exact topological order, capturing execution outputs for comprehensive multi-capability rollouts.
 
+### Phase XVI: Autonomous Improvement Loop (AIL) Daemon
+* **Objective**: Provide automated 24/7 background security audits and backup rollbacks on sandbox crash.
+* **Action Steps**:
+  1. Build `/api/mnemosyne/ail/daemon` endpoint in `app.py`.
+  2. Run static audits using regex patterns to block harmful scripts (e.g. checking for infinite `while True` or malicious `os.system` / `eval` filesystem escapes).
+  3. Simulates dynamic rollbacks: if a sandbox execution crashes or a static security audit fails, automatically trigger git checkout rollback operations and extract failure SOK card entries.
+
+### Phase XVII: Multi-Model Speculative Decoding
+* **Objective**: Implement mathematical speculative models offloading target tokens to light ternary draft layers.
+* **Action Steps**:
+  1. Build `/api/quantization/speculative-decoding` endpoint in `app.py`.
+  2. Implement mathematical models calculating the speculative token speedups ($S = \frac{1}{\alpha(1-\beta) + \beta}$) using a 1.58-bit BitNet draft model and a heavy FP16 model.
+  3. Calculate memory bandwidth gains and token per second (TPS) rates, optimizing offline execution plans.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the performance crucible controls and topological multi-skill graph sandbox execution lane.
-2. CREATE `test_app.py` to assert correct dynamic crucible adjustments and topologically sorted multi-skill sandboxed execution sequences.
+1. OVERWRITE `app.py` with the AIL daemon, static regex security audits, and speculative decoding mathematics.
+2. CREATE `test_app.py` to assert correct AIL security blocks, git rollbacks, and speculative speedup calculations.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add performance crucible optimizations and topological skill graph sandboxed resolution so Solomon can topologically sort and execute complex multi-skill chains offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add autonomous improvement loops and speculative decoding speedups so Solomon can run secure self-healing and fast token generation offline.**
