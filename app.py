@@ -51,6 +51,10 @@ from solomon_self_evolving_codex import SelfEvolvingCodex
 from solomon_kalshi_predictor import KalshiPredictor
 from solomon_system_sentinel import SystemSentinel
 
+# Import Phase 18 and 19 SOSS Engines
+from solomon_tensor_coherence import TensorCoherenceOptimizer
+from solomon_multi_agent_consensus import MultiAgentConsensus
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -78,6 +82,8 @@ synapse_mapper = NeuralSynapseMapper(db)
 self_evolving_codex = SelfEvolvingCodex(db)
 kalshi_predictor = KalshiPredictor(db)
 sentinel = SystemSentinel()
+tensor_optimizer = TensorCoherenceOptimizer(db)
+agent_consensus = MultiAgentConsensus(db)
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1301,6 +1307,56 @@ def run_sentinel_verify():
     Executes a complete self-health sweep and AST syntactic compliance analysis over all python trees.
     """
     report = sentinel.run_complete_compliance_sweep()
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 18 & 19 SOSS TENSOR COHERENCE AND MULTI-AGENT CONSENSUS ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/tensor/coherence", methods=["POST"])
+def run_tensor_coherence_optimize():
+    """
+    Ingests raw phase states and applies simulated annealing to find the optimal coherent configuration.
+    """
+    data = request.json or {}
+    initial_states = data.get("initial_states")
+    try:
+        steps = int(data.get("steps", 50))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'steps' value. Must be an integer."}), 400
+
+    if not initial_states or not isinstance(initial_states, list):
+        return jsonify({"error": "Missing or invalid 'initial_states' list in request payload."}), 400
+
+    report = tensor_optimizer.run_simulated_annealing_optimization(
+        initial_states=initial_states,
+        steps=steps
+    )
+    return jsonify(report)
+
+
+@app.route("/api/command-center/consensus/vote", methods=["POST"])
+def run_multi_agent_consensus_evaluate():
+    """
+    Ingests proposed actions and evaluates weighted agent votes against consensus thresholds.
+    """
+    data = request.json or {}
+    proposal_id = data.get("proposal_id")
+    description = data.get("description")
+    votes = data.get("votes")
+
+    if not proposal_id or not description or not votes:
+        return jsonify({"error": "Missing required fields 'proposal_id', 'description', or 'votes'."}), 400
+
+    if not isinstance(votes, dict):
+        return jsonify({"error": "'votes' must be a valid agent-vote JSON dictionary."}), 400
+
+    report = agent_consensus.evaluate_action_proposal(
+        proposal_id=proposal_id,
+        description=description,
+        votes=votes
+    )
     return jsonify(report)
 
 
