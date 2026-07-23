@@ -47,6 +47,10 @@ from solomon_meta_architect import MetaArchitect
 from solomon_neural_synapse_mapper import NeuralSynapseMapper
 from solomon_self_evolving_codex import SelfEvolvingCodex
 
+# Import Phase 16 and 17 SOSS Engines
+from solomon_kalshi_predictor import KalshiPredictor
+from solomon_system_sentinel import SystemSentinel
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -72,6 +76,8 @@ meta_learning_engine = MetaLearningEngine(db)
 meta_architect = MetaArchitect(db)
 synapse_mapper = NeuralSynapseMapper(db)
 self_evolving_codex = SelfEvolvingCodex(db)
+kalshi_predictor = KalshiPredictor(db)
+sentinel = SystemSentinel()
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1254,6 +1260,47 @@ def run_self_evolving_codex_compile():
         natural_language_intent=natural_language_intent,
         expected_output_assertion=expected_output_assertion
     )
+    return jsonify(report)
+
+
+# ==========================================
+# PHASE 16 & 17 SOSS KALSHI PREDICTOR AND SYSTEM SENTINEL ENDPOINTS
+# ==========================================
+
+@app.route("/api/command-center/kalshi/simulate", methods=["POST"])
+def run_kalshi_simulate():
+    """
+    Ingests parameters to simulate Yes-odds and Yes-probabilities, resolving Kelly fractional stakes.
+    """
+    data = request.json or {}
+    market_id = data.get("market_id")
+    question = data.get("question")
+    try:
+        yes_price_cents = float(data.get("yes_price_cents", 50.0))
+        true_probability = float(data.get("true_probability", 0.50))
+        bankroll_balance = float(data.get("bankroll_balance", 1000.0))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid argument types: {str(e)}"}), 400
+
+    if not market_id or not question:
+        return jsonify({"error": "Missing required fields 'market_id' or 'question'."}), 400
+
+    report = kalshi_predictor.simulate_prediction_wager(
+        market_id=market_id,
+        question=question,
+        yes_price_cents=yes_price_cents,
+        true_probability=true_probability,
+        bankroll_balance=bankroll_balance
+    )
+    return jsonify(report)
+
+
+@app.route("/api/command-center/sentinel/verify", methods=["POST"])
+def run_sentinel_verify():
+    """
+    Executes a complete self-health sweep and AST syntactic compliance analysis over all python trees.
+    """
+    report = sentinel.run_complete_compliance_sweep()
     return jsonify(report)
 
 
