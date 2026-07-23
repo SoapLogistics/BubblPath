@@ -38,6 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAnalyzeJob = document.getElementById('btn-analyze-job');
   const btnPrepareJobForm = document.getElementById('btn-prepare-job-form');
 
+  // Phase 12 Elements
+  const btnAnalyzeTech = document.getElementById('btn-analyze-tech');
+
+  // Phase 13 Elements
+  const btnAnalyzeTravel = document.getElementById('btn-analyze-travel');
+
   function appendMessage(sender, text, isHtml = false) {
     const p = document.createElement('p');
     const strong = document.createElement('strong');
@@ -305,6 +311,60 @@ document.addEventListener('DOMContentLoaded', () => {
       appendMessage('Solomon', '&#10003; Routine fields populated. <strong>I cannot click Submit.</strong> Please review and finalize the application.', true);
       btnPrepareJobForm.classList.add('hidden');
     });
+  });
+
+  // --- Phase 12: Technical Support Companion ---
+  btnAnalyzeTech.addEventListener('click', () => {
+    appendMessage('Solomon', 'Initiating Technical Page Scan...');
+
+    setTimeout(() => {
+      appendMessage('Solomon Tech', '&#10003; Scanning for console error signatures...', true);
+    }, 600);
+
+    setTimeout(() => {
+      appendMessage('Solomon Tech', '&#10003; Checking domain reputation and SSL validity...', true);
+    }, 1200);
+
+    setTimeout(() => {
+      const techReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Security Status:</strong> Safe. SSL Certificate verified.<br>
+          <strong>Phishing Risk:</strong> Low. No homoglyphs detected.<br>
+          <strong>Console Diagnostics:</strong><br>
+          - Found CORS error on asset loading.<br>
+          - <strong>Fix:</strong> This is a server-side configuration issue, not a local browser problem. You cannot fix this directly.
+        </div>
+      `;
+      appendMessage('Solomon Tech', techReport, true);
+    }, 2200);
+  });
+
+  // --- Phase 13: Travel & Itinerary Companion ---
+  btnAnalyzeTravel.addEventListener('click', () => {
+    appendMessage('Solomon', 'Extracting travel dates and comparing global aggregators...');
+
+    setTimeout(() => {
+      appendMessage('Solomon Travel', '&#10003; Cross-referencing cancellation policies...', true);
+    }, 800);
+
+    setTimeout(() => {
+      appendMessage('Solomon Travel', '&#10003; Auditing for hidden resort fees and baggage traps...', true);
+    }, 1700);
+
+    setTimeout(() => {
+      const travelReport = `
+        <div style="background:#f3f4f6; padding:8px; border-radius:6px; font-size:0.75rem; margin-top:4px;">
+          <strong>Destination:</strong> Tokyo (NRT)<br>
+          <strong>Dates:</strong> Oct 12 - Oct 19<br>
+          <strong>Base Fare:</strong> $850<br>
+          <strong>Hidden Fees:</strong> $120 (Baggage not included in basic economy).<br>
+          <strong>True Cost:</strong> $970<br>
+          <strong>Cancellation Policy:</strong> Non-refundable. Travel credit only.<br>
+          <strong>Recommendation:</strong> Consider Premium Economy upgrade for $50 more, which includes baggage and free cancellation.
+        </div>
+      `;
+      appendMessage('Solomon Travel', travelReport, true);
+    }, 2800);
   });
 
 
