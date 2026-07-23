@@ -7,6 +7,14 @@ app = Flask(__name__)
 # Initialize modern thread-safe OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+@app.route("/")
+def index():
+    try:
+        from flask import render_template
+        return render_template("solomon_loki_workspace.html")
+    except Exception as e:
+        return jsonify({"error": "UI template not found", "details": str(e)}), 404
+
 @app.route("/chat", methods=["POST"])
 def chat():
     if not request.is_json:
