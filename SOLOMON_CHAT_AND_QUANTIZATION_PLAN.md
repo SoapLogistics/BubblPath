@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 5-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 7-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -143,12 +143,26 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   2. Dynamically inject these cards as "retrieval-augmented context" into the local system instructions before chat generation.
   3. Feed user feedback ratings into card confidence indexes, continuously honing retrieval quality.
 
+### Phase VI: Relational Card Memory Persistence and Retention
+* **Objective**: Enable Solomon to read and write memories to a persistent local JSON repository.
+* **Action Steps**:
+  1. Implement a persistent SOK card repository (`sok_memory_cards.json`) that saves newly acquired concepts during active conversation.
+  2. Maintain a card link lookup so newly saved cards can express relationships like `DEPENDS_ON` or `ENHANCES` to existing cards.
+  3. Ensure that when Solomon chats, he automatically checks his persistent local repository to remember past actions and user-taught skills.
+
+### Phase VII: Live Sandbox Subprocess Execution and Heuristic Verification
+* **Objective**: Provide Solomon with a real executor to test and verify code snippets.
+* **Action Steps**:
+  1. Build a timed-out, memory-constrained `SandboxExecutor` that runs synthesized Python snippets in a separate OS subprocess.
+  2. Capture full execution traces (stdout, stderr, exit code).
+  3. If compilation fails or exceptions arise, feed the traceback back into Solomon's reasoning loop so he can fix his own code autonomously.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with a built-in `LocalInferenceEngine` that handles offline heuristics, combines ChatGPT and Codex behaviors locally, and supports local Ollama/llama.cpp server routing.
-2. CREATE `test_app.py` to assert correct local offline operations and worker-orchestration routing.
+1. OVERWRITE `app.py` with the complete local card persistence store and sandboxed execution gateway.
+2. CREATE `test_app.py` to assert correct local card memory insertion and sandbox execution routing.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Proceed with implementing the fully functional offline local inference engine in `app.py` to run GPT-like chat and Codex-like code operations entirely offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add persistent card storage and live sandboxed execution lanes so Solomon can autonomously code and execute entirely offline.**

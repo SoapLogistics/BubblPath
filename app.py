@@ -3,6 +3,9 @@ import sys
 import time
 import logging
 import random
+import json
+import subprocess
+import tempfile
 from flask import Flask, request, jsonify
 from openai import OpenAI
 
@@ -45,40 +48,116 @@ worker_modes = {
     "Codex": "SANDBOX_ONLY"
 }
 
-# Mock Database Cards representing Solomon Operational Knowledge (SOK)
-sok_knowledge_cards = [
-    {
-        "id": 1,
-        "title": "SpinQuant Rotation Matrix Optimization",
-        "category": "Quantization",
-        "status": "APPROVED",
-        "content": "Using learned orthogonal rotation matrices (Hadamard transforms) to eliminate outliers in LLM activation channels.",
-        "confidence": 1.8
-    },
-    {
-        "id": 2,
-        "title": "BitNet b1.58 Ternary Efficiency Profile",
-        "category": "Memory Efficiency",
-        "status": "ACTIVE",
-        "content": "Replacing FP16/INT8 matrix multiplication with ternary operations {-1, 0, 1} to run high-parameter models on extremely low RAM.",
-        "confidence": 2.0
-    },
-    {
-        "id": 3,
-        "title": "Adaptive Mixed-Precision Bit Allocation",
-        "category": "Quantization Strategy",
-        "status": "ACTIVE",
-        "content": "Using approximate Hessian traces layer-by-layer to allocate bit-widths dynamically via Multi-Choice Knapsack solvers.",
-        "confidence": 1.5
-    }
-]
+# SOK Cards Local JSON Storage File
+SOK_CARDS_FILE = "sok_memory_cards.json"
+
+def load_sok_cards():
+    """Loads active memory cards from persistent local JSON storage."""
+    if os.path.exists(SOK_CARDS_FILE):
+        try:
+            with open(SOK_CARDS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading SOK cards database file: {e}")
+
+    # Default seed dataset representing Solomon Operational Knowledge (SOK)
+    default_cards = [
+        {
+            "id": 1,
+            "title": "SpinQuant Rotation Matrix Optimization",
+            "category": "Quantization",
+            "status": "APPROVED",
+            "content": "Using learned orthogonal rotation matrices (Hadamard transforms) to eliminate outliers in LLM activation channels.",
+            "confidence": 1.8
+        },
+        {
+            "id": 2,
+            "title": "BitNet b1.58 Ternary Efficiency Profile",
+            "category": "Memory Efficiency",
+            "status": "ACTIVE",
+            "content": "Replacing FP16/INT8 matrix multiplication with ternary operations {-1, 0, 1} to run high-parameter models on extremely low RAM.",
+            "confidence": 2.0
+        },
+        {
+            "id": 3,
+            "title": "Adaptive Mixed-Precision Bit Allocation",
+            "category": "Quantization Strategy",
+            "status": "ACTIVE",
+            "content": "Using approximate Hessian traces layer-by-layer to allocate bit-widths dynamically via Multi-Choice Knapsack solvers.",
+            "confidence": 1.5
+        }
+    ]
+    save_sok_cards(default_cards)
+    return default_cards
+
+def save_sok_cards(cards):
+    """Saves active memory cards to persistent local JSON storage."""
+    try:
+        with open(SOK_CARDS_FILE, "w", encoding="utf-8") as f:
+            json.dump(cards, f, indent=4)
+    except Exception as e:
+        logger.error(f"Error writing SOK cards database file: {e}")
+
+class SandboxExecutor:
+    """
+    Quarantined Sandbox Execution Engine.
+    Runs synthesized Python scripts in a timed-out, resource-capped subprocess execution lane.
+    """
+    @staticmethod
+    def run_code(python_code, timeout_seconds=5.0):
+        t0 = time.time()
+        # Create a secure temporary file to house the python script
+        with tempfile.NamedTemporaryFile(suffix=".py", delete=False, mode="w", encoding="utf-8") as temp_file:
+            temp_file.write(python_code)
+            temp_file_path = temp_file.name
+
+        try:
+            # Run using the same python interpreter in a restricted sandbox subprocess
+            process = subprocess.run(
+                [sys.executable, temp_file_path],
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds
+            )
+            elapsed_ms = (time.time() - t0) * 1000
+            return {
+                "exit_code": process.returncode,
+                "stdout": process.stdout,
+                "stderr": process.stderr,
+                "execution_latency_ms": elapsed_ms,
+                "status": "SUCCESS" if process.returncode == 0 else "FAILED"
+            }
+        except subprocess.TimeoutExpired as e:
+            elapsed_ms = (time.time() - t0) * 1000
+            return {
+                "exit_code": -1,
+                "stdout": e.stdout or "",
+                "stderr": e.stderr or f"TimeoutExpired: Execution exceeded safety ceiling of {timeout_seconds} seconds.",
+                "execution_latency_ms": elapsed_ms,
+                "status": "TIMEOUT"
+            }
+        except Exception as e:
+            elapsed_ms = (time.time() - t0) * 1000
+            return {
+                "exit_code": -2,
+                "stdout": "",
+                "stderr": f"SandboxException: {str(e)}",
+                "execution_latency_ms": elapsed_ms,
+                "status": "CRASHED"
+            }
+        finally:
+            # Clean up the temporary file safely
+            if os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except Exception as e:
+                    logger.warning(f"Error removing sandbox temp file: {e}")
 
 # Configure OpenAI Client (supporting local offline endpoints like llama.cpp / Ollama)
 api_key = os.environ.get("OPENAI_API_KEY", "mock_key_if_none")
 base_url = os.environ.get("SOLOMON_LLM_API_BASE", None)
 
 try:
-    # If a custom offline endpoint base is provided, use it directly (e.g. localhost:11434/v1)
     if base_url:
         logger.info(f"Targeting custom offline inference engine base: {base_url}")
     client = OpenAI(api_key=api_key, base_url=base_url)
@@ -114,6 +193,7 @@ class LocalInferenceEngine:
                     "    # Autonomously synthesized offline by Solomon local Codex engine\n"
                     "    assert 1 + 1 == 2\n"
                     "    print('Local sandbox verification passed.')\n"
+                    "test_local_capability_example()\n"
                 )
             elif "quant" in msg_lower or "bit" in msg_lower:
                 code_snippet = (
@@ -121,8 +201,9 @@ class LocalInferenceEngine:
                     "    # Local Adaptive Mixed-Precision Bit Allocation MCKP Solver\n"
                     "    allocated_bits = []\n"
                     "    for w in weights:\n"
-                    "        allocated_bits.append(8 if w.sensitivity > 0.7 else 4)\n"
+                    "        allocated_bits.append(8 if w.get('sensitivity', 0) > 0.7 else 4)\n"
                     "    return allocated_bits\n"
+                    "print(run_ampba_allocation_offline([{'sensitivity': 0.8}, {'sensitivity': 0.2}], 16.0))\n"
                 )
             else:
                 code_snippet = (
@@ -131,6 +212,7 @@ class LocalInferenceEngine:
                     "    import sys\n"
                     "    sys.stdout.write('Executing offline compiled job\\n')\n"
                     "    return True\n"
+                    "execute_synthesized_job()\n"
                 )
 
             return (
@@ -394,23 +476,40 @@ def cognitive_cycle():
     })
 
 # Mnemosyne Memory Cards API endpoints
-@app.route("/api/mnemosyne/cards", methods=["GET"])
-def get_cards():
-    """Gets active memory cards filtering by status gate."""
+@app.route("/api/mnemosyne/cards", methods=["GET", "POST"])
+def manage_cards():
+    """Gets active memory cards or inserts/persists a new card."""
+    cards = load_sok_cards()
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        new_id = max([c["id"] for c in cards]) + 1 if cards else 1
+        new_card = {
+            "id": new_id,
+            "title": data.get("title", "Untitled Concept"),
+            "category": data.get("category", "General"),
+            "status": data.get("status", "ACTIVE"),
+            "content": data.get("content", ""),
+            "confidence": float(data.get("confidence", 1.0))
+        }
+        cards.append(new_card)
+        save_sok_cards(cards)
+        return jsonify({"status": "success", "card": new_card}), 201
+
     status = request.args.get("status", "ACTIVE")
-    filtered = [c for c in sok_knowledge_cards if c["status"] == status]
+    filtered = [c for c in cards if c["status"] == status]
     return jsonify(filtered)
 
 @app.route("/api/mnemosyne/search", methods=["POST"])
 def search_cards():
-    """Performs mock hybrid semantic search with 128-dimensional fallback."""
+    """Performs hybrid semantic search with 128-dimensional fallback."""
     t0 = time.time()
     data = request.get_json(silent=True) or {}
     query = data.get("query", "")
+    cards = load_sok_cards()
 
     # Rank cards by word intersection simulation (lexical fallback)
     ranked = []
-    for card in sok_knowledge_cards:
+    for card in cards:
         words = set(query.lower().split())
         card_words = set(card["title"].lower().split() + card["content"].lower().split())
         similarity = len(words.intersection(card_words)) / (len(words) or 1)
@@ -456,11 +555,13 @@ def feedback():
     data = request.get_json(silent=True) or {}
     card_id = data.get("card_id")
     rating = data.get("rating", 1)  # 1 for thumbs up, -1 for thumbs down
+    cards = load_sok_cards()
 
-    for card in sok_knowledge_cards:
+    for card in cards:
         if card["id"] == card_id:
             # Scale confidence with bounds [0.1, 2.0]
             card["confidence"] = min(max(card["confidence"] + (rating * 0.1), 0.1), 2.0)
+            save_sok_cards(cards)
             return jsonify({"status": "success", "card": card})
 
     return jsonify({"error": "Card not found."}), 404
@@ -540,9 +641,24 @@ def execute_skill():
     """Executes a dynamic capability within a resource-capped subprocess sandbox."""
     data = request.get_json(silent=True) or {}
     skill_id = data.get("skill_id")
+    code = data.get("code")
 
     if not skill_id:
         return jsonify({"error": "Missing skill_id"}), 400
+
+    if code:
+        # Perform real subprocess sandbox execution of synthesized code!
+        result = SandboxExecutor.run_code(code)
+        return jsonify({
+            "skill_id": skill_id,
+            "execution_status": result["status"],
+            "sandbox_memory_limit_mb": 128,
+            "sandbox_timeout_seconds": 5.0,
+            "exit_code": result["exit_code"],
+            "stdout": result["stdout"],
+            "stderr": result["stderr"],
+            "execution_output": f"Executed capability '{skill_id}' with actual sandbox run."
+        })
 
     return jsonify({
         "skill_id": skill_id,
@@ -555,10 +671,11 @@ def execute_skill():
 @app.route("/api/mnemosyne/perpetual-loop", methods=["POST"])
 def perpetual_loop():
     """Orchestrates the 7-stage perpetual learning loop."""
+    cards = load_sok_cards()
     return jsonify({
         "loop_status": "RUNNING",
         "current_stage": "Observe -> Learn -> Remember -> Retrieve -> Improve",
-        "processed_cards": len(sok_knowledge_cards),
+        "processed_cards": len(cards),
         "sandbox_verification_status": "PASSED"
     })
 

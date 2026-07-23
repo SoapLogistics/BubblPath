@@ -1,13 +1,28 @@
 import json
+import os
 import pytest
 from unittest.mock import MagicMock, patch
-from app import app, client, routing_preferences, worker_modes
+from app import app, client, routing_preferences, worker_modes, SOK_CARDS_FILE
 
 @pytest.fixture
 def flask_client():
     app.config["TESTING"] = True
+    # Clean up card storage before test runs to ensure deterministic state
+    if os.path.exists(SOK_CARDS_FILE):
+        try:
+            os.remove(SOK_CARDS_FILE)
+        except Exception:
+            pass
+
     with app.test_client() as client:
         yield client
+
+    # Clean up after test runs
+    if os.path.exists(SOK_CARDS_FILE):
+        try:
+            os.remove(SOK_CARDS_FILE)
+        except Exception:
+            pass
 
 def test_health_endpoint(flask_client):
     """Verifies that the telemetry health probe works as expected."""
@@ -114,12 +129,37 @@ def test_cognitive_cycle_endpoint(flask_client):
     assert len(data["cycle_stages"]) == 7
 
 def test_mnemosyne_cards_endpoint(flask_client):
-    """Verifies Mnemosyne card retrieval."""
+    """Verifies Mnemosyne card retrieval and persistent insert capabilities."""
+    # GET active cards
     response = flask_client.get("/api/mnemosyne/cards?status=ACTIVE")
     assert response.status_code == 200
     data = response.get_json()
     assert isinstance(data, list)
     assert len(data) >= 1
+
+    # POST insert a new SOK memory card
+    payload = {
+        "title": "Local GGUF Calibration Profiles",
+        "category": "Quantization",
+        "status": "ACTIVE",
+        "content": "Calibrated offsets for Llama-3-8B model layers running local offloading.",
+        "confidence": 1.9
+    }
+    response_post = flask_client.post(
+        "/api/mnemosyne/cards",
+        data=json.dumps(payload),
+        content_type="application/json"
+    )
+    assert response_post.status_code == 201
+    post_data = response_post.get_json()
+    assert post_data["status"] == "success"
+    assert post_data["card"]["title"] == "Local GGUF Calibration Profiles"
+
+    # Assert persistence by reloading database
+    response_check = flask_client.get("/api/mnemosyne/cards?status=ACTIVE")
+    data_check = response_check.get_json()
+    titles = [c["title"] for c in data_check]
+    assert "Local GGUF Calibration Profiles" in titles
 
 def test_mnemosyne_search_endpoint(flask_client):
     """Verifies mock semantic search rankings and cosine boundaries."""
@@ -220,8 +260,8 @@ def test_observe_endpoint(flask_client):
     assert data["binary_profiled"] == "kubernetes-cli"
     assert "synthesized_clean_room_python" in data
 
-def test_skills_endpoint(flask_client):
-    """Verifies active capability graph and isolated sandbox execute lanes."""
+def test_skills_endpoint_and_sandbox_run(flask_client):
+    """Verifies active capability graph and isolated sandbox execute lanes (live & mock)."""
     # GET skills
     response1 = flask_client.get("/api/mnemosyne/skills")
     assert response1.status_code == 200
@@ -236,7 +276,7 @@ def test_skills_endpoint(flask_client):
     )
     assert response2.status_code == 400
 
-    # POST execute skill success
+    # POST execute skill success mock
     response3 = flask_client.post(
         "/api/mnemosyne/skills/execute",
         data=json.dumps({"skill_id": "codex_mcp_bridge"}),
@@ -245,6 +285,38 @@ def test_skills_endpoint(flask_client):
     assert response3.status_code == 200
     data3 = response3.get_json()
     assert data3["execution_status"] == "SUCCESS"
+
+    # POST execute skill with live python script inside subprocess sandbox
+    real_python_code = (
+        "import sys\n"
+        "sys.stdout.write('Solomon sandbox run was successful')\n"
+        "sys.exit(0)\n"
+    )
+    response4 = flask_client.post(
+        "/api/mnemosyne/skills/execute",
+        data=json.dumps({"skill_id": "jules_test_runner_loop", "code": real_python_code}),
+        content_type="application/json"
+    )
+    assert response4.status_code == 200
+    data4 = response4.get_json()
+    assert data4["execution_status"] == "SUCCESS"
+    assert data4["exit_code"] == 0
+    assert "sandbox run" in data4["stdout"]
+
+    # POST execute skill with failing script inside sandbox to test error reporting
+    failing_python_code = (
+        "raise ValueError('Simulated compilation error')\n"
+    )
+    response5 = flask_client.post(
+        "/api/mnemosyne/skills/execute",
+        data=json.dumps({"skill_id": "jules_test_runner_loop", "code": failing_python_code}),
+        content_type="application/json"
+    )
+    assert response5.status_code == 200
+    data5 = response5.get_json()
+    assert data5["execution_status"] == "FAILED"
+    assert data5["exit_code"] != 0
+    assert "Simulated compilation error" in data5["stderr"]
 
 def test_perpetual_loop_endpoint(flask_client):
     """Verifies end-to-end continuous loop orchestration."""
