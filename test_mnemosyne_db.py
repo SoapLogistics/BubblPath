@@ -6,7 +6,7 @@ import os
 import json
 import sqlite3
 import pytest
-from app import app
+from app import app, router
 from solomon_mnemosyne_db import SolomonMnemosyneDB
 
 @pytest.fixture
@@ -388,3 +388,26 @@ class TestMnemosyneAPIIntegration:
         assert "AST-SAFETY" in rep_fail["crucible_actions_triggered"][0]
         assert rep_fail["crucible_metrics"]["projected_failure_reduction_percent"] == 92.0
         assert "RECOMMENDED NEXT STEP" in res_fail.get_json()["recommended_next_step"]
+
+    def test_dynamic_ast_injection_endpoint(self, client):
+        """
+        Verifies that POST /api/mnemosyne/ast-inject successfully parses AST,
+        injects a new method, hot-reloads the module, and allows in-memory
+        execution of the newly injected function successfully with zero downtime.
+        """
+        payload = {
+            "class_name": "ModelRouter",
+            "method_name": "injected_telemetry_probe",
+            "source_code": "def injected_telemetry_probe(self):\n    return 'ast_injection_active_soss'"
+        }
+        response = client.post("/api/mnemosyne/ast-inject", data=json.dumps(payload), content_type="application/json")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "success"
+        assert data["injected_method_name"] == "injected_telemetry_probe"
+        assert data["module_hot_reloaded"] == "solomon_model_router"
+
+        # Access reloaded global router in app and execute newly injected method
+        from app import router as reloaded_router
+        assert hasattr(reloaded_router, "injected_telemetry_probe") is True
+        assert reloaded_router.injected_telemetry_probe() == "ast_injection_active_soss"

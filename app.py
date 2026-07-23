@@ -10,6 +10,7 @@ from solomon_quantization_engine import (
 from solomon_mnemosyne_db import SolomonMnemosyneDB
 from solomon_model_router import ModelRouter
 from solomon_recursive_crucible import RecursiveCrucible
+from solomon_ast_injector import ASTInjector
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -501,6 +502,60 @@ def execute_recursive_crucible_telemetry():
         )
     }
     return jsonify(crucible_response)
+
+
+@app.route("/api/mnemosyne/ast-inject", methods=["POST"])
+def execute_ast_injection():
+    """
+    Dynamically parses class AST structures, programmatically injects new methods
+    or overrides, compiles and hot-reloads mutated modules in-memory with zero server downtime.
+    """
+    data = request.json or {}
+    class_name = data.get("class_name", "")
+    method_name = data.get("method_name", "")
+    source_code = data.get("source_code", "")
+
+    filepath = data.get("filepath", "solomon_model_router.py")
+    module_name = data.get("module_name", "solomon_model_router")
+
+    if not class_name or not method_name or not source_code:
+        return jsonify({"error": "Missing 'class_name', 'method_name', or 'source_code' for AST injection."}), 400
+
+    # 1. Programmatically inject code into python file on disk
+    try:
+        result = ASTInjector.inject_method_to_file(filepath, class_name, source_code)
+    except Exception as e:
+        return jsonify({"error": f"AST compilation failed during parsing: {str(e)}"}), 400
+
+    if not result["success"]:
+        return jsonify({"error": result["message"]}), 404
+
+    # 2. Programmatically compile and hot-reload mutated module in active memory
+    global router
+    try:
+        mutated_class = ASTInjector.hot_reload_module(module_name, class_name)
+        if mutated_class and class_name == "ModelRouter":
+            # Re-instantiate the global router variable instantly with the mutated class
+            router = mutated_class(db)
+    except Exception as e:
+        return jsonify({"error": f"In-memory hot-reloading failed: {str(e)}"}), 500
+
+    # Return complete injection audit report
+    injection_response = {
+        "status": "success",
+        "injected_class_target": class_name,
+        "injected_method_name": method_name,
+        "filepath_modified": filepath,
+        "module_hot_reloaded": module_name,
+        "ast_injection_details": result,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Instantly call the injected method on the hot-reloaded class object to verify "
+            "zero-downtime execution of your mutated production algorithm!</span>"
+        )
+    }
+    return jsonify(injection_response)
 
 
 if __name__ == "__main__":
