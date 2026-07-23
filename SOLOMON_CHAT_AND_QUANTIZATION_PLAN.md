@@ -105,7 +105,7 @@ When acting as the **Foreman**, Solomon orchestrates the following specialized w
 
 ## 4. Multi-Phase Plan for Complete Offline Autonomy (No GPT/Codex APIs)
 
-To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 23-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
+To enable Solomon to chat like GPT-4 and synthesize code like Codex **without relying on any external APIs**, we propose a comprehensive 25-phase execution plan. This transition implements local open-source models (like **Qwen-2.5-Coder-7B-Instruct** or **DeepSeek-Coder-V2-Lite**) heavily quantized via **GGUF** and **EXL2** running on consumer-grade hardware.
 
 ### Phase I: Local Inference Server Integration
 * **Objective**: Establish a high-throughput local inference bridge.
@@ -269,12 +269,26 @@ To enable Solomon to chat like GPT-4 and synthesize code like Codex **without re
   1. Expose routes `/api/command-center/preferences` supporting GET and POST requests to toggle routing configurations.
   2. Enforce preferences in the `/chat` POST endpoint: if `execution_mode` is set to `solomon_only` and Codex actions are requested, automatically restrict, block, and return a structured `BLOCKED` status payload.
 
+### Phase XXIV: SOK Quantization Cognitive Cycle Blueprint Integration
+* **Objective**: Expose the SOK sequence mapping, active card families, and perpetual learning sequence directly to cognitive cycle APIs.
+* **Action Steps**:
+  1. Upgrade `/api/quantization/cognitive-cycle` in `app.py`.
+  2. Integrate the 7-stage sequence mapping (Observe -> Learn -> Remember -> Retrieve -> Improve -> Reinforce -> Optimize) and active card families (Quantization Strategy, Memory Efficiency, Performance Crucible, Capabilities) inside.
+  3. Establish structured, high-fidelity cognitive cycle maps for the command workspace.
+
+### Phase XXV: Dynamic Live Model-Loading Initialization Pipeline
+* **Objective**: Calculate and print optimal mixed-precision bit-widths layer-by-layer on gateway startup using Hessian trace sensitivities.
+* **Action Steps**:
+  1. Build a dynamic startup pipeline inside `app.py`.
+  2. On server start, compute the optimal mixed-precision layout layer-by-layer (e.g. allocating 8, 4, 3, or 2 bits) using simulated Hessian trace sensitivities to maximize local VRAM efficiency.
+  3. Log and output the final model bit allocation layout cleanly to the terminal context.
+
 ---
 
 ## 5. Summary of Recommended Actions
 To activate this offline-first, dual-personality capability immediately:
-1. OVERWRITE `app.py` with the 128-dimensional vector hashing engine and the secured preferences controller.
-2. CREATE `test_app.py` to assert correct similarity calculations, cosine boundaries, and restricted Codex block states.
+1. OVERWRITE `app.py` with the cognitive cycle maps and the startup dynamic live model-loading initialization pipeline.
+2. CREATE `test_app.py` to assert correct cognitive cycle outputs and startup metrics.
 3. RUN pytest to ensure 100% verification correctness.
 
-**RECOMMENDED NEXT STEP: Overwrite the server code to add deterministic vector hashing and operator preference routing controls so Solomon can securely rank cards and restrict engine accesses offline.**
+**RECOMMENDED NEXT STEP: Overwrite the server code to add the cognitive cycle maps and the startup live model-loading initialization pipeline so Solomon can safely output model metrics and sequences offline.**

@@ -127,11 +127,14 @@ def test_quantization_simulate_endpoint(flask_client):
     assert "average_allocated_bitwidth" in data
 
 def test_cognitive_cycle_endpoint(flask_client):
-    """Verifies SOK sequence steps retrieval."""
+    """Verifies SOK sequence steps and active card families retrieval."""
     response = flask_client.get("/api/quantization/cognitive-cycle")
     assert response.status_code == 200
     data = response.get_json()
     assert len(data["cycle_stages"]) == 7
+    assert "Observe" in data["cycle_stages"][0]
+    assert "Memory Efficiency" in data["active_card_families"]
+    assert data["is_integrated_blueprint"] is True
 
 def test_mnemosyne_cards_endpoint(flask_client):
     """Verifies Mnemosyne card retrieval and persistent insert capabilities."""
@@ -646,6 +649,17 @@ def test_workspace_ui_sync_routes(flask_client):
     assert data_picks["status"] == "SUCCESS"
     assert len(data_picks["picks"]) == 3
     assert data_picks["picks"][0]["sport"] == "NFL"
+
+def test_startup_pipeline_initialization(flask_client):
+    """Verifies the start-up mixed-precision layer-by-layer bit-allocation map metrics."""
+    response = flask_client.get("/api/mnemosyne/startup-pipeline")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "SUCCESS"
+    assert data["total_layers"] == 32
+    assert len(data["layers"]) == 32
+    assert "allocated_bitwidth" in data["layers"][0]
+    assert 2.0 <= data["average_allocated_bit_width"] <= 8.0
 
 def test_perpetual_loop_endpoint(flask_client):
     """Verifies end-to-end continuous loop orchestration."""
