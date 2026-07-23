@@ -28,9 +28,38 @@
       border: 1px solid #d1d5db;
       border-radius: 6px;
       padding: 12px;
-      min-height: 200px;
+      height: 250px;
       margin-bottom: 12px;
       overflow-y: auto;
+      font-size: 0.875rem;
+    }
+    .panel-section {
+      background-color: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .panel-section h2 {
+      font-size: 1rem;
+      margin-top: 0;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 4px;
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-bottom: 4px;
+      margin-top: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      box-sizing: border-box;
       font-size: 0.875rem;
     }
     button {
@@ -43,6 +72,7 @@
       cursor: pointer;
       width: 100%;
       margin-bottom: 8px;
+      margin-top: 8px;
     }
     button:hover {
       background-color: #1d4ed8;
@@ -53,18 +83,47 @@
     .btn-stop:hover {
       background-color: #dc2626;
     }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <h1>Solomon Lens</h1>
-  <div class="status-bar" id="status">Mode: Observer (Read-Only)</div>
+  <h1>Solomon Companion</h1>
+  <div class="status-bar" id="status">Mode: Phases 1-3 (Observer/Prepare)</div>
 
   <div class="chat-box" id="chat">
-    <p><em>Waiting for context...</em></p>
+    <p><em>Solomon initialized. Awaiting commands.</em></p>
   </div>
 
-  <button id="btn-read-page">Read Current Page</button>
-  <button id="btn-kalshi-test">Query Kalshi Markets (Simulated)</button>
+  <div class="panel-section">
+    <h2>Observer Actions</h2>
+    <button id="btn-read-page">Read Current Page</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Kalshi Intelligence</h2>
+    <button id="btn-kalshi-test">Analyze Divergence (Simulated)</button>
+    <div id="kalshi-order-form" class="hidden">
+      <label>Market Ticker</label>
+      <input type="text" id="kalshi-ticker" value="KXUSGDP-24">
+      <label>Order Type</label>
+      <input type="text" id="kalshi-type" value="LIMIT_YES">
+      <label>Price (Cents)</label>
+      <input type="text" id="kalshi-price" value="48">
+      <label>Quantity</label>
+      <input type="text" id="kalshi-quantity" value="50">
+      <button id="btn-prepare-kalshi">Prepare Order Payload</button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <h2>Sports Desk (Manual Input)</h2>
+    <label>Matchup Line (e.g. Eagles -3.5 at -110)</label>
+    <input type="text" id="sports-line" placeholder="Enter odds...">
+    <button id="btn-analyze-sports">Calculate Shin Probability</button>
+  </div>
+
   <button class="btn-stop" id="btn-stop">EMERGENCY STOP</button>
 
   <script src="sidepanel.js"></script>

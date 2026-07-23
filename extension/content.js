@@ -25,10 +25,29 @@ function safeExtractPageContent() {
   };
 }
 
+// Phase 3: Preparer - Form Filling (Safe fields only)
+function simulateFormFill(payload) {
+  console.log("Solomon: Attempting to prepopulate form data...", payload);
+  // Example of finding a safe input and filling it.
+  // We strictly avoid interacting with financial submission buttons.
+
+  const searchInput = document.querySelector('input[type="search"], input[name="q"]');
+  if (searchInput && payload.searchTerm) {
+    searchInput.value = payload.searchTerm;
+    console.log("Solomon: Populated search term.");
+  }
+
+  // We NEVER query for or click buttons like "buy", "submit", "place order"
+  return { status: "Form fields prepared. Waiting for Mark to submit." };
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'GET_CONTENT') {
     const data = safeExtractPageContent();
     sendResponse(data);
+  } else if (request.type === 'PREPARE_FORM') {
+    const result = simulateFormFill(request.payload);
+    sendResponse(result);
   }
   return true;
 });
