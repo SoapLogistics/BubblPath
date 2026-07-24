@@ -224,6 +224,34 @@ class DatabaseManager:
                     """)
                     conn.execute("INSERT INTO migrations (version) VALUES (6);")
 
+
+                # Migration 7: Loki Advanced Data Structures
+                if current_v < 7:
+                    now_str = datetime.utcnow().isoformat()
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_equity_snapshots (
+                            snapshot_id TEXT PRIMARY KEY,
+                            bankroll REAL NOT NULL,
+                            vault REAL NOT NULL,
+                            timestamp TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("INSERT OR IGNORE INTO loki_bankroll (bankroll_id, balance, updated_at) VALUES ('vault', 0.0, ?);", (now_str,))
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_advanced_learning (
+                            category_id TEXT PRIMARY KEY,
+                            sport TEXT NOT NULL,
+                            market TEXT NOT NULL,
+                            odds_band TEXT NOT NULL,
+                            total_bets INTEGER DEFAULT 0,
+                            won_bets INTEGER DEFAULT 0,
+                            confidence_modifier REAL DEFAULT 1.0,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("INSERT INTO migrations (version) VALUES (7);")
+
         finally:
+
 
             conn.close()

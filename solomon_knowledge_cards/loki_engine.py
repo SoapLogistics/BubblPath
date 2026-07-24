@@ -237,15 +237,16 @@ class LokiEngine:
 
         return fixtures
 
-    def get_confidence_modifier(self, sport: str, market: str, conn=None) -> float:
-        """Retrieves the learned confidence modifier for a given sport and market."""
+    def get_confidence_modifier(self, sport: str, market: str, odds: float, conn=None) -> float:
+        """Retrieves the learned confidence modifier for a given sport, market, and odds band."""
         close_conn = False
         if conn is None:
             conn = self.runtime.db.get_connection()
             close_conn = True
         try:
-            category_id = f"{sport}_{market}".replace(" ", "_")
-            cursor = conn.execute("SELECT confidence_modifier FROM loki_learning_weights WHERE category_id = ?", (category_id,))
+            band = "Favorite" if odds < 1.75 else ("Coinflip" if odds < 2.5 else "Longshot")
+            category_id = f"{sport}_{market}_{band}".replace(" ", "_")
+            cursor = conn.execute("SELECT confidence_modifier FROM loki_advanced_learning WHERE category_id = ?", (category_id,))
             row = cursor.fetchone()
             return row["confidence_modifier"] if row else 1.0
         except Exception as e:
@@ -258,20 +259,26 @@ class LokiEngine:
     def nightly_learning_review(self) -> Dict[str, Any]:
         """
         Reviews all resolved bets to improve future forecasting.
-        Calculates win rate by sport/market and updates confidence multipliers.
+        Calculates win rate by sport/market/odds_band and updates confidence multipliers.
+        Generates a summary card for Gabriel.
         """
         conn = self.runtime.db.get_connection()
         try:
             with conn:
-                cursor = conn.execute("SELECT sport, market, status FROM loki_bets WHERE status != 'PENDING'")
+                cursor = conn.execute("SELECT sport, market, odds, status, profit_loss FROM loki_bets WHERE status != 'PENDING'")
                 bets = cursor.fetchall()
 
                 stats = {}
+                total_profit = 0.0
+                total_bets_count = 0
                 for bet in bets:
-                    cat = f"{bet['sport']}_{bet['market']}".replace(" ", "_")
+                    band = "Favorite" if bet["odds"] < 1.75 else ("Coinflip" if bet["odds"] < 2.5 else "Longshot")
+                    cat = f"{bet['sport']}_{bet['market']}_{band}".replace(" ", "_")
                     if cat not in stats:
-                        stats[cat] = {"sport": bet["sport"], "market": bet["market"], "total": 0, "won": 0}
+                        stats[cat] = {"sport": bet["sport"], "market": bet["market"], "band": band, "total": 0, "won": 0}
                     stats[cat]["total"] += 1
+                    total_bets_count += 1
+                    total_profit += bet["profit_loss"]
                     if bet["status"] == "WON":
                         stats[cat]["won"] += 1
 
@@ -279,64 +286,86 @@ class LokiEngine:
                 for cat, data in stats.items():
                     win_rate = data["won"] / data["total"] if data["total"] > 0 else 0
 
-                    # Target win rate is roughly 52.38% (breakeven at -110)
-                    # If doing better, boost confidence (up to 1.5). If worse, penalize (down to 0.5)
                     baseline = 0.5238
+                    if data["band"] == "Favorite": baseline = 0.60
+                    elif data["band"] == "Longshot": baseline = 0.35
+
                     diff = win_rate - baseline
                     modifier = max(0.5, min(1.5, 1.0 + (diff * 2.0)))
 
                     conn.execute("""
-                        INSERT INTO loki_learning_weights (category_id, sport, market, total_bets, won_bets, confidence_modifier, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO loki_advanced_learning (category_id, sport, market, odds_band, total_bets, won_bets, confidence_modifier, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         ON CONFLICT(category_id) DO UPDATE SET
                             total_bets = excluded.total_bets,
                             won_bets = excluded.won_bets,
                             confidence_modifier = excluded.confidence_modifier,
                             updated_at = excluded.updated_at
-                    """, (cat, data["sport"], data["market"], data["total"], data["won"], modifier, datetime.utcnow().isoformat()))
+                    """, (cat, data["sport"], data["market"], data["band"], data["total"], data["won"], modifier, datetime.utcnow().isoformat()))
 
                     updates.append({
                         "category": cat,
                         "total_bets": data["total"],
                         "won_bets": data["won"],
-                        "new_modifier": modifier
+                        "new_modifier": round(modifier, 4)
                     })
 
-                return {"ok": True, "learning_updates": updates}
+                # Feature 10: Automated Reporting Card
+                card_id = f"loki_report_{datetime.utcnow().strftime('%Y%m%d')}"
+                summary = f"Loki processed {total_bets_count} total bets for a net profit of {total_profit:.2f}."
+                body = "Learning Adjustments:\n" + "\n".join([f"- {u['category']}: Modifier -> {u['new_modifier']}" for u in updates])
+                conn.execute("""
+                    INSERT OR REPLACE INTO knowledge_cards (card_id, card_type, title, summary, body, confidence, validation_state, security_classification, source_ids, created_at, updated_at)
+                    VALUES (?, 'SYSTEM_REPORT', ?, ?, ?, 1.0, 'ACTIVE', 'INTERNAL', '[]', ?, ?)
+                """, (card_id, "Loki Nightly Engine Report", summary, body, datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
+
+                return {"ok": True, "learning_updates": updates, "profit": total_profit, "report_card_id": card_id}
         except Exception as e:
             logger.error(f"Failed during nightly learning review: {e}")
             return {"ok": False, "error": str(e)}
         finally:
             conn.close()
 
+    def solve_mpo_probabilities(self, implied_probs: List[float]) -> List[float]:
+        """Margin Proportional to Odds (MPO) elimination, better for props/longshots."""
+        margin = sum(implied_probs) - 1.0
+        n = len(implied_probs)
+        return [p - (margin / n) for p in implied_probs]
+
     def get_active_value_picks(self) -> List[Dict[str, Any]]:
         """
-        Scours live mock fixtures, runs Shin overround correction, and identifies
-        all outcomes containing positive expected value (value-betting picks).
-        It learns from historical performance by applying the confidence_modifier.
+        Scours live mock fixtures, runs overround correction, and identifies value.
         """
         fixtures = self.generate_fixtures()
         picks = []
 
         for f in fixtures:
             pinnacle_implied = [1.0 / o for o in f["pinnacle_odds"]]
-            z, true_probs = solve_shin_probabilities(pinnacle_implied)
-
             market = f.get("market", "Moneyline")
+
+            # Feature 9: Market-Specific Vig Elimination
+            if market == "Prop_Bet":
+                true_probs = self.solve_mpo_probabilities(pinnacle_implied)
+            else:
+                z, true_probs = solve_shin_probabilities(pinnacle_implied)
+
             sport = f["sport"]
-            modifier = self.get_confidence_modifier(sport, market)
 
             for idx, outcome in enumerate(f["outcomes"]):
                 true_p = true_probs[idx]
+                if true_p <= 0.0: continue
                 soft_o = f["soft_odds"][idx]
 
-                # Apply learned confidence modifier to our expected value
-                # A modifier > 1 means we historically win this more often
+                modifier = self.get_confidence_modifier(sport, market, soft_o)
                 expected_value = true_p * soft_o * modifier
 
-                if expected_value > 1.02: # Clear 2%+ edge after modifier
+                # Feature 8: Time-decay Variance (mock it as getting closer to game time)
+                # Later bets are sharper, decrease our EV slightly if we assume this is late
+                time_decay = random.uniform(0.95, 1.0)
+                expected_value *= time_decay
+
+                if expected_value > 1.02:
                     kelly_frac = calculate_kelly_fraction(true_p, soft_o, risk_fraction=0.25)
-                    # Adjust stake based on confidence as well
                     adjusted_kelly = kelly_frac * modifier
                     if adjusted_kelly > 0:
                         picks.append({
@@ -355,30 +384,65 @@ class LokiEngine:
                             "confidence_modifier": round(modifier, 4)
                         })
 
-        # Sort picks so the highest expected value (most likely to hit + value) are first
         picks.sort(key=lambda x: x["expected_value"], reverse=True)
         return picks
 
+    def get_vault(self, conn=None) -> float:
+        close_conn = False
+        if conn is None:
+            conn = self.runtime.db.get_connection()
+            close_conn = True
+        try:
+            cursor = conn.execute("SELECT balance FROM loki_bankroll WHERE bankroll_id = 'vault'")
+            row = cursor.fetchone()
+            return row["balance"] if row else 0.0
+        except Exception:
+            return 0.0
+        finally:
+            if close_conn: conn.close()
+
+    def update_vault(self, change: float, conn=None):
+        close_conn = False
+        if conn is None:
+            conn = self.runtime.db.get_connection()
+            close_conn = True
+        try:
+            cursor = conn.execute("SELECT balance FROM loki_bankroll WHERE bankroll_id = 'vault'")
+            row = cursor.fetchone()
+            current = row["balance"] if row else 0.0
+            conn.execute("UPDATE loki_bankroll SET balance = ?, updated_at = ? WHERE bankroll_id = 'vault'", (current + change, datetime.utcnow().isoformat()))
+        finally:
+            if close_conn: conn.close()
+
     def simulate_tick(self) -> Dict[str, Any]:
         """
-        Simulates one full cognitive sports betting tick:
-        1. Resolves all existing PENDING bets using true event probability.
-        2. Scours new live games and calculates value using Shin + Kelly.
-        3. Executes live virtual bets, updating the bankroll atomically.
+        Simulates one full cognitive sports betting tick.
+        Features: Drawdown Circuit Breaker, Dynamic Kelly, Hedging, Exposure Limits, Vault Sweeping, Equity Snapshots.
         """
         conn = self.runtime.db.get_connection()
         resolved_bets = []
         new_bets_placed = []
+        hedged_bets = []
         initial_bankroll = self.get_bankroll(conn)
 
         try:
             with conn:
-                # 1. Resolve pending bets
+                # 1. Resolve pending bets & Feature 3: Hedging Engine
                 cursor = conn.execute("SELECT * FROM loki_bets WHERE status = 'PENDING'")
                 pending_rows = [dict(r) for r in cursor.fetchall()]
 
+                # Quick check to see if we should hedge (mock shift in probability)
                 for bet in pending_rows:
                     win_roll = random.random()
+
+                    # Feature 3: Mock a hedge scenario (10% chance)
+                    if random.random() < 0.10:
+                        hedge_profit = bet["stake"] * 0.15 # Secure 15% guaranteed return
+                        conn.execute("UPDATE loki_bets SET status = 'HEDGED', profit_loss = ?, resolved_at = ? WHERE bet_id = ?", (hedge_profit, datetime.utcnow().isoformat(), bet["bet_id"]))
+                        self.update_bankroll(bet["stake"] + hedge_profit, conn)
+                        hedged_bets.append(bet["bet_id"])
+                        continue
+
                     if win_roll < bet["shin_prob"]:
                         status = "WON"
                         profit_loss = bet["stake"] * (bet["odds"] - 1.0)
@@ -386,60 +450,81 @@ class LokiEngine:
                         status = "LOST"
                         profit_loss = -bet["stake"]
 
-                    conn.execute("""
-                        UPDATE loki_bets
-                        SET status = ?, profit_loss = ?, resolved_at = ?
-                        WHERE bet_id = ?
-                    """, (status, profit_loss, datetime.utcnow().isoformat(), bet["bet_id"]))
+                    conn.execute("UPDATE loki_bets SET status = ?, profit_loss = ?, resolved_at = ? WHERE bet_id = ?", (status, profit_loss, datetime.utcnow().isoformat(), bet["bet_id"]))
 
                     if status == "WON":
                         self.update_bankroll(bet["stake"] + profit_loss, conn)
 
                     resolved_bets.append({
                         "bet_id": bet["bet_id"],
-                        "fixture": bet["fixture"],
-                        "outcome": bet["outcome"],
                         "status": status,
-                        "stake": bet["stake"],
                         "profit_loss": profit_loss
                     })
 
                 current_bankroll = self.get_bankroll(conn)
 
-                # 2. Scan and place new bets if Loki is in LIVE_BETTING mode
+                # Feature 1: Drawdown Circuit Breaker
                 cursor_modes = conn.execute("SELECT mode FROM worker_modes WHERE worker_id = 'loki'")
                 mode_row = cursor_modes.fetchone()
                 active_mode = mode_row["mode"] if mode_row else "RESEARCH_ONLY"
 
+                # If we've dropped below $8,000 (20% drawdown on starting $10K), emergency halt
+                if current_bankroll < 8000.0 and active_mode == "LIVE_BETTING":
+                    conn.execute("UPDATE worker_modes SET mode = 'RESEARCH_ONLY', updated_at = ? WHERE worker_id = 'loki'", (datetime.utcnow().isoformat(),))
+                    active_mode = "RESEARCH_ONLY"
+                    logger.warning("LOKI CIRCUIT BREAKER TRIGGERED: Drawdown > 20%. Reverting to RESEARCH_ONLY.")
+
+                # Feature 7: Automated Profit Vault Sweeping
+                if current_bankroll > 12000.0:
+                    excess = current_bankroll - 12000.0
+                    sweep_amount = excess * 0.5 # Sweep 50% of excess above 12K
+                    self.update_bankroll(-sweep_amount, conn)
+                    self.update_vault(sweep_amount, conn)
+                    current_bankroll -= sweep_amount
+
+                # Feature 6: Bankroll Equity Curve Snapshots
+                vault = self.get_vault(conn)
+                snapshot_id = str(uuid.uuid4())[:8]
+                conn.execute("INSERT INTO loki_equity_snapshots (snapshot_id, bankroll, vault, timestamp) VALUES (?, ?, ?, ?)", (snapshot_id, current_bankroll, vault, datetime.utcnow().isoformat()))
+
                 if active_mode == "LIVE_BETTING":
                     picks = self.get_active_value_picks()
+
+                    # Calculate recent form for Dynamic Kelly (Feature 2)
+                    cursor_form = conn.execute("SELECT status FROM loki_bets WHERE status != 'PENDING' AND status != 'HEDGED' ORDER BY created_at DESC LIMIT 10")
+                    form_rows = cursor_form.fetchall()
+                    recent_wins = sum(1 for r in form_rows if r["status"] == "WON")
+
+                    kelly_divisor = 5.0
+                    if len(form_rows) == 10:
+                        if recent_wins <= 3: kelly_divisor = 8.0 # Cold streak, risk less
+                        elif recent_wins >= 6: kelly_divisor = 4.0 # Hot streak, risk more
+
+                    # Feature 4: Exposure Limits
+                    active_fixtures = set()
+
                     for pick in picks:
-                        stake = current_bankroll * pick["kelly_fraction"]
-                        stake = round(stake / 5.0) * 5.0
-                        if stake < 10.0:
+                        # Max 1 bet per fixture per tick
+                        if pick["fixture_id"] in active_fixtures:
                             continue
-                        if stake > current_bankroll * 0.15:
-                            stake = round((current_bankroll * 0.15) / 5.0) * 5.0
+
+                        stake = current_bankroll * pick["kelly_fraction"] / kelly_divisor
+                        stake = round(stake / 5.0) * 5.0
+                        if stake < 10.0: continue
+
+                        # Feature 4b: Dynamic Max Stake Cap (15% normally, but hard limit $1000)
+                        max_stake = min(current_bankroll * 0.15, 1000.0)
+                        if stake > max_stake: stake = round(max_stake / 5.0) * 5.0
 
                         if current_bankroll >= stake:
+                            active_fixtures.add(pick["fixture_id"])
                             bet_id = str(uuid.uuid4())[:8]
                             conn.execute("""
                                 INSERT INTO loki_bets (
                                     bet_id, sport, fixture, market, outcome, odds, shin_prob,
                                     kelly_fraction, stake, status, profit_loss, created_at
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 0.0, ?)
-                            """, (
-                                bet_id,
-                                pick["sport"],
-                                pick["fixture"],
-                                pick["market"],
-                                pick["outcome"],
-                                pick["odds"],
-                                pick["shin_true_prob"],
-                                pick["kelly_fraction"],
-                                stake,
-                                datetime.utcnow().isoformat()
-                            ))
+                            """, (bet_id, pick["sport"], pick["fixture"], pick["market"], pick["outcome"], pick["odds"], pick["shin_true_prob"], pick["kelly_fraction"], stake, datetime.utcnow().isoformat()))
 
                             self.update_bankroll(-stake, conn)
                             current_bankroll -= stake
@@ -448,8 +533,6 @@ class LokiEngine:
                                 "bet_id": bet_id,
                                 "fixture": pick["fixture"],
                                 "outcome": pick["outcome"],
-                                "odds": pick["odds"],
-                                "shin_prob": pick["shin_true_prob"],
                                 "stake": stake
                             })
                 else:
@@ -459,10 +542,10 @@ class LokiEngine:
                 "ok": True,
                 "initial_bankroll": initial_bankroll,
                 "final_bankroll": self.get_bankroll(conn),
+                "vault": vault,
                 "resolved_bets_count": len(resolved_bets),
-                "resolved_bets": resolved_bets,
+                "hedged_bets_count": len(hedged_bets),
                 "new_bets_count": len(new_bets_placed),
-                "new_bets_placed": new_bets_placed,
                 "active_mode": active_mode
             }
         except Exception as e:
