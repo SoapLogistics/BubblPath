@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hephaestus App Forge | Solomon Subsystem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 p-8">
+    <div class="max-w-5xl mx-auto space-y-8">
+
+        <!-- Header -->
+        <header class="border-b border-gray-700 pb-4">
+            <h1 class="text-4xl font-bold text-orange-500">Hephaestus App Forge</h1>
+            <p class="text-sm text-gray-400 mt-2">Solomon's Master Multi-Platform Application Builder</p>
+        </header>
+
+        <!-- Main Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Scaffold App Panel -->
+            <section class="bg-gray-800 p-6 rounded shadow border border-gray-700">
+                <h2 class="text-2xl text-orange-400 font-semibold mb-4">Forge New Application</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Application Name</label>
+                        <input type="text" id="appName" placeholder="NexusApp" class="w-full bg-gray-700 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Target Platform</label>
+                        <select id="platform" class="w-full bg-gray-700 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="cross_platform">Cross Platform</option>
+                            <option value="android">Android</option>
+                            <option value="ios">iOS / iPhone</option>
+                            <option value="windows">Windows</option>
+                            <option value="linux">Linux</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Framework</label>
+                        <select id="framework" class="w-full bg-gray-700 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="flutter">Flutter</option>
+                            <option value="react_native">React Native</option>
+                            <option value="tauri">Tauri (Rust)</option>
+                            <option value="swiftui">SwiftUI</option>
+                            <option value="kotlin_compose">Kotlin Compose</option>
+                        </select>
+                    </div>
+
+                    <button onclick="scaffoldApp()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 px-4 rounded transition">
+                        Scaffold Application
+                    </button>
+                </div>
+            </section>
+
+            <!-- Knowledge Teaching Panel -->
+            <section class="bg-gray-800 p-6 rounded shadow border border-gray-700">
+                <h2 class="text-2xl text-blue-400 font-semibold mb-4">Teach Solomon Patterns</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Pattern Topic (e.g., flutter_bloc)</label>
+                        <input type="text" id="topic" placeholder="Topic name" class="w-full bg-gray-700 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Pattern / Architecture Content</label>
+                        <textarea id="content" rows="4" placeholder="Explain the code architecture here..." class="w-full bg-gray-700 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <button onclick="teachPattern()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded transition">
+                        Inject Knowledge
+                    </button>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Terminal Output Log -->
+        <section class="bg-black p-4 rounded border border-gray-700">
+            <h3 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">Hephaestus Terminal Log</h3>
+            <pre id="logOutput" class="text-sm text-green-400 overflow-y-auto h-64 font-mono">System initialized. Awaiting commands...</pre>
+        </section>
+
+    </div>
+
+    <script>
+        function logMessage(msg) {
+            const logBox = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            logBox.innerHTML += `\n[${timestamp}] ${msg}`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        async function scaffoldApp() {
+            const appName = document.getElementById('appName').value || 'MyAwesomeApp';
+            const platform = document.getElementById('platform').value;
+            const framework = document.getElementById('framework').value;
+
+            logMessage(`Requesting scaffold for ${appName} on ${platform} using ${framework}...`);
+
+            try {
+                const response = await fetch('/api/hephaestus/scaffold', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_name: appName, platform: platform, framework: framework })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    logMessage(`[ERROR] ${data.error}`);
+                } else {
+                    logMessage(data.message);
+                    logMessage(`Architectural Advice: ${data.architectural_advice}`);
+                    logMessage(`Files Scaffolded:\n - ${data.files.join('\n - ')}`);
+                }
+            } catch (err) {
+                logMessage(`[ERROR] Failed to contact Hephaestus API: ${err.message}`);
+            }
+        }
+
+        async function teachPattern() {
+            const topic = document.getElementById('topic').value;
+            const content = document.getElementById('content').value;
+
+            if (!topic || !content) {
+                logMessage("[ERROR] Both topic and content are required to teach Solomon.");
+                return;
+            }
+
+            logMessage(`Teaching Solomon new pattern: ${topic}...`);
+
+            try {
+                const response = await fetch('/api/hephaestus/teach', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic: topic, content: content })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    logMessage(`[ERROR] ${data.error}`);
+                } else {
+                    logMessage(data.message);
+                }
+            } catch (err) {
+                logMessage(`[ERROR] Failed to contact Hephaestus API: ${err.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
