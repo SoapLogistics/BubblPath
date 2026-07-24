@@ -2,7 +2,7 @@ import pytest
 from solomon_dynamic_quantization_optimizers import DynamicQuantizationOptimizer
 from app import app
 
-def test_all_25_optimizations():
+def test_all_50_optimizations():
     payload = {
         "entropy": 0.9,
         "attention_scores": [0.1, 0.02, 0.5],
@@ -27,7 +27,40 @@ def test_all_25_optimizations():
         "domain": "medical",
         "memory_pressure": 0.98,
         "identity_sim": 0.999,
-        "grad_norm": 1.45
+        "grad_norm": 1.45,
+        "token_sims": [0.99, 0.92, 0.98],
+        "block_max": 4.0,
+        "verif_latency": 100.0,
+        "has_outliers": True,
+        "layer_depth": 31,
+        "max_depth": 32,
+        "unique_weights": 50,
+        "mem_limit": 4000.0,
+        "mem_usage": 3900.0,
+        "channel_size": 128,
+        "router_conf": 0.4,
+        "seq_len": 9000,
+        "expert_freq": 0.02,
+        "ema_max": 5.0,
+        "curr_max": 10.0,
+        "prev_scale": 4.0,
+        "next_scale": 16.0,
+        "exp_mean": 0.8,
+        "quant_mean": 0.5,
+        "use_stoch": True,
+        "is_training": True,
+        "num_elements": 1023,
+        "ternary_weights": [1.0, -1.0, 0.5],
+        "total_tokens": 1024,
+        "quant_err": 0.5,
+        "act_var": 5.0,
+        "seq_access": True,
+        "model_gb": 15.0,
+        "ram_gb": 16.0,
+        "vocab_freq": {"a": 0.1, "b": 1e-5, "c": 1e-6},
+        "use_int8_embed": True,
+        "head_dim": 64,
+        "quant_scale": 0.5
     }
 
     results = DynamicQuantizationOptimizer.apply_all_optimizations(payload)

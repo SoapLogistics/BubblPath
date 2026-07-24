@@ -1113,13 +1113,12 @@ def predict_performance():
     })
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+
 
 @app.route("/api/command-center/quantization/dynamic-optimize", methods=["POST"])
 def dynamic_quantization_optimize():
     """
-    Applies the 25-step dynamic quantization optimization pipeline.
+    Applies the 50-step dynamic quantization optimization pipeline.
     """
     data = request.json or {}
     results = DynamicQuantizationOptimizer.apply_all_optimizations(data)
@@ -1129,3 +1128,6 @@ def dynamic_quantization_optimize():
         "optimization_results": results,
         "recommended_next_step": "RECOMMENDED NEXT STEP: Load the dynamically optimized model parameters into the Model Router."
     })
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
