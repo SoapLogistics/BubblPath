@@ -23,6 +23,25 @@ from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
+
+def require_api_key(f):
+    """
+    Decorator to enforce SOSS API Key authorization for sensitive execution,
+    compilation, installation, and modification endpoints. Bypasses check during testing.
+    """
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if app.config.get("TESTING"):
+            return f(*args, **kwargs)
+        provided_key = request.headers.get("X-API-Key") or request.args.get("api_key")
+        expected_key = os.environ.get("SOSS_API_KEY", "soss-secure-key")
+        if provided_key != expected_key:
+            return jsonify({"status": "error", "message": "Unauthorized: Invalid or missing SOSS API Key."}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
 # Instantiate Gabriel's perpetual absorption loop engine
 gabriel_loop = GabrielPerpetualLoop()
 
@@ -649,6 +668,7 @@ def execute_recursive_crucible_telemetry():
 
 
 @app.route("/api/mnemosyne/ast-inject", methods=["POST"])
+@require_api_key
 def execute_ast_injection():
     """
     Dynamically parses class AST structures, programmatically injects new methods
@@ -1421,6 +1441,7 @@ def kalshi_simulate_wager():
 # SOSS PHASE 15: SELF-EVOLVING CODEX NL COMPILER
 # ==========================================
 @app.route("/api/command-center/codex/compile", methods=["POST"])
+@require_api_key
 def codex_compile():
     """
     Compiles high-level natural language instructions directly into executable Python code blocks.
@@ -1624,6 +1645,7 @@ def performance_prediction():
 
 
 @app.route("/api/jules/install", methods=["POST"])
+@require_api_key
 def jules_install():
     """
     Endpoint to execute Jules' automated dependency compilation and installation.
@@ -1647,6 +1669,7 @@ def jules_install():
 
 
 @app.route("/api/jules/patch", methods=["POST"])
+@require_api_key
 def jules_patch():
     """
     Endpoint to execute Jules' unified search-and-replace code patching.
@@ -1674,6 +1697,7 @@ def jules_patch():
 
 
 @app.route("/api/jules/test-loop", methods=["POST"])
+@require_api_key
 def jules_test_loop():
     """
     Endpoint to run Jules' recursive test compilation and automated repair loop.
@@ -1709,6 +1733,7 @@ def jules_test_loop():
 
 
 @app.route("/api/codex/worktrees", methods=["POST"])
+@require_api_key
 def manage_worktrees():
     """
     Endpoint to execute Codex parallel sandboxed worktree creation and cleanup.
@@ -1781,6 +1806,7 @@ def manage_tasks():
 
 
 @app.route("/api/codex/mcp", methods=["POST"])
+@require_api_key
 def manage_mcp():
     """
     Standardized Model Context Protocol (MCP) tool invocation gateway.
@@ -1804,6 +1830,7 @@ def manage_mcp():
 
 
 @app.route("/api/codex/pipeline", methods=["POST"])
+@require_api_key
 def manage_pipeline():
     """
     Jules-style autonomous issue-to-PR code triage pipeline.
@@ -1830,6 +1857,7 @@ def manage_pipeline():
 
 
 @app.route("/api/gabriel/assimilate", methods=["POST"])
+@require_api_key
 def assimilate():
     """
     Triggers Gabriel's multi-stage assimilation loop on a target project/source path.
@@ -1866,6 +1894,7 @@ def assimilate():
 
 
 @app.route("/api/gabriel/execute", methods=["POST"])
+@require_api_key
 def execute_assimilated_code():
     """
     Dynamically executes any code capability that has been assimilated and folded into self.
@@ -1914,6 +1943,7 @@ def execute_assimilated_code():
 
 
 @app.route("/api/gabriel/ast-inject", methods=["POST"])
+@require_api_key
 def ast_inject():
     """
     Programmatically mutates class source code using AST injections.
@@ -1954,6 +1984,7 @@ def ast_inject():
 
 
 @app.route("/api/gabriel/optimize", methods=["POST"])
+@require_api_key
 def optimize_capability():
     """
     Runs recursive self-optimizing feedback loops on code blocks.
@@ -2360,6 +2391,257 @@ def scale_learning_rate():
         "consecutive_successes": consecutive_successes,
         "base_learning_rate": base_learning_rate,
         "optimized_learning_rate": round(scaled_lr, 4)
+    })
+
+
+# ==========================================
+# SOSS PHASE 20: DYNAMIC CONTEXT BUDGETER
+# ==========================================
+@app.route("/api/command-center/context/budget", methods=["POST"])
+def context_budget():
+    """
+    Evaluates system memory limits and sets strict context size budgets.
+    """
+    data = request.json or {}
+    available_ram_gb = data.get("available_ram_gb", 1.5)
+    char_budget = int(available_ram_gb * 1024 * 1024 * 10)
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 20 (Dynamic Context Budgeter)",
+        "available_ram_gb": available_ram_gb,
+        "max_character_budget": char_budget
+    })
+
+
+# ==========================================
+# SOSS PHASE 32: LOW-BIT TERNARY ENTROPY SOLVER
+# ==========================================
+@app.route("/api/quantization/ternary-entropy", methods=["POST"])
+def ternary_entropy():
+    """
+    Evaluates layer ternary entropy across quantized model weights.
+    """
+    data = request.json or {}
+    layer_weights = data.get("layer_weights", [0.5, -0.2, 0.1, -0.9])
+
+    zeros = sum(1 for w in layer_weights if abs(w) < 0.1)
+    pos = sum(1 for w in layer_weights if w >= 0.1)
+    neg = sum(1 for w in layer_weights if w <= -0.1)
+
+    total = len(layer_weights) if layer_weights else 1
+    p0, p1, p2 = zeros/total, pos/total, neg/total
+
+    import math
+    entropy = 0.0
+    for p in [p0, p1, p2]:
+        if p > 0:
+            entropy -= p * math.log2(p)
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 32 (Ternary Entropy)",
+        "ternary_distribution": [p0, p1, p2],
+        "ternary_entropy_bits": round(entropy, 4)
+    })
+
+
+# ==========================================
+# SOSS PHASE 23: SPECULATIVE THROUGHPUT SOLVER
+# ==========================================
+@app.route("/api/quantization/speculative/throughput", methods=["POST"])
+def speculative_throughput():
+    """
+    Calculates speculative decoding throughput metrics across model iterations.
+    """
+    data = request.json or {}
+    target_throughput = data.get("target_throughput", 45.0)
+    speedup_factor = data.get("speedup_factor", 1.8)
+
+    speculative_throughput = target_throughput * speedup_factor
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 23 (Speculative Throughput)",
+        "base_throughput_tokens_sec": target_throughput,
+        "speedup_factor": speedup_factor,
+        "speculative_throughput_tokens_sec": round(speculative_throughput, 2)
+    })
+
+
+# ==========================================
+# SOSS PHASE 38: SMOOTHQUANT CALIBRATION SOLVER
+# ==========================================
+@app.route("/api/quantization/smoothquant/calibrate", methods=["POST"])
+def smoothquant_calibrate():
+    """
+    Simulates SmoothQuant scale calibrations across activations and weight profiles.
+    """
+    data = request.json or {}
+    alpha = data.get("alpha", 0.5)
+    activation_max = data.get("activation_max", 12.5)
+    weight_max = data.get("weight_max", 3.2)
+
+    migration_scale = (activation_max ** alpha) / (weight_max ** (1.0 - alpha)) if weight_max > 0 else 1.0
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 38 (SmoothQuant Calibration)",
+        "migration_alpha": alpha,
+        "computed_migration_scale": round(migration_scale, 4)
+    })
+
+
+# ==========================================
+# SOSS PHASE 39: LUT COMPILER SIMULATOR
+# ==========================================
+@app.route("/api/quantization/lut/compile", methods=["POST"])
+def compile_lut():
+    """
+    Compiles Look-Up Table (LUT) mapping bounds to optimize GPU memory access lookups.
+    """
+    data = request.json or {}
+    bits = data.get("bits", 4)
+
+    num_bins = 2 ** bits
+    lut_table = {i: round((i / (num_bins - 1)) * 2.0 - 1.0, 4) for i in range(num_bins)}
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 39 (LUT Compiler)",
+        "quantization_bits": bits,
+        "look_up_table_bins": num_bins,
+        "look_up_table": lut_table
+    })
+
+
+# ==========================================
+# SOSS PHASE 37: WEIGHT PRUNING SENSITIVITY ANALYZER
+# ==========================================
+@app.route("/api/quantization/weight/prune", methods=["POST"])
+def prune_weights():
+    """
+    Prunes low-magnitude model weights dynamically to measure pruning sensitivities.
+    """
+    data = request.json or {}
+    pruning_threshold = data.get("threshold", 0.15)
+    layer_weights = data.get("layer_weights", [0.05, 0.45, -0.01, 0.9, -0.3])
+
+    pruned_weights = [w if abs(w) >= pruning_threshold else 0.0 for w in layer_weights]
+    pruning_sparsity = sum(1 for w in pruned_weights if w == 0.0) / len(layer_weights) if layer_weights else 0.0
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 37 (Weight Pruning)",
+        "pruning_threshold": pruning_threshold,
+        "original_weights_count": len(layer_weights),
+        "computed_sparsity": round(pruning_sparsity, 4),
+        "pruned_weights": pruned_weights
+    })
+
+
+# ==========================================
+# SOSS PHASE 36: ACTIVATION MSE MINIMIZER
+# ==========================================
+@app.route("/api/quantization/activation/mse", methods=["POST"])
+def minimize_activation_mse():
+    """
+    Minimizes activation mean squared errors during simulated network passes.
+    """
+    data = request.json or {}
+    original_activations = data.get("activations", [1.2, 2.5, 0.8, 3.1])
+    bits = data.get("bits", 4)
+
+    step = max(original_activations) / (2**bits - 1) if original_activations else 0.1
+    quantized_activations = [round(x / step) * step for x in original_activations]
+
+    mse = sum((x - q)**2 for x, q in zip(original_activations, quantized_activations)) / len(original_activations) if original_activations else 0.0
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 36 (Activation MSE)",
+        "quantization_bits": bits,
+        "mean_squared_error": round(mse, 6),
+        "quantized_activations": quantized_activations
+    })
+
+
+# ==========================================
+# SOSS PHASE 35: QAT DISTILLATION MONITOR
+# ==========================================
+@app.route("/api/quantization/qat/distill", methods=["POST"])
+def monitor_qat_distillation():
+    """
+    Traces Quantization-Aware Training (QAT) student-teacher distillation losses.
+    """
+    data = request.json or {}
+    student_loss = data.get("student_loss", 0.35)
+    teacher_loss = data.get("teacher_loss", 0.12)
+
+    gap = student_loss - teacher_loss
+    distillation_status = "STABLE" if gap <= 0.25 else "DISVERGING"
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 35 (QAT Distillation)",
+        "student_loss": student_loss,
+        "teacher_loss": teacher_loss,
+        "distillation_gap": round(gap, 4),
+        "status_evaluation": distillation_status
+    })
+
+
+# ==========================================
+# SOSS PHASE 34: SPINQUANT LEARNED ROTATION
+# ==========================================
+@app.route("/api/quantization/spinquant/rotate", methods=["POST"])
+def evaluate_spinquant_rotation():
+    """
+    Evaluates orthogonal SpinQuant learned rotations to minimize outlier weight vectors.
+    """
+    data = request.json or {}
+    input_vector = data.get("vector", [1.0, -1.0, 2.0, -2.0])
+
+    max_val_before = max(abs(x) for x in input_vector) if input_vector else 1.0
+    rotated_vector = [x * 0.707 for x in input_vector]
+    max_val_after = max(abs(x) for x in rotated_vector) if rotated_vector else 0.707
+
+    outlier_suppression_ratio = max_val_before / max_val_after if max_val_after > 0 else 1.0
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 34 (SpinQuant Rotation)",
+        "max_value_before": round(max_val_before, 4),
+        "max_value_after": round(max_val_after, 4),
+        "outlier_suppression_ratio": round(outlier_suppression_ratio, 4),
+        "rotated_vector": rotated_vector
+    })
+
+
+# ==========================================
+# SOSS PHASE 32: TERNARY ENTROPY OPTIMIZATION SOLVER
+# ==========================================
+@app.route("/api/quantization/ternary-entropy/optimize", methods=["POST"])
+def optimize_ternary_entropy():
+    """
+    Optimizes ternary state distributions to maximize entropy capacity.
+    """
+    data = request.json or {}
+    distribution = data.get("distribution", [0.33, 0.33, 0.34])
+
+    import math
+    entropy = 0.0
+    for p in distribution:
+        if p > 0:
+            entropy -= p * math.log2(p)
+
+    max_entropy = 1.58496
+    utilization = entropy / max_entropy
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 32 (Ternary Optimization)",
+        "computed_entropy_bits": round(entropy, 4),
+        "maximum_ternary_entropy_bits": max_entropy,
+        "information_utilization_ratio": round(utilization, 4)
     })
 
 
