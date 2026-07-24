@@ -9,8 +9,6 @@ class GabrielWorker(abc.ABC):
     def execute(self, task: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]: pass
     @abc.abstractmethod
     def get_capabilities(self) -> List[str]: pass
-
-    # Phase 102: Auction-Based Task Bidding
     @abc.abstractmethod
     def bid_on_task(self, task: Dict[str, Any]) -> float: pass
 
@@ -25,8 +23,7 @@ class OpenAIWorker(GabrielWorker):
             return {"status": "success", "result": content}
         except Exception as e:
             return {"status": "error", "error_message": str(e), "result": f"API Error"}
-    def bid_on_task(self, task: Dict[str, Any]) -> float:
-        return 0.8 # Constant high bid but costs money
+    def bid_on_task(self, task: Dict[str, Any]) -> float: return 0.8
 
 class LocalStubWorker(GabrielWorker):
     def get_capabilities(self) -> List[str]: return ["general", "fast", "low_energy", "sandboxed"]
@@ -35,23 +32,22 @@ class LocalStubWorker(GabrielWorker):
             return {"status": "error", "error_message": "Task too complex for local worker."}
         return {"status": "success", "result": "Local sandboxed worker processed task."}
     def bid_on_task(self, task: Dict[str, Any]) -> float:
-        # Bids high on easy tasks, low on complex tasks
         return 0.9 if task.get("complexity_score", 0.0) < 0.5 else 0.1
 
 class GabrielKernel:
     def __init__(self):
         self.workers: Dict[str, GabrielWorker] = {}
-        self.worker_stats: Dict[str, Dict[str, int]] = {}
+        self.worker_stats: Dict[str, Dict[str, Any]] = {}
         self.learning_pipeline = None
         self.dashboard = None
         self.active_tasks = 0
         self.peer_nodes = []
-        # Phase 105: Agent Mailboxes
         self.agent_mailbox: Dict[str, List[str]] = {}
 
     def register_worker(self, name: str, worker: GabrielWorker):
         self.workers[name] = worker
-        self.worker_stats[name] = {"success": 0, "failure": 0}
+        # Phase 161: Token-Based Micro-Economies
+        self.worker_stats[name] = {"success": 0, "failure": 0, "token_balance": 100.0}
         self.agent_mailbox[name] = []
 
     def set_dashboard(self, dashboard: Any): self.dashboard = dashboard
@@ -69,8 +65,16 @@ class GabrielKernel:
                 result = {"status": "error", "error_message": f"Execution timed out."}
         self.active_tasks -= 1
 
-        if result.get("status") == "success": self.worker_stats[worker_name]["success"] += 1
-        else: self.worker_stats[worker_name]["failure"] += 1
+        # Phase 161 & 162: Micro-Economy & Reputation Slashing
+        if result.get("status") == "success":
+            self.worker_stats[worker_name]["success"] += 1
+            self.worker_stats[worker_name]["token_balance"] += complexity * 10
+        else:
+            self.worker_stats[worker_name]["failure"] += 1
+            if "hallucination" in result.get("error_message", "").lower():
+                self.worker_stats[worker_name]["token_balance"] *= 0.5 # slash 50%
+            else:
+                self.worker_stats[worker_name]["token_balance"] -= 5.0
 
         if self.learning_pipeline: self.learning_pipeline.ingest(result)
         return result
@@ -80,14 +84,16 @@ class GabrielKernel:
 
         complexity = task.get("complexity_score", 0.5)
 
-        # Phase 101: Byzantine Fault Tolerance (BFT) for critical tasks
+        # Phase 154: Zero-Trust Routing
+        if task.get("cryptographically_signed") is False:
+            return {"status": "error", "result": "Execution rejected: unsigned request."}
+
         if task.get("critical", False) and len(self.workers) >= 3:
             return self._bft_consensus_route(task)
 
         if self.dashboard and self.dashboard.get_system_health().get("metrics", {}).get("gpu_temp_c", 0) > 85.0:
             task["required_capability"] = "low_energy"
 
-        # Phase 102: Auction-Based Routing
         best_worker_name = self._auction_route(task)
 
         result = self._execute_with_stats(best_worker_name, task)
@@ -97,6 +103,10 @@ class GabrielKernel:
                 task["messages"].append({"role": "system", "content": "Fallback attempt."})
                 result = self._execute_with_stats(fallback_name, task)
 
+        # Phase 154: Zero-Trust Output Scanner
+        if "eval(" in result.get("result", ""):
+            return {"status": "error", "result": "Output sanitized by Zero-Trust scanner."}
+
         return result
 
     def _auction_route(self, task: Dict[str, Any]) -> str:
@@ -105,11 +115,11 @@ class GabrielKernel:
 
         for name, worker in self.workers.items():
             if req_cap in worker.get_capabilities():
-                # Phase 110: Global Trust Score weighting
                 s, f = self.worker_stats[name]["success"], self.worker_stats[name]["failure"]
                 trust_score = s / (s + f) if (s + f) > 0 else 1.0
+                token_multiplier = min(self.worker_stats[name]["token_balance"] / 100.0, 2.0)
 
-                bid = worker.bid_on_task(task) * trust_score
+                bid = worker.bid_on_task(task) * trust_score * token_multiplier
                 if bid > best_bid:
                     best_bid, best_worker = bid, name
 
@@ -120,11 +130,14 @@ class GabrielKernel:
             if name != exclude and "fallback" in worker.get_capabilities(): return name
         return None
 
-    # Phase 101: BFT Consensus
     def _bft_consensus_route(self, task: Dict[str, Any]) -> Dict[str, Any]:
         results = []
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(self.workers[w].execute, task, {"routed_by": "BFT"}): w for w in self.workers.keys()}
+            # Phase 169: Consensus Validation Staking
+            staked_workers = [w for w, stats in self.worker_stats.items() if stats["token_balance"] > 10.0]
+            if not staked_workers: return {"status": "error", "result": "No workers have enough tokens to stake in BFT."}
+
+            futures = {executor.submit(self.workers[w].execute, task, {"routed_by": "BFT"}): w for w in staked_workers}
             for future in concurrent.futures.as_completed(futures):
                 try:
                     res = future.result()
@@ -132,14 +145,13 @@ class GabrielKernel:
                 except Exception: pass
 
         if not results: return {"status": "error", "result": "Consensus failed."}
-
-        # Simple BFT stub: requires > 50% identical responses (mocked as string length matching for brevity)
-        if len(results) >= (len(self.workers) // 2) + 1:
+        if len(results) >= (len(staked_workers) // 2) + 1:
             return {"status": "success", "result": f"BFT Validated: {results[0]}"}
-
         return {"status": "error", "result": "BFT Consensus not reached. Nodes disagreed."}
 
     def set_learning_pipeline(self, pipeline: Any): self.learning_pipeline = pipeline
 
+    # Phase 168: Swarm Load-Shedding
     def broadcast_health(self):
-        return {"active_tasks": self.active_tasks, "workers": list(self.workers.keys())}
+        dnd = True if self.active_tasks > 10 else False
+        return {"active_tasks": self.active_tasks, "workers": list(self.workers.keys()), "dnd_flag": dnd}

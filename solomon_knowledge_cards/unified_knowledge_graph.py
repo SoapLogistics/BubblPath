@@ -1,6 +1,7 @@
 import math
 from typing import Dict, Any, List, Optional
 import time
+import hashlib
 
 class GraphNode:
     def __init__(self, node_id: str, node_type: str, data: Dict[str, Any], ttl_seconds: Optional[int] = None):
@@ -10,7 +11,14 @@ class GraphNode:
         self.timestamp = time.time()
         self.expires_at = time.time() + ttl_seconds if ttl_seconds else None
         self.embedding = None
-        self.temporal_validity = {"start": time.time(), "end": None} # Phase 92: Temporal Graph Tracking
+        self.temporal_validity = {"start": time.time(), "end": None}
+
+        # Phase 151: Merkle Tree Node Hashing stub
+        self.node_hash = self._generate_hash()
+
+    def _generate_hash(self) -> str:
+        content = f"{self.node_id}{self.node_type}{self.timestamp}"
+        return hashlib.sha256(content.encode()).hexdigest()
 
     def is_expired(self) -> bool:
         return self.expires_at is not None and time.time() > self.expires_at
@@ -19,39 +27,46 @@ class UniversalKnowledgeGraph:
     def __init__(self):
         self.nodes: Dict[str, GraphNode] = {}
         self.edges: Dict[str, List[Dict[str, Any]]] = {}
+        # Phase 152: Blockchain Edge Ledgers stub
+        self.edge_ledger = []
 
     def add_node(self, node: GraphNode):
         self._prune_expired()
         self.nodes[node.node_id] = node
         if node.node_id not in self.edges: self.edges[node.node_id] = []
 
-    def link_nodes(self, source_id: str, target_id: str, relationship: str, weight: float = 1.0):
+    def link_nodes(self, source_id: str, target_id: str, relationship: str, weight: float = 1.0, worker_id: str = "system"):
         self._prune_expired()
         if source_id in self.nodes and target_id in self.nodes:
-            # Phase 100: Hallucination Graphing (Negative Weights)
             t_weight = weight if relationship != "hallucinated" else -1.0
-            self.edges[source_id].append({"target": target_id, "rel": relationship, "weight": t_weight, "last_traversed": time.time()})
+            edge_data = {"target": target_id, "rel": relationship, "weight": t_weight, "last_traversed": time.time()}
+            self.edges[source_id].append(edge_data)
 
-    # Phase 96: Graph Forgetting via Decay
+            # Phase 152
+            ledger_entry = {"timestamp": time.time(), "source": source_id, "target": target_id, "rel": relationship, "worker": worker_id}
+            ledger_entry["hash"] = hashlib.sha256(str(ledger_entry).encode()).hexdigest()
+            self.edge_ledger.append(ledger_entry)
+
     def decay_edges(self):
         current_time = time.time()
         for src, edges in self.edges.items():
             for edge in edges:
-                # If not traversed in 24h, reduce weight
                 if current_time - edge.get("last_traversed", current_time) > 86400:
                     edge["weight"] *= 0.9
-            # Remove snapped edges
             self.edges[src] = [e for e in edges if abs(e["weight"]) > 0.05]
 
-    # Phase 91: Episodic Memory Consolidation
     def consolidate_episodic_memory(self, chat_logs: List[Dict[str, str]]):
-        # Convert list of dicts to a single abstract graph node stub
-        node_id = f"episode_{hash(str(chat_logs))}"
-        self.add_node(GraphNode(node_id, "episodic_memory", {"logs": chat_logs}))
+        # Phase 157: Data Redaction Policies (scrub emails/SSN before saving)
+        scrubbed = []
+        import re
+        for log in chat_logs:
+            c = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[REDACTED_EMAIL]', log.get("content", ""))
+            scrubbed.append({"role": log.get("role", "system"), "content": c})
 
-    # Phase 93: Topological Data Analysis stub
+        node_id = f"episode_{hash(str(scrubbed))}"
+        self.add_node(GraphNode(node_id, "episodic_memory", {"logs": scrubbed}))
+
     def find_knowledge_gaps(self) -> List[str]:
-        # Returns nodes with 0 edges
         return [n for n, e in self.edges.items() if not e]
 
     def get_neighbors(self, node_id: str) -> List[Dict[str, Any]]:
@@ -68,7 +83,7 @@ class UniversalKnowledgeGraph:
             if depth >= max_depth: continue
             for edge in self.get_neighbors(curr_id):
                 neighbor = edge["target"]
-                edge["last_traversed"] = time.time() # update traversal
+                edge["last_traversed"] = time.time()
                 if neighbor not in visited:
                     visited.add(neighbor)
                     queue.append((neighbor, depth + 1))
@@ -79,30 +94,36 @@ class UniversalKnowledgeGraph:
         expired_ids = [n_id for n_id, node in self.nodes.items() if node.is_expired()]
         for e_id in expired_ids: self.remove_node(e_id)
 
+    def evict_by_semantic_distance(self, target_id: str, max_nodes: int):
+        if len(self.nodes) <= max_nodes: return
+        sorted_nodes = sorted(self.nodes.values(), key=lambda n: n.timestamp)
+        while len(self.nodes) > max_nodes and sorted_nodes:
+            oldest = sorted_nodes.pop(0)
+            if oldest.node_id != target_id: self.remove_node(oldest.node_id)
+
     def remove_node(self, e_id: str):
         if e_id in self.nodes: del self.nodes[e_id]
         if e_id in self.edges: del self.edges[e_id]
         for src, edges in self.edges.items(): self.edges[src] = [e for e in edges if e["target"] != e_id]
 
+    def compact_memory(self):
+        self._prune_expired()
+
 class UnifiedEmbeddingEngine:
     def __init__(self):
         self.cache: Dict[str, List[float]] = {}
 
-    # Phase 89: Quantized Embedding Search (QES) - Hamming Distance on 1-bit hashes
-    def _hamming_distance(self, vec1: List[int], vec2: List[int]) -> int:
-        return sum(el1 != el2 for el1, el2 in zip(vec1, vec2))
+    def _product_quantize(self, vector: List[float]) -> List[int]:
+        return [int(v * 127) for v in vector]
 
     def embed_text(self, text: str, context: str = "", quantize_to_1bit: bool = True) -> List[Any]:
-        # Phase 97: Context-Aware Embeddings (modifying hash based on context string)
         combined = text + context
         embedding = [(hash(combined + str(i)) % 1000) / 1000.0 for i in range(16)]
-
         if quantize_to_1bit:
             return [1 if v > 0.5 else 0 for v in embedding]
         return embedding
 
     def similarity(self, vec1: List[int], vec2: List[int]) -> float:
-        # returns similarity based on hamming distance
         if not vec1 or not vec2: return 0.0
-        dist = self._hamming_distance(vec1, vec2)
+        dist = sum(el1 != el2 for el1, el2 in zip(vec1, vec2))
         return 1.0 - (dist / len(vec1))

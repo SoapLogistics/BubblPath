@@ -10,17 +10,35 @@ class DynamicContextEngine:
         self.swap_file = "cold_context_swap.bin"
         self.semantic_cache = {}
 
+    def _scrub_hallucinations(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        safe = []
+        for m in messages:
+            if "hallucinated fact" not in m.get("content", "").lower():
+                safe.append(m)
+        return safe
+
+    def _check_intent_override(self, messages: List[Dict[str, str]]) -> bool:
+        if not messages: return False
+        content = messages[-1].get("content", "").lower()
+        if "forget everything" in content or "system reset" in content:
+            return True
+        return False
+
     def budget_context(self, current_vram_usage: float, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        if self._check_intent_override(messages):
+            return [{"role": "system", "content": "OS RESET INITIATED BY USER INTENT", "importance": 1.0}]
+
+        messages = self._scrub_hallucinations(messages)
         available_vram = self.max_vram_mb - current_vram_usage
 
         if len(messages) > 10:
-            messages = [{"role": "system", "content": "[DELTA ENCODING ACTIVE]"}] + messages[-5:]
+            messages = [{"role": "system", "content": "[DELTA ENCODING ACTIVE]", "importance": 1.0}] + messages[-5:]
 
+        # Inject metadata
         for i, msg in enumerate(messages):
             if "importance" not in msg:
                 msg["importance"] = 1.0 if msg.get("role") == "system" else 0.5
 
-        # Phase 94: Fractal Context Spheres stub (sort by importance instead of strict chronological)
         messages = sorted(messages, key=lambda x: (x.get("role") == "system", x.get("importance", 0.5)), reverse=True)
 
         messages = self._defragment_system_messages(messages)
@@ -34,8 +52,15 @@ class DynamicContextEngine:
             total_chars = sum(len(m.get("content", "")) for m in messages)
             estimated_vram = (total_chars * 10) / self.bytes_per_mb
             if estimated_vram > available_vram:
-                return self._compress_messages(messages, target_vram=available_vram)
-        return sorted(messages, key=lambda x: x.get("importance", 0.5), reverse=True) # return in priority order
+                messages = self._compress_messages(messages, target_vram=available_vram)
+
+        # CRITICAL FIX: Strip metadata (like 'importance') before passing to LLM APIs
+        sanitized_messages = []
+        for m in sorted(messages, key=lambda x: x.get("importance", 0.5), reverse=True):
+            safe_msg = {k: v for k, v in m.items() if k in ["role", "content", "name"]}
+            sanitized_messages.append(safe_msg)
+
+        return sanitized_messages
 
     def check_semantic_cache(self, messages: List[Dict[str, str]]) -> str:
         if not messages: return None
