@@ -4,8 +4,13 @@ const chatContainer = document.getElementById('chat-container');
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
 const contextBanner = document.getElementById('context-banner');
+const pendingActionContainer = document.getElementById('pending-action-container');
+const pendingActionDetails = document.getElementById('pending-action-details');
+const approveBtn = document.getElementById('approve-btn');
+const cancelBtn = document.getElementById('cancel-btn');
 
 let activeContext = null;
+let currentPendingActionSelector = null;
 
 // Initialize context on load
 chrome.runtime.sendMessage({ type: 'GET_CURRENT_CONTEXT' }, (response) => {
@@ -78,7 +83,29 @@ async function sendMessageToSolomon(message) {
         }
 
         const data = await response.json();
-        appendMessage('Solomon', data.reply);
+        let replyText = data.reply;
+
+        // Parse for action requests
+        const actionMatch = replyText.match(/\[ACTION:\s*(.+?)\]/);
+        if (actionMatch) {
+            currentPendingActionSelector = actionMatch[1].trim();
+            // Remove the raw action tag from the user-visible message
+            replyText = replyText.replace(actionMatch[0], '').trim();
+
+            // Show approval UI
+            pendingActionContainer.style.display = 'block';
+            pendingActionDetails.textContent = `Target: ${currentPendingActionSelector}`;
+
+            // Highlight element on page
+            chrome.runtime.sendMessage({
+                type: 'HIGHLIGHT_ELEMENT',
+                selector: currentPendingActionSelector
+            });
+        }
+
+        if (replyText) {
+            appendMessage('Solomon', replyText);
+        }
     } catch (error) {
         console.error("Error communicating with Solomon backend:", error);
         appendMessage('System', 'Error connecting to Solomon backend. Ensure app.py is running.');
@@ -100,3 +127,41 @@ chatInput.addEventListener('keypress', (e) => {
         }
     }
 });
+
+// Action Handlers
+approveBtn.addEventListener('click', async () => {
+    if (currentPendingActionSelector) {
+        chrome.runtime.sendMessage({
+            type: 'EXECUTE_ACTION',
+            selector: currentPendingActionSelector
+        });
+
+        // Log action securely
+        fetch('http://localhost:10000/api/browser/action-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                selector: currentPendingActionSelector,
+                url: activeContext?.url || 'unknown'
+            })
+        }).catch(err => console.error(err));
+
+        appendMessage('System', `Action approved on target: ${currentPendingActionSelector}`);
+        resetPendingAction();
+    }
+});
+
+cancelBtn.addEventListener('click', () => {
+    if (currentPendingActionSelector) {
+        chrome.runtime.sendMessage({
+            type: 'CLEAR_HIGHLIGHT'
+        });
+        appendMessage('System', 'Action cancelled by user.');
+        resetPendingAction();
+    }
+});
+
+function resetPendingAction() {
+    pendingActionContainer.style.display = 'none';
+    currentPendingActionSelector = null;
+}

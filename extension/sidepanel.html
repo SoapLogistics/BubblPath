@@ -69,11 +69,53 @@
     button:hover {
       background-color: #0056b3;
     }
+    /* Add pending action styles */
+    #pending-action-container {
+      display: none;
+      background-color: #fff3e0;
+      border: 1px solid #ffb74d;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    #pending-action-container p {
+      margin-top: 0;
+      font-size: 13px;
+      color: #e65100;
+      font-weight: bold;
+    }
+    .action-btn {
+      padding: 6px 12px;
+      margin: 0 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #approve-btn {
+      background-color: #4caf50;
+      color: white;
+    }
+    #approve-btn:hover { background-color: #388e3c; }
+    #cancel-btn {
+      background-color: #f44336;
+      color: white;
+    }
+    #cancel-btn:hover { background-color: #d32f2f; }
   </style>
 </head>
 <body>
+
   <div id="context-banner">👀 Context: None</div>
   <div id="chat-container"></div>
+
+  <div id="pending-action-container">
+    <p>⚠️ Manual Approval Required for Action</p>
+    <div id="pending-action-details" style="font-size: 11px; margin-bottom: 8px; color: #555;"></div>
+    <button id="approve-btn" class="action-btn">Approve</button>
+    <button id="cancel-btn" class="action-btn">Cancel</button>
+  </div>
+
   <div id="input-container">
     <input type="text" id="chat-input" placeholder="Ask Solomon..." />
     <button id="send-btn">Send</button>

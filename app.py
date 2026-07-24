@@ -14,7 +14,12 @@ def chat():
     context_data = data.get("context", None)
 
     # We prepend context if available
-    system_prompt = "You are Solomon, a helpful assistant."
+    system_prompt = (
+        "You are Solomon, a helpful assistant. "
+        "If the user asks you to perform an action on the webpage (like adding to cart or clicking a bet), "
+        "and you know the CSS selector for the button, you MUST output a tag at the end of your response like this: "
+        "[ACTION: #my-css-selector]. The system will intercept this and ask the user for manual approval."
+    )
     if context_data:
         system_prompt += f" The user is currently looking at {context_data.get('type', 'a webpage')} at {context_data.get('url', '')}. Here is the extracted context: {context_data.get('data', '')}"
 
@@ -36,6 +41,13 @@ def receive_context():
     # In a full implementation, we might store this context in a local DB or memory card
     print(f"Received context from {data.get('url')}: {data.get('type')}")
     return jsonify({"status": "Context received successfully"})
+
+@app.route("/api/browser/action-log", methods=["POST"])
+def log_action():
+    data = request.json
+    print(f"AUDIT LOG: User explicitly approved action on {data.get('url')}. Target: {data.get('selector')}")
+    # In a production system, write to SQLite audit tables (e.g. loki_bets/actions)
+    return jsonify({"status": "Action logged securely"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

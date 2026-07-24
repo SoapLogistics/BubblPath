@@ -30,4 +30,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'GET_CURRENT_CONTEXT') {
         sendResponse(currentContext);
     }
+
+    // Route action commands to the active tab's content script
+    if (['HIGHLIGHT_ELEMENT', 'EXECUTE_ACTION', 'CLEAR_HIGHLIGHT'].includes(request.type)) {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (tabs[0]) {
+                chrome.tabs.sendMessage(tabs[0].id, request).catch(err => console.error("Error sending message to active tab:", err));
+            }
+        });
+        // We don't need to return sendResponse asynchronously here
+    }
 });

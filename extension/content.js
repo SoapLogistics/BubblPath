@@ -29,13 +29,15 @@ function extractKalshi() {
 function extractAmazon() {
     const title = document.getElementById('productTitle')?.innerText || "";
     const price = document.querySelector('.a-price .a-offscreen')?.innerText || "";
-    return `Product: ${title}\nPrice: ${price}`;
+    // Hint to the AI about what the "Add to Cart" button selector usually is on Amazon
+    return `Product: ${title}\nPrice: ${price}\n(Hint: "Add to Cart" selector is usually #add-to-cart-button)`;
 }
 
 function extractEbay() {
     const title = document.querySelector('.x-item-title__mainTitle')?.innerText || "";
     const price = document.querySelector('.x-price-primary')?.innerText || "";
-    return `eBay Item: ${title}\nPrice: ${price}`;
+    // Hint for eBay "Buy It Now" or "Place Bid"
+    return `eBay Item: ${title}\nPrice: ${price}\n(Hint: Buy button selector is usually [id^="binBtn_btn"])`;
 }
 
 function extractPolymarket() {
@@ -101,3 +103,63 @@ new MutationObserver(() => {
     setTimeout(extractPageContent, 2000); // Wait for render
   }
 }).observe(document, {subtree: true, childList: true});
+
+// --- Action Execution Logic ---
+let currentHighlight = null;
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'HIGHLIGHT_ELEMENT') {
+        clearHighlight();
+        try {
+            const el = document.querySelector(request.selector);
+            if (el) {
+                // Apply a prominent visual highlight
+                currentHighlight = document.createElement('div');
+                currentHighlight.id = 'solomon-action-highlight';
+                currentHighlight.style.position = 'absolute';
+                currentHighlight.style.border = '4px solid #ff9800';
+                currentHighlight.style.backgroundColor = 'rgba(255, 152, 0, 0.2)';
+                currentHighlight.style.zIndex = '999999';
+                currentHighlight.style.pointerEvents = 'none'; // Don't block clicks
+                currentHighlight.style.boxShadow = '0 0 10px #ff9800';
+
+                const rect = el.getBoundingClientRect();
+                currentHighlight.style.top = (rect.top + window.scrollY - 5) + 'px';
+                currentHighlight.style.left = (rect.left + window.scrollX - 5) + 'px';
+                currentHighlight.style.width = (rect.width + 10) + 'px';
+                currentHighlight.style.height = (rect.height + 10) + 'px';
+
+                document.body.appendChild(currentHighlight);
+
+                // Scroll element into view smoothly
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } catch (e) {
+            console.error("Invalid selector or element not found:", request.selector);
+        }
+    }
+
+    if (request.type === 'CLEAR_HIGHLIGHT') {
+        clearHighlight();
+    }
+
+    if (request.type === 'EXECUTE_ACTION') {
+        clearHighlight();
+        try {
+            const el = document.querySelector(request.selector);
+            if (el) {
+                console.log("Solomon executes manual approved click on:", request.selector);
+                el.click();
+            }
+        } catch (e) {
+            console.error("Failed to execute action on:", request.selector);
+        }
+    }
+});
+
+function clearHighlight() {
+    if (currentHighlight && currentHighlight.parentNode) {
+        currentHighlight.parentNode.removeChild(currentHighlight);
+    }
+    currentHighlight = null;
+}
