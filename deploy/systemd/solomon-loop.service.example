@@ -1,0 +1,18 @@
+[Unit]
+Description=Solomon 24/7 Perpetual Learning and Autonomous Improvement Loop Daemon
+After=network.target solomon-api.service
+
+[Service]
+Type=simple
+User=millerm
+WorkingDirectory=/home/millerm/Projects/JARVISWebUI
+EnvironmentFile=/etc/solomon/solomon.env
+# Starts the background loop python execution
+ExecStart=/usr/bin/python3 -c "from solomon_knowledge_cards import MnemosyneRuntime, AutonomousImprovementLoop; r = MnemosyneRuntime(); loop = AutonomousImprovementLoop(r, loop_interval_seconds=600); loop.start_loop()"
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
