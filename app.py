@@ -35,6 +35,9 @@ from solomon_vector_compressor import RAGVectorCompressor
 from solomon_model_fusion import MultiModelFusionRouter
 from solomon_performance_predictor import PerformancePredictor
 from solomon_50_step_optimizers import FiftyStepOptimizers
+from solomon_advanced_algorithms import AdvancedAlgorithms
+
+
 
 
 from solomon_knowledge_cards.models import DatabaseManager
@@ -46,7 +49,10 @@ class MockRuntime:
 
 loki_runtime = MockRuntime()
 loki_engine = LokiEngine(loki_runtime)
+
 fifty_step_optimizers = FiftyStepOptimizers(loki_runtime.db)
+advanced_algorithms_engine = AdvancedAlgorithms(loki_runtime.db)
+
 
 
 
@@ -1102,6 +1108,16 @@ def optimize_50_step_pipeline():
         return jsonify(report), 200
     except Exception as e:
         logger.error(f"Failed to execute 50-step optimization pipeline: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/command-center/algorithms/run-all", methods=["POST", "GET"])
+def run_all_algorithms():
+    try:
+        report = advanced_algorithms_engine.run_all_diagnostics()
+        return jsonify(report), 200
+    except Exception as e:
+        logger.error(f"Failed to execute advanced algorithms diagnostic: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
