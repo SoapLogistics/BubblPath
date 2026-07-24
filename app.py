@@ -3,6 +3,10 @@ import hmac
 import json
 import logging
 from datetime import datetime
+from solomon_50_step_optimizers import FiftyStepSystemOptimizer
+import time
+import gzip
+from functools import wraps
 from flask import Flask, request, jsonify, render_template
 import openai
 
@@ -811,6 +815,23 @@ def loki_backtest():
         return jsonify({"status": "success", "backtest_results": stats}), 200
     except Exception as e:
         logger.error(f"Error executing backtest: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/command-center/optimization/50-step", methods=["POST"])
+def optimize_50_step():
+    """Runs the massive 50-step architectural optimization suite."""
+    auth_header = request.headers.get("Authorization")
+    expected_token = os.environ.get("SOLOMON_ACTIONS_API_KEY")
+    if not expected_token or auth_header != f"Bearer {expected_token}":
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        opt = FiftyStepSystemOptimizer(os.environ.get("SOLOMON_DB_PATH", "knowledge_cards.db"))
+        result = opt.execute_all_50_optimizations()
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"Failed 50-step optimization: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/command-center/loki/stats", methods=["GET"])
