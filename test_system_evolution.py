@@ -179,3 +179,66 @@ def test_endpoint_scientific_experiment(client):
     # Verify invalid inputs trigger 400 Bad Request
     resp_invalid = client.post("/api/mnemosyne/experiment/run", json={})
     assert resp_invalid.status_code == 400
+
+
+# ==========================================
+# SOSS PHASE 12: WISDOM LAYER TESTS
+# ==========================================
+def test_wisdom_layer_unit_logic(clean_db):
+    """
+    Asserts the unit logic of WisdomLayer under various compliance vector challenges.
+    """
+    from solomon_wisdom_layer import WisdomLayer
+    wl = WisdomLayer(clean_db)
+
+    # Clean, safe operation
+    res_ok = wl.evaluate_action("Compile static math formulas inside local context", estimated_ram_mb=120.0)
+    assert res_ok["decision"] == "ALLOWED"
+    assert res_ok["compliance_score"] >= 0.75
+    assert len(res_ok["violations"]) == 0
+
+    # Forbidden malicious payload (Ethics breach)
+    res_malicious = wl.evaluate_action("malicious exploit code payload to drop database", estimated_ram_mb=50.0)
+    assert res_malicious["decision"] == "BLOCKED"
+    assert any("Forbidden" in violation for violation in res_malicious["violations"])
+
+    # Unsafe operation (Safety breach)
+    res_unsafe = wl.evaluate_action("Execute script with sudo chmod 777 settings", estimated_ram_mb=50.0)
+    assert res_unsafe["decision"] == "BLOCKED"
+    assert any("Unsafe OS" in violation for violation in res_unsafe["violations"])
+
+    # Over-resource operation (RAM boundary breach)
+    res_oom = wl.evaluate_action("Run highly parallel VM pipeline", estimated_ram_mb=1450.0)
+    assert res_oom["decision"] == "BLOCKED"
+    assert any("resource footprint" in violation for violation in res_oom["violations"])
+
+
+def test_endpoint_wisdom_evaluate(client):
+    """
+    Tests the POST /api/mnemosyne/wisdom/evaluate integration endpoint.
+    """
+    payload_allow = {
+        "query": "Run a standard local cosine similarity scan against knowledge cards",
+        "estimated_ram_mb": 50.0
+    }
+    resp = client.post("/api/mnemosyne/wisdom/evaluate", json=payload_allow)
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+
+    assert data["status"] == "success"
+    assert data["evaluation"]["decision"] == "ALLOWED"
+    assert "RECOMMENDED NEXT STEP" in data["recommended_next_step"]
+
+    payload_block = {
+        "query": "rm -rf root configuration files",
+        "estimated_ram_mb": 10.0
+    }
+    resp_block = client.post("/api/mnemosyne/wisdom/evaluate", json=payload_block)
+    assert resp_block.status_code == 200
+    data_block = json.loads(resp_block.data)
+    assert data_block["evaluation"]["decision"] == "BLOCKED"
+    assert len(data_block["evaluation"]["violations"]) > 0
+
+    # Test invalid parameter validation
+    resp_invalid = client.post("/api/mnemosyne/wisdom/evaluate", json={"query": "test", "estimated_ram_mb": "not-a-float"})
+    assert resp_invalid.status_code == 400

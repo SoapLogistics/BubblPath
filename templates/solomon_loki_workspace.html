@@ -175,6 +175,55 @@
                 </div>
             </div>
 
+            <!-- Panel B5: SOSS Phase 12 Wisdom Compliance Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-scale-balanced text-indigo-400"></i>
+                        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">Phase 12: Wisdom Compliance Gate</h2>
+                    </div>
+                    <span class="text-[10px] bg-indigo-950 text-indigo-400 border border-indigo-900 px-2 py-0.5 rounded-md font-mono font-bold uppercase tracking-wider">Gatekeeper</span>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 gap-2">
+                        <input type="text" id="wisdom-query" placeholder="Command/Action query" value="Execute dynamic model quantization calibration on local weights" class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded p-1.5 focus:outline-none focus:border-cyan-500 font-mono">
+                        <input type="number" id="wisdom-ram" value="450" placeholder="Estimated RAM (MB)" class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded p-1.5 focus:outline-none focus:border-cyan-500 font-mono">
+                    </div>
+
+                    <!-- Wisdom Vector Outputs -->
+                    <div class="grid grid-cols-4 gap-2 text-center text-[10px] font-mono">
+                        <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                            <div class="text-slate-500 uppercase">Ethics</div>
+                            <div class="font-bold text-slate-300" id="wisdom-ethics">--</div>
+                        </div>
+                        <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                            <div class="text-slate-500 uppercase">Safety</div>
+                            <div class="font-bold text-slate-300" id="wisdom-safety">--</div>
+                        </div>
+                        <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                            <div class="text-slate-500 uppercase">Resource</div>
+                            <div class="font-bold text-slate-300" id="wisdom-resource">--</div>
+                        </div>
+                        <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                            <div class="text-slate-500 uppercase">Confidence</div>
+                            <div class="font-bold text-slate-300" id="wisdom-conf">--</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-2.5 rounded text-xs border border-slate-800" id="wisdom-decision-box">
+                        <div class="text-slate-500 italic text-center py-1 font-mono text-[11px]">Awaiting compliance audit execution...</div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg flex items-center space-x-1 transition-all" onclick="triggerWisdomAudit()">
+                            <i class="fa-solid fa-gavel"></i>
+                            <span>Audit Action Compliance</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <!-- Column B: Model Router Pathway & Interactive Simulation Console (Right 7 Columns) -->
@@ -620,6 +669,68 @@
             .catch(err => {
                 output.className = "bg-slate-950 p-2.5 rounded text-[11px] font-mono border border-slate-800 text-rose-400 text-left";
                 output.innerText = `[ERROR] System connection failed: ${err}`;
+            });
+        }
+
+        // Phase 12: Run Wisdom compliance audit
+        function triggerWisdomAudit() {
+            const query = document.getElementById("wisdom-query").value.trim();
+            const ram = parseFloat(document.getElementById("wisdom-ram").value || "0");
+            const decisionBox = document.getElementById("wisdom-decision-box");
+
+            if (!query) {
+                alert("Please enter an action query to evaluate compliance!");
+                return;
+            }
+
+            decisionBox.innerHTML = `<div class="text-slate-400 font-mono text-center py-1 animate-pulse">Running executive compliance audit...</div>`;
+
+            fetch("/api/mnemosyne/wisdom/evaluate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: query,
+                    estimated_ram_mb: ram,
+                    target_card_id: "SOK-TASK-QUANT-001" // use seeded card for confidence checks
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    const evalObj = data.evaluation;
+
+                    // Render Vector scores
+                    document.getElementById("wisdom-ethics").innerText = evalObj.wisdom_vector.ethics_score.toFixed(2);
+                    document.getElementById("wisdom-safety").innerText = evalObj.wisdom_vector.safety_score.toFixed(2);
+                    document.getElementById("wisdom-resource").innerText = evalObj.wisdom_vector.resource_score.toFixed(2);
+                    document.getElementById("wisdom-conf").innerText = evalObj.wisdom_vector.confidence_score.toFixed(2);
+
+                    // Render overall decision
+                    let html = `
+                        <div class="space-y-1 text-left text-[11px]">
+                            <div class="flex justify-between font-bold font-mono">
+                                <span>Audit Score: <span class="text-cyan-400">${evalObj.compliance_score}</span></span>
+                                <span>Verdict: <span class="${evalObj.decision === 'ALLOWED' ? 'text-emerald-400' : 'text-rose-500'}">${evalObj.decision}</span></span>
+                            </div>
+                    `;
+
+                    if (evalObj.decision === "BLOCKED" && evalObj.violations.length > 0) {
+                        html += `<div class="text-rose-400 font-bold mt-1 text-[10px]">Violations:</div><ul class="list-disc pl-3 text-slate-400 text-[10px]">`;
+                        evalObj.violations.forEach(v => {
+                            html += `<li>${v}</li>`;
+                        });
+                        html += `</ul>`;
+                    } else {
+                        html += `<div class="text-emerald-400 font-mono text-[10px] mt-1">✓ Compliance evaluation passed. Zero policy boundaries violated.</div>`;
+                    }
+                    html += `</div>`;
+                    decisionBox.innerHTML = html;
+                } else {
+                    decisionBox.innerHTML = `<div class="text-rose-500 font-mono text-center py-1">Error running wisdom audit: ${data.error || 'Unknown error'}</div>`;
+                }
+            })
+            .catch(err => {
+                decisionBox.innerHTML = `<div class="text-rose-500 font-mono text-center py-1">System connection failed: ${err}</div>`;
             });
         }
     </script>

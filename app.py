@@ -17,6 +17,7 @@ from solomon_self_repair import SelfRepairEngine
 from solomon_self_audit_probes import SelfAuditProbes
 from solomon_prometheus_curiosity import PrometheusCuriosityEngine
 from solomon_experiment_engine import ExperimentEngine
+from solomon_wisdom_layer import WisdomLayer
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -28,6 +29,7 @@ skills_graph = SkillGraph()
 repair_engine = SelfRepairEngine(db)
 curiosity_engine = PrometheusCuriosityEngine(db)
 experiment_engine = ExperimentEngine(db)
+wisdom_layer = WisdomLayer(db)
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -863,6 +865,45 @@ def run_scientific_experiment():
             "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
             "Utilize the freshly promoted SOK Procedure card to update the global model hot-swapping "
             "routing algorithms for immediate execution upgrades!</span>"
+        )
+    })
+
+
+# ==========================================
+# SOSS PHASE 12: WISDOM LAYER GATEKEEPER ROUTING
+# ==========================================
+@app.route("/api/mnemosyne/wisdom/evaluate", methods=["POST"])
+def evaluate_wisdom_compliance():
+    """
+    Evaluates execution queries and dynamic scripts against the Wisdom Compliance Vector.
+    Returns dynamic determinations to block or allow capability executions.
+    """
+    data = request.json or {}
+    query = data.get("query")
+    target_card_id = data.get("target_card_id")
+
+    try:
+        estimated_ram_mb = float(data.get("estimated_ram_mb", 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'estimated_ram_mb' parameter, must be a float."}), 400
+
+    if not query:
+        return jsonify({"error": "Missing 'query' parameter to evaluate compliance."}), 400
+
+    evaluation = wisdom_layer.evaluate_action(
+        action_query=query,
+        estimated_ram_mb=estimated_ram_mb,
+        target_card_id=target_card_id
+    )
+
+    return jsonify({
+        "status": "success",
+        "evaluation": evaluation,
+        "recommended_next_step": (
+            "RECOMMENDED NEXT STEP:\n"
+            "<span style='color: #00E676; font-weight: bold; font-size: 1.25em;'>"
+            "Always wrap your active workspace API queries inside this /api/mnemosyne/wisdom/evaluate gate "
+            "to guarantee complete ethical compliance, safety, and strict process memory boundaries!</span>"
         )
     })
 
