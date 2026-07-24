@@ -782,6 +782,37 @@ def loki_nightly_learn():
         logger.error(f"Error executing nightly learning: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/command-center/loki/backtest", methods=["POST"])
+def loki_backtest():
+    auth_header = request.headers.get("Authorization")
+    expected_token = os.environ.get("SOLOMON_ACTIONS_API_KEY")
+    if not expected_token or auth_header != f"Bearer {expected_token}":
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        data = request.json or {}
+        days = data.get("days", 30)
+        ticks = days * 10 # 10 ticks a day
+
+        loki = LokiEngine(runtime)
+
+        # We run it against the real DB for now to leverage its structure,
+        # but in a true offline mode we'd mock the DB entirely.
+
+        stats = {"ticks_run": 0, "starting_bankroll": loki.get_bankroll()}
+        for _ in range(ticks):
+            loki.simulate_tick()
+            stats["ticks_run"] += 1
+
+        stats["ending_bankroll"] = loki.get_bankroll()
+        stats["roi"] = (stats["ending_bankroll"] - stats["starting_bankroll"]) / stats["starting_bankroll"] if stats["starting_bankroll"] > 0 else 0
+
+        return jsonify({"status": "success", "backtest_results": stats}), 200
+    except Exception as e:
+        logger.error(f"Error executing backtest: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/command-center/loki/stats", methods=["GET"])
 def bp_get_loki_stats():
     """Retrieves betting performance and bankroll stats for Project Loki."""

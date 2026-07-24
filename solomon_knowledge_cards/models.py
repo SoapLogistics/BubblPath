@@ -279,7 +279,41 @@ class DatabaseManager:
                     """)
                     conn.execute("INSERT INTO migrations (version) VALUES (8);")
 
+
+                # Migration 9: Elo, Currency, and Live Scores
+                if current_v < 9:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_team_elo (
+                            team_name TEXT PRIMARY KEY,
+                            elo_rating REAL DEFAULT 1500.0,
+                            matches_played INTEGER DEFAULT 0,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_currencies (
+                            currency_id TEXT PRIMARY KEY,
+                            balance REAL NOT NULL,
+                            volatility_index REAL NOT NULL,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    now_str = datetime.utcnow().isoformat()
+                    conn.execute("INSERT OR IGNORE INTO loki_currencies (currency_id, balance, volatility_index, updated_at) VALUES ('USD', 10000.0, 1.0, ?);", (now_str,))
+                    conn.execute("INSERT OR IGNORE INTO loki_currencies (currency_id, balance, volatility_index, updated_at) VALUES ('mBTC', 1.0, 3.5, ?);", (now_str,))
+                    conn.execute("INSERT OR IGNORE INTO loki_currencies (currency_id, balance, volatility_index, updated_at) VALUES ('mETH', 10.0, 4.2, ?);", (now_str,))
+
+                    # Add live win prob column to bets if missing
+                    cursor = conn.execute("PRAGMA table_info(loki_bets);")
+                    columns = [col["name"] for col in cursor.fetchall()]
+                    if "live_win_prob" not in columns:
+                        conn.execute("ALTER TABLE loki_bets ADD COLUMN live_win_prob REAL DEFAULT -1.0;")
+                        conn.execute("ALTER TABLE loki_bets ADD COLUMN correlation_key TEXT DEFAULT '';")
+
+                    conn.execute("INSERT INTO migrations (version) VALUES (9);")
+
         finally:
+
 
 
 
