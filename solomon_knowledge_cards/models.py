@@ -312,7 +312,39 @@ class DatabaseManager:
 
                     conn.execute("INSERT INTO migrations (version) VALUES (9);")
 
+
+                # Migration 10: Loki Shadow Bankrolls, Timers, and Archives
+                if current_v < 10:
+                    now_str = datetime.utcnow().isoformat()
+                    conn.execute("INSERT OR IGNORE INTO loki_bankroll (bankroll_id, balance, updated_at) VALUES ('shadow_flat', 10000.0, ?);", (now_str,))
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_system_state (
+                            key TEXT PRIMARY KEY,
+                            value TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("INSERT OR IGNORE INTO loki_system_state (key, value, updated_at) VALUES ('kelly_mode', 'HALF', ?);", (now_str,))
+                    conn.execute("INSERT OR IGNORE INTO loki_system_state (key, value, updated_at) VALUES ('cooldown_timer', '0', ?);", (now_str,))
+
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_bet_archive (
+                            archive_id TEXT PRIMARY KEY,
+                            bets_json TEXT NOT NULL,
+                            archived_at TEXT NOT NULL
+                        );
+                    """)
+
+                    # Update snapshot to support shadow
+                    cursor = conn.execute("PRAGMA table_info(loki_equity_snapshots);")
+                    columns = [col["name"] for col in cursor.fetchall()]
+                    if "shadow_flat" not in columns:
+                        conn.execute("ALTER TABLE loki_equity_snapshots ADD COLUMN shadow_flat REAL DEFAULT 10000.0;")
+
+                    conn.execute("INSERT INTO migrations (version) VALUES (10);")
+
         finally:
+
 
 
 
