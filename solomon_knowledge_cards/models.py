@@ -343,7 +343,51 @@ class DatabaseManager:
 
                     conn.execute("INSERT INTO migrations (version) VALUES (10);")
 
+
+                # Migration 11: 25 Advanced Algorithmic Optimization Data Structures
+                if current_v < 11:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_glicko_ratings (
+                            team_name TEXT PRIMARY KEY,
+                            rating REAL DEFAULT 1500.0,
+                            rating_deviation REAL DEFAULT 350.0,
+                            volatility REAL DEFAULT 0.06,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_kalshi_markets (
+                            market_id TEXT PRIMARY KEY,
+                            topic TEXT NOT NULL,
+                            yes_price REAL NOT NULL,
+                            no_price REAL NOT NULL,
+                            open_interest REAL NOT NULL,
+                            sentiment_score REAL DEFAULT 0.5,
+                            resolution_date TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_strategy_leaderboard (
+                            strategy_name TEXT PRIMARY KEY,
+                            total_bets INTEGER DEFAULT 0,
+                            won_bets INTEGER DEFAULT 0,
+                            roi REAL DEFAULT 0.0,
+                            weight REAL DEFAULT 1.0,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_macro_indicators (
+                            indicator_id TEXT PRIMARY KEY,
+                            value REAL NOT NULL,
+                            timestamp TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("INSERT INTO migrations (version) VALUES (11);")
+
         finally:
+
 
 
 
