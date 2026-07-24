@@ -3,8 +3,17 @@ import math
 import random
 import uuid
 import logging
+import json
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
+
+# Advanced math helpers
+def norm_cdf(x: float) -> float:
+    """Standard normal cumulative distribution function"""
+    return (1.0 + math.erf(x / math.sqrt(2.0))) / 2.0
+
+def norm_pdf(x: float) -> float:
+    return math.exp(-x**2 / 2.0) / math.sqrt(2.0 * math.pi)
 
 logger = logging.getLogger("solomon_loki_engine")
 
@@ -120,6 +129,55 @@ def solve_soccer_poisson(home_xg: float, away_xg: float) -> List[float]:
     return [home_win/total, draw/total, away_win/total]
 
 
+
+
+def black_scholes_call(S: float, K: float, T: float, r: float, sigma: float) -> float:
+    """Feature 3: Black-Scholes-Merton Options Pricing"""
+    if T <= 0 or sigma <= 0: return max(0.0, S - K)
+    d1 = (math.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * math.sqrt(T))
+    d2 = d1 - sigma * math.sqrt(T)
+    return S * norm_cdf(d1) - K * math.exp(-r * T) * norm_cdf(d2)
+
+def implied_volatility_newton_raphson(C_market: float, S: float, K: float, T: float, r: float) -> float:
+    """Feature 3: Back-solve for IV using Newton-Raphson"""
+    sigma = 0.20 # initial guess
+    for _ in range(20):
+        d1 = (math.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * math.sqrt(T))
+        vega = S * norm_pdf(d1) * math.sqrt(T)
+        if vega < 1e-8: break
+        C_est = black_scholes_call(S, K, T, r, sigma)
+        diff = C_est - C_market
+        if abs(diff) < 1e-4: break
+        sigma -= diff / vega
+    return max(0.01, min(sigma, 5.0))
+
+def ornstein_uhlenbeck_spread(price_A: float, price_B: float, mu: float, theta: float) -> str:
+    """Feature 2: OU Process for Stat Arb (Mean Reverting Pairs)"""
+    spread = price_A - price_B
+    z_score = (spread - mu) / (theta + 1e-5)
+    if z_score > 2.0: return "SHORT_A_LONG_B"
+    elif z_score < -2.0: return "LONG_A_SHORT_B"
+    return "NEUTRAL"
+
+def calculate_hurst_mock() -> float:
+    """Feature 4: Fractional Brownian Motion & Hurst Exponent"""
+    # Mocking a Hurst calculation over a time series
+    return random.uniform(0.3, 0.7)
+
+def garch_forecast(current_vol: float, recent_shock: float) -> float:
+    """Feature 9: GARCH Volatility Forecasting"""
+    omega = 0.0001
+    alpha = 0.1
+    beta = 0.85
+    new_var = omega + alpha*(recent_shock**2) + beta*(current_vol**2)
+    return math.sqrt(new_var)
+
+def hidden_markov_regime_mock() -> str:
+    """Feature 1: HMM Regime Switching"""
+    roll = random.random()
+    if roll < 0.6: return "BULL_LOW_VOL"
+    elif roll < 0.8: return "BEAR_HIGH_VOL"
+    else: return "SIDEWAYS_CHOP"
 
 def update_glicko2(rating: float, rd: float, vol: float, outcome: float, opponent_rating: float, opponent_rd: float) -> Tuple[float, float, float]:
     """Feature 14: Mock Glicko-2 Rating Migration"""
@@ -296,18 +354,89 @@ class LokiEngine:
             })
         return markets
 
+    def generate_equities_and_commodities(self, conn) -> List[Dict[str, Any]]:
+        """Feature 8 (Commodities), Feature 7 (NLP), Feature 6 (Order Book Toxicity)"""
+        markets = []
+
+        # Stocks
+        stocks = [("AAPL", 150.0), ("MSFT", 350.0), ("TSLA", 60000.0)]
+        for ticker, base_price in stocks:
+            # Random walk
+            price = base_price * random.uniform(0.95, 1.05)
+
+            # Feature 6: VPIN (Order Book Toxicity)
+            vpin = random.uniform(0.0, 1.0)
+            toxicity_alert = vpin > 0.8
+
+            # Feature 7: NLP Sentiment Aggregation
+            sentiment = random.uniform(-1.0, 1.0)
+
+            # Feature 3: BSM IV Backsolving
+            mock_call_price = price * random.uniform(0.02, 0.08)
+            iv = implied_volatility_newton_raphson(mock_call_price, price, price*1.05, 30/365.0, 0.05)
+
+            # Feature 4: Hurst Exponent
+            hurst = calculate_hurst_mock()
+
+            markets.append({
+                "ticker": ticker,
+                "asset_class": "STOCK",
+                "price": price,
+                "vpin_toxic": toxicity_alert,
+                "sentiment": sentiment,
+                "iv": iv,
+                "hurst": hurst
+            })
+
+        # Commodities
+        commodities = [("OIL", 80.0), ("WHEAT", 600.0)]
+        for ticker, base_price in commodities:
+            price = base_price * random.uniform(0.95, 1.05)
+
+            # Feature 8: Contango / Backwardation Analyzer
+            front_month = price
+            back_month = price * random.uniform(0.9, 1.1)
+            is_backwardation = front_month > back_month
+
+            markets.append({
+                "ticker": ticker,
+                "asset_class": "COMMODITY",
+                "price": price,
+                "vpin_toxic": False,
+                "sentiment": 0.0,
+                "iv": 0.3,
+                "hurst": 0.5,
+                "is_backwardation": is_backwardation
+            })
+
+        return markets
+
     def calculate_cvar(self, conn) -> float:
-        """Feature 21: Expected Shortfall (CVaR) Limits"""
-        # Mock calculation: sum of stakes for all pending bets multiplied by loss probability
-        cursor = conn.execute("SELECT stake, shin_prob FROM loki_bets WHERE status = 'PENDING'")
+        """Feature 5: Monte Carlo Value at Risk (VaR) & CVaR"""
+        cursor = conn.execute("SELECT stake, shin_prob, odds FROM loki_bets WHERE status = 'PENDING'")
         rows = cursor.fetchall()
+        if not rows: return 0.0
 
-        total_risk = 0.0
-        for r in rows:
-            loss_prob = 1.0 - r["shin_prob"]
-            total_risk += r["stake"] * loss_prob
+        simulations = 1000
+        portfolio_losses = []
 
-        return total_risk
+        for _ in range(simulations):
+            sim_loss = 0.0
+            for r in rows:
+                if random.random() > r["shin_prob"]:
+                    sim_loss += r["stake"]
+                else:
+                    sim_loss -= (r["stake"] * (r["odds"] - 1.0))
+            portfolio_losses.append(sim_loss)
+
+        portfolio_losses.sort(reverse=True)
+        # 95% VaR index
+        idx_95 = int(simulations * 0.05)
+        tail_losses = portfolio_losses[:idx_95]
+
+        if not tail_losses: return 0.0
+        cvar = sum(tail_losses) / len(tail_losses)
+        return max(0.0, cvar)
 
     def generate_fixtures(self) -> List[Dict[str, Any]]:
         conn = self.runtime.db.get_connection()
@@ -880,12 +1009,75 @@ class LokiEngine:
                     active_mode = "RESEARCH_ONLY"
                     self.notify("CIRCUIT_BREAKER", "Drawdown > 20%. Reverting to RESEARCH_ONLY.", conn)
 
-                # Feature 21: Expected Shortfall Halt
+                # Feature 1: HMM Regime Switching
+                current_regime = hidden_markov_regime_mock()
+                conn.execute("INSERT OR REPLACE INTO loki_system_state (key, value, updated_at) VALUES ('regime_state', ?, ?)", (current_regime, datetime.utcnow().isoformat()))
+
+                # If regime is BEAR_HIGH_VOL, slash risk parameters globally
+                if current_regime == "BEAR_HIGH_VOL" and active_mode == "LIVE_BETTING":
+                    self.notify("REGIME_SHIFT", "HMM detected High Volatility Bear Regime. Slashing risk exposure.", conn)
+                    # We will artificially boost CVaR evaluation threshold to force halts more easily below
+
+                # Evaluate Equities & Commodities
+                equities = self.generate_equities_and_commodities(conn)
+                for eq in equities:
+                    now_str = datetime.utcnow().isoformat()
+                    conn.execute("""
+                        INSERT OR REPLACE INTO loki_equities (ticker, asset_class, price, implied_volatility, hurst_exponent, regime_state, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (eq["ticker"], eq["asset_class"], eq["price"], eq["iv"], eq["hurst"], current_regime, now_str))
+
+                    if eq["sentiment"] != 0.0:
+                        conn.execute("INSERT INTO loki_news_sentiment (article_id, asset, headline, sentiment_score, timestamp) VALUES (?, ?, ?, ?, ?)",
+                                     (str(uuid.uuid4())[:8], eq["ticker"], f"{eq['ticker']} Momentum Update", eq["sentiment"], now_str))
+
+                    # Mock placing equity positions based on signals
+                    if active_mode == "LIVE_BETTING":
+                        trade_signal = "NONE"
+
+                        # Feature 4 (Hurst) & Feature 6 (VPIN) & Feature 7 (Sentiment)
+                        if eq["asset_class"] == "STOCK":
+                            if eq["hurst"] > 0.6 and eq["sentiment"] > 0.5 and not eq["vpin_toxic"]:
+                                trade_signal = "LONG"
+                            elif eq["vpin_toxic"] and eq["sentiment"] < -0.5:
+                                trade_signal = "SHORT"
+
+                        # Feature 8 (Backwardation)
+                        if eq["asset_class"] == "COMMODITY" and eq.get("is_backwardation"):
+                            trade_signal = "LONG"
+
+                        if trade_signal != "NONE":
+                            # Feature 9: GARCH Volatility Forecasting dynamically sizing position
+                            forecast_vol = garch_forecast(eq["iv"], 0.05)
+                            position_size = current_bankroll * (0.02 / forecast_vol) # Inverse vol sizing
+                            position_size = min(position_size, current_bankroll * 0.10)
+
+                            if current_bankroll >= position_size:
+                                conn.execute("""
+                                    INSERT INTO loki_positions (position_id, asset, position_type, entry_price, current_price, size, unrealized_pnl, created_at, updated_at)
+                                    VALUES (?, ?, ?, ?, ?, ?, 0.0, ?, ?)
+                                """, (str(uuid.uuid4())[:8], eq["ticker"], trade_signal, eq["price"], eq["price"], position_size, now_str, now_str))
+                                self.update_bankroll(-position_size, conn)
+                                current_bankroll -= position_size
+
+                # Feature 2: OU Process Stat Arb (Mock pairs trading Coke vs Pepsi)
+                pair_signal = ornstein_uhlenbeck_spread(100.0, 95.0, 5.0, 2.0)
+                if pair_signal != "NEUTRAL" and active_mode == "LIVE_BETTING":
+                    pair_size = current_bankroll * 0.05
+                    if current_bankroll >= pair_size:
+                        conn.execute("""
+                            INSERT INTO loki_positions (position_id, asset, position_type, entry_price, current_price, size, unrealized_pnl, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, 0.0, ?, ?)
+                        """, (str(uuid.uuid4())[:8], "COKE_PEPSI_SPREAD", pair_signal, 5.0, 5.0, pair_size, datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
+                        self.update_bankroll(-pair_size, conn)
+                        current_bankroll -= pair_size
+
+                # Feature 21: Expected Shortfall Halt (Monte Carlo updated)
                 cvar = self.calculate_cvar(conn)
-                if cvar > current_bankroll * 0.15 and active_mode == "LIVE_BETTING":
+                cvar_threshold = 0.15 if current_regime != "BEAR_HIGH_VOL" else 0.05
+                if cvar > current_bankroll * cvar_threshold and active_mode == "LIVE_BETTING":
                     logger.warning(f"CVaR limit exceeded ({cvar:.2f}). Halting new bets.")
                     self.notify("RISK_LIMIT", f"CVaR exceeded ({cvar:.2f}).", conn)
-                    # Don't switch off mode entirely, just skip placing new bets this tick
                     picks = []
                 elif active_mode == "LIVE_BETTING":
                     picks = self.get_active_value_picks(conn)
@@ -893,6 +1085,7 @@ class LokiEngine:
                     picks = []
 
                 if current_bankroll > 12000.0:
+
                     excess = current_bankroll - 12000.0
                     sweep_amount = excess * 0.5
                     self.update_bankroll(-sweep_amount, conn)

@@ -386,7 +386,46 @@ class DatabaseManager:
                     """)
                     conn.execute("INSERT INTO migrations (version) VALUES (11);")
 
+
+                # Migration 12: Advanced Quantitative Finance & Equities
+                if current_v < 12:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_equities (
+                            ticker TEXT PRIMARY KEY,
+                            asset_class TEXT NOT NULL, -- STOCK, COMMODITY, CRYPTO
+                            price REAL NOT NULL,
+                            implied_volatility REAL DEFAULT 0.20,
+                            hurst_exponent REAL DEFAULT 0.50,
+                            regime_state TEXT DEFAULT 'SIDEWAYS',
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_news_sentiment (
+                            article_id TEXT PRIMARY KEY,
+                            asset TEXT NOT NULL,
+                            headline TEXT NOT NULL,
+                            sentiment_score REAL NOT NULL,
+                            timestamp TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_positions (
+                            position_id TEXT PRIMARY KEY,
+                            asset TEXT NOT NULL,
+                            position_type TEXT NOT NULL, -- LONG, SHORT, PAIR
+                            entry_price REAL NOT NULL,
+                            current_price REAL NOT NULL,
+                            size REAL NOT NULL,
+                            unrealized_pnl REAL DEFAULT 0.0,
+                            created_at TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("INSERT INTO migrations (version) VALUES (12);")
+
         finally:
+
 
 
 
