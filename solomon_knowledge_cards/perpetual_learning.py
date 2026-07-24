@@ -41,7 +41,6 @@ class SkillAssimilation:
 
     def extract_and_index_skill(self, problem_description: str, solution_code: str, deps: List[str] = None):
         if not self._verify_ast(solution_code): return None
-        # Phase 158: Hashed Skill Verification
         skill_hash = hashlib.sha256(solution_code.encode()).hexdigest()
         self.skill_registry[skill_hash] = {
             "problem": problem_description,
@@ -62,10 +61,9 @@ class SkillAssimilation:
                 data["benchmark_score"] = min(data["benchmark_score"] + 0.1, 1.0)
                 data["last_benchmarked"] = current_time
 
-        # Phase 170: Agentic Evolution via Natural Selection (delete worst, mutate best)
         sorted_skills = sorted(self.skill_registry.keys(), key=lambda k: self.skill_registry[k]["benchmark_score"])
         if len(sorted_skills) > 10:
-            to_forget.extend(sorted_skills[:1]) # Drop lowest 10%
+            to_forget.extend(sorted_skills[:1])
 
         for sf in to_forget:
             if sf in self.skill_registry: del self.skill_registry[sf]
@@ -87,12 +85,24 @@ class ContinuousLearningPipeline:
         if self.task_count % 100 == 0: self._generate_adversarial_task()
         if self.task_count % 1000 == 0: self._trigger_self_play_debate()
 
+        # Phase 201: Synthetic Dataset Generation
+        if self.task_count % 500 == 0: self._generate_synthetic_data()
+
     def _generate_adversarial_task(self): pass
     def _trigger_self_play_debate(self): pass
 
     def generate_socratic_prompt(self, user_prompt: str) -> str:
         return f"Instead of answering directly, ask the user a guiding question about: {user_prompt}"
 
-    # Phase 164: Cross-Agent Synthetic Distillation
     def trigger_synthetic_distillation(self):
         return "Distillation routine complete. Teacher model outputs mapped to student weights."
+
+    # Phase 201: Synthetic Dataset Generator
+    def _generate_synthetic_data(self):
+        # Mocks generating QA pairs from internal graph states during idle time
+        pass
+
+    # Phase 202: Distillation Pipeline stub
+    def distill_to_small_model(self):
+        # Stub: Fine-tunes local stub worker based on synthetic dataset
+        pass

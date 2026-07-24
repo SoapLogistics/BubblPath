@@ -18,6 +18,10 @@ class OpenAIWorker(GabrielWorker):
         messages = task.get("messages", [])
         if not messages: return {"status": "error", "result": "Error: No messages."}
         try:
+            # Phase 186: Counter-Factual Reasoning Pre-processing
+            if task.get("counter_factual", False):
+                messages.append({"role": "system", "content": "Critique this by assuming the opposite premise is true."})
+
             response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
             content = response.choices[0].message["content"]
             return {"status": "success", "result": content}
@@ -41,12 +45,10 @@ class GabrielKernel:
         self.learning_pipeline = None
         self.dashboard = None
         self.active_tasks = 0
-        self.peer_nodes = []
         self.agent_mailbox: Dict[str, List[str]] = {}
 
     def register_worker(self, name: str, worker: GabrielWorker):
         self.workers[name] = worker
-        # Phase 161: Token-Based Micro-Economies
         self.worker_stats[name] = {"success": 0, "failure": 0, "token_balance": 100.0}
         self.agent_mailbox[name] = []
 
@@ -65,26 +67,38 @@ class GabrielKernel:
                 result = {"status": "error", "error_message": f"Execution timed out."}
         self.active_tasks -= 1
 
-        # Phase 161 & 162: Micro-Economy & Reputation Slashing
         if result.get("status") == "success":
             self.worker_stats[worker_name]["success"] += 1
             self.worker_stats[worker_name]["token_balance"] += complexity * 10
         else:
             self.worker_stats[worker_name]["failure"] += 1
             if "hallucination" in result.get("error_message", "").lower():
-                self.worker_stats[worker_name]["token_balance"] *= 0.5 # slash 50%
+                self.worker_stats[worker_name]["token_balance"] *= 0.5
             else:
                 self.worker_stats[worker_name]["token_balance"] -= 5.0
 
         if self.learning_pipeline: self.learning_pipeline.ingest(result)
         return result
 
+    # Phase 184: Meta-Cognition Loop
+    def run_meta_cognition(self):
+        # Background loop that analyzes the queue
+        if self.active_tasks > 50:
+            return {"action": "Scale Up Nodes", "reason": "High queue depth"}
+        return {"action": "Stable", "reason": "Normal operations"}
+
+    # Phase 185: Autonomous Sub-Agent Spawning
+    def spawn_sub_agent(self, task_chunk: Dict[str, Any]):
+        # Spawns a temporary worker to handle a map-reduce chunk
+        temp_name = f"sub_agent_{hash(str(time.time()))}"
+        self.register_worker(temp_name, LocalStubWorker())
+        return self._execute_with_stats(temp_name, task_chunk)
+
     def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         if not self.workers: raise RuntimeError("No workers registered.")
 
         complexity = task.get("complexity_score", 0.5)
 
-        # Phase 154: Zero-Trust Routing
         if task.get("cryptographically_signed") is False:
             return {"status": "error", "result": "Execution rejected: unsigned request."}
 
@@ -103,7 +117,6 @@ class GabrielKernel:
                 task["messages"].append({"role": "system", "content": "Fallback attempt."})
                 result = self._execute_with_stats(fallback_name, task)
 
-        # Phase 154: Zero-Trust Output Scanner
         if "eval(" in result.get("result", ""):
             return {"status": "error", "result": "Output sanitized by Zero-Trust scanner."}
 
@@ -133,9 +146,8 @@ class GabrielKernel:
     def _bft_consensus_route(self, task: Dict[str, Any]) -> Dict[str, Any]:
         results = []
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            # Phase 169: Consensus Validation Staking
             staked_workers = [w for w, stats in self.worker_stats.items() if stats["token_balance"] > 10.0]
-            if not staked_workers: return {"status": "error", "result": "No workers have enough tokens to stake in BFT."}
+            if not staked_workers: return {"status": "error", "result": "No workers have enough tokens."}
 
             futures = {executor.submit(self.workers[w].execute, task, {"routed_by": "BFT"}): w for w in staked_workers}
             for future in concurrent.futures.as_completed(futures):
@@ -151,7 +163,6 @@ class GabrielKernel:
 
     def set_learning_pipeline(self, pipeline: Any): self.learning_pipeline = pipeline
 
-    # Phase 168: Swarm Load-Shedding
     def broadcast_health(self):
         dnd = True if self.active_tasks > 10 else False
         return {"active_tasks": self.active_tasks, "workers": list(self.workers.keys()), "dnd_flag": dnd}

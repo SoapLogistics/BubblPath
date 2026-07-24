@@ -14,7 +14,7 @@ class UnifiedDashboard:
             "latency_budgeting_ms": 0.0,
             "latency_routing_ms": 0.0,
             "gpu_temp_c": 45.0,
-            "cpu_queue_depth": 0.0 # Phase 137
+            "cpu_queue_depth": 0.0
         }
         self.alerts = []
         self.cost_history_24h: List[float] = []
@@ -33,7 +33,7 @@ class UnifiedDashboard:
         if self.metrics["ram_cost_mb"] > 2000.0: self.alerts.append("CRITICAL: RAM Threshold Breached")
         if costs.get("latency_routing_ms", 0.0) > 5000.0: self.alerts.append("WARNING: Routing Latency Spike Detected")
         if self.metrics["gpu_temp_c"] > 85.0: self.alerts.append("CRITICAL: Thermal Throttling Detected")
-        if self.metrics["cpu_queue_depth"] > 100.0: self.alerts.append("WARNING: Compute Overcommit Detected") # Phase 137
+        if self.metrics["cpu_queue_depth"] > 100.0: self.alerts.append("WARNING: Compute Overcommit Detected")
 
         if "usd_cost_estimate" in costs:
             self.cost_history_24h.append(costs["usd_cost_estimate"])
@@ -45,7 +45,7 @@ class UnifiedDashboard:
             "alerts": self.alerts[-10:],
             "forecast_usd_24h": self._forecast_cost(),
             "budget_status": "OK" if self._forecast_cost() < 50.0 else "SCALING_DOWN",
-            "overcommit_status": "PAUSED" if self.metrics["cpu_queue_depth"] > 100.0 else "OK" # Phase 137
+            "overcommit_status": "PAUSED" if self.metrics["cpu_queue_depth"] > 100.0 else "OK"
         }
 
     def _forecast_cost(self) -> float:
@@ -74,7 +74,6 @@ class SolomonOSKernel:
         t_start = time.time()
         self.dashboard.metrics["cpu_queue_depth"] += 1
 
-        # Phase 137: Compute Overcommit Pausing
         if self.dashboard.get_system_health()["overcommit_status"] == "PAUSED":
             self.dashboard.metrics["cpu_queue_depth"] -= 1
             return {"status": "error", "error_message": "429 Too Many Requests (Compute Overcommit)"}
@@ -86,7 +85,13 @@ class SolomonOSKernel:
 
         messages = task.get("messages", [])
 
-        # Phase 138: L2 Cache Pre-Fetching stub
+        # Phase 221: Pareto Frontier Scaling
+        # Based on user token tier, adjust complexity bounds dynamically
+        user_tier = task.get("api_tier", "free")
+        task["complexity_score"] = self._predict_complexity(messages)
+        if user_tier == "free":
+            task["complexity_score"] = min(task["complexity_score"], 0.4) # Force cheap local routing
+
         self.graph.prefetch_subgraph(messages[-1].get("content", "") if messages else "")
 
         cached = self.context_engine.check_semantic_cache(messages)
@@ -94,7 +99,6 @@ class SolomonOSKernel:
             self.dashboard.metrics["cpu_queue_depth"] -= 1
             return {"status": "success", "result": cached, "cached": True}
 
-        task["complexity_score"] = self._predict_complexity(messages)
         t_budget_start = time.time()
         budgeted = self.context_engine.budget_context(current_vram_usage=500.0, messages=messages)
 
@@ -109,7 +113,6 @@ class SolomonOSKernel:
         t_route_start = time.time()
         if time.time() < self.circuit_breaker_open_until: task["required_capability"] = "fallback"
 
-        # Phase 131: GPU Stream Multiplexing / Phase 134: Tensor Core Scheduling (Stubs)
         result = self.gabriel_kernel.route_task(task)
 
         if result.get("status") == "error" and "API Error" in result.get("result", ""):

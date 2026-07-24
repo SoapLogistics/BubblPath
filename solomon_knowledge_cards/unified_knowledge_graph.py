@@ -2,6 +2,7 @@ import math
 from typing import Dict, Any, List, Optional
 import time
 import hashlib
+import random
 
 class GraphNode:
     def __init__(self, node_id: str, node_type: str, data: Dict[str, Any], ttl_seconds: Optional[int] = None):
@@ -12,8 +13,6 @@ class GraphNode:
         self.expires_at = time.time() + ttl_seconds if ttl_seconds else None
         self.embedding = None
         self.temporal_validity = {"start": time.time(), "end": None}
-
-        # Phase 151: Merkle Tree Node Hashing stub
         self.node_hash = self._generate_hash()
 
     def _generate_hash(self) -> str:
@@ -27,38 +26,57 @@ class UniversalKnowledgeGraph:
     def __init__(self):
         self.nodes: Dict[str, GraphNode] = {}
         self.edges: Dict[str, List[Dict[str, Any]]] = {}
-        # Phase 152: Blockchain Edge Ledgers stub
         self.edge_ledger = []
+
+        # Phase 181: Distributed Hash Table (DHT) Stub
+        self.dht_peers = []
+        self.local_shard_range = (0, 1000)
 
     def add_node(self, node: GraphNode):
         self._prune_expired()
+
+        # Phase 181: DHT Routing check
+        if not self._is_local_shard(node.node_id):
+            self._route_to_peer(node)
+            return
+
         self.nodes[node.node_id] = node
         if node.node_id not in self.edges: self.edges[node.node_id] = []
 
-    def link_nodes(self, source_id: str, target_id: str, relationship: str, weight: float = 1.0, worker_id: str = "system"):
+    def link_nodes(self, source_id: str, target_id: str, relationship: str, weights: List[float] = None, worker_id: str = "system"):
         self._prune_expired()
         if source_id in self.nodes and target_id in self.nodes:
-            t_weight = weight if relationship != "hallucinated" else -1.0
-            edge_data = {"target": target_id, "rel": relationship, "weight": t_weight, "last_traversed": time.time()}
+
+            # Phase 182: Multi-Dimensional Edge Weights
+            if not weights:
+                weights = [1.0] # Default to 1D
+
+            edge_data = {"target": target_id, "rel": relationship, "weights": weights, "last_traversed": time.time()}
             self.edges[source_id].append(edge_data)
 
-            # Phase 152
             ledger_entry = {"timestamp": time.time(), "source": source_id, "target": target_id, "rel": relationship, "worker": worker_id}
             ledger_entry["hash"] = hashlib.sha256(str(ledger_entry).encode()).hexdigest()
             self.edge_ledger.append(ledger_entry)
+
+    def _is_local_shard(self, node_id: str) -> bool:
+        # Mock logic
+        return True
+
+    def _route_to_peer(self, node: GraphNode):
+        # Stub for DHT network routing
+        pass
 
     def decay_edges(self):
         current_time = time.time()
         for src, edges in self.edges.items():
             for edge in edges:
                 if current_time - edge.get("last_traversed", current_time) > 86400:
-                    edge["weight"] *= 0.9
-            self.edges[src] = [e for e in edges if abs(e["weight"]) > 0.05]
+                    edge["weights"] = [w * 0.9 for w in edge.get("weights", [1.0])]
+            self.edges[src] = [e for e in edges if max([abs(w) for w in e["weights"]]) > 0.05]
 
     def consolidate_episodic_memory(self, chat_logs: List[Dict[str, str]]):
-        # Phase 157: Data Redaction Policies (scrub emails/SSN before saving)
-        scrubbed = []
         import re
+        scrubbed = []
         for log in chat_logs:
             c = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[REDACTED_EMAIL]', log.get("content", ""))
             scrubbed.append({"role": log.get("role", "system"), "content": c})
@@ -72,23 +90,39 @@ class UniversalKnowledgeGraph:
     def get_neighbors(self, node_id: str) -> List[Dict[str, Any]]:
         self._prune_expired()
         self.decay_edges()
-        return sorted(self.edges.get(node_id, []), key=lambda x: x.get("weight", 0), reverse=True)
+        # Sort by primary dimension weight
+        return sorted(self.edges.get(node_id, []), key=lambda x: x.get("weights", [0])[0], reverse=True)
 
-    def get_subgraph_bfs(self, start_id: str, max_depth: int = 2) -> List[str]:
+    # Phase 183: Probabilistic Traversal
+    def get_subgraph_markov(self, start_id: str, steps: int = 5) -> List[str]:
         self._prune_expired()
         if start_id not in self.nodes: return []
-        visited, queue, result = set([start_id]), [(start_id, 0)], [start_id]
-        while queue:
-            curr_id, depth = queue.pop(0)
-            if depth >= max_depth: continue
-            for edge in self.get_neighbors(curr_id):
-                neighbor = edge["target"]
-                edge["last_traversed"] = time.time()
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append((neighbor, depth + 1))
-                    result.append(neighbor)
-        return result
+
+        path = [start_id]
+        curr_id = start_id
+
+        for _ in range(steps):
+            neighbors = self.edges.get(curr_id, [])
+            if not neighbors: break
+
+            # Select neighbor probabilistically based on primary weight
+            weights = [max(0.1, n.get("weights", [0.1])[0]) for n in neighbors]
+            total = sum(weights)
+            probs = [w/total for w in weights]
+
+            r = random.random()
+            cum_p = 0.0
+            next_node = neighbors[0]["target"]
+            for i, p in enumerate(probs):
+                cum_p += p
+                if r <= cum_p:
+                    next_node = neighbors[i]["target"]
+                    break
+
+            path.append(next_node)
+            curr_id = next_node
+
+        return path
 
     def _prune_expired(self):
         expired_ids = [n_id for n_id, node in self.nodes.items() if node.is_expired()]
