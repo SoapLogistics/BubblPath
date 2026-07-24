@@ -20,6 +20,7 @@ const julesCloseBtn = document.getElementById('jules-close-btn');
 const clearBtn = document.getElementById('clear-btn');
 const haltBtn = document.getElementById('halt-btn');
 const copyContextBtn = document.getElementById('copy-context-btn');
+const rememberBtn = document.getElementById('remember-btn');
 
 let activeContext = null;
 let currentPendingActionSelector = null;
@@ -308,6 +309,35 @@ copyContextBtn.addEventListener('click', () => {
     }
 });
 
+rememberBtn.addEventListener('click', async () => {
+    if (!activeContext || !activeContext.url) {
+        rememberBtn.textContent = "❌ No Data";
+        setTimeout(() => rememberBtn.textContent = "🧠 Remember", 2000);
+        return;
+    }
+
+    rememberBtn.textContent = "⏳ Saving...";
+    try {
+        const response = await fetch('http://localhost:10000/api/mnemosyne/remember', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activeContext)
+        });
+        const data = await response.json();
+
+        if (data.status === 'memorized') {
+            rememberBtn.textContent = "✅ Saved";
+            appendMessage('System', `Memory committed: ${data.card_id}`);
+        } else {
+            rememberBtn.textContent = "❌ Error";
+        }
+    } catch (err) {
+        console.error(err);
+        rememberBtn.textContent = "❌ Failed";
+    }
+    setTimeout(() => rememberBtn.textContent = "🧠 Remember", 2000);
+});
+
 // --- Tabbed UI Logic ---
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -466,16 +496,20 @@ function resetPendingAction() {
 }
 
 // --- Jules Bridge UI Flow ---
-async function triggerJulesAPI(endpoint, payload) {
+async function triggerJulesAPI(endpoint, payload, method = 'POST') {
     julesBridgeContainer.style.display = 'block';
     julesActiveStatus.textContent = "Contacting API...";
 
     try {
-        const response = await fetch(`http://localhost:10000${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const fetchOptions = {
+            method: method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (method === 'POST') {
+            fetchOptions.body = JSON.stringify(payload);
+        }
+
+        const response = await fetch(`http://localhost:10000${endpoint}`, fetchOptions);
         const data = await response.json();
 
         if (data.task_id) {
@@ -506,7 +540,7 @@ async function triggerJulesAPI(endpoint, payload) {
                 if (julesPollInterval) clearTimeout(julesPollInterval);
                 julesPollInterval = setTimeout(() => {
                     pollDelay = Math.min(pollDelay * 1.5, 15000); // Max 15s delay
-                    triggerJulesAPI(`/api/jules/status/${activeJulesTaskId}`, {});
+                    triggerJulesAPI(`/api/jules/status/${activeJulesTaskId}`, {}, 'GET');
                 }, pollDelay);
             }
         }

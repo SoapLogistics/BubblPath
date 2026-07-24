@@ -85,14 +85,14 @@ class CasinoLab:
 
         dealer_val = self.get_card_value(dealer_upcard)
         total = sum(player_values)
-        has_ace = 'A' in [c.upper() for c in player_cards]
-        is_soft = has_ace and total <= 21
+        ace_count = [c.upper() for c in player_cards].count('A')
 
-        # Adjust Aces if we bust
-        if total > 21 and has_ace:
+        # Adjust Aces down from 11 to 1 if we bust
+        while total > 21 and ace_count > 0:
             total -= 10
-            is_soft = False
+            ace_count -= 1
 
+        is_soft = ace_count > 0 and total <= 21
         is_pair = len(player_cards) == 2 and player_cards[0].upper() == player_cards[1].upper()
 
         action = "HIT"

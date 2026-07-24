@@ -104,10 +104,41 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 });
 
-// Keep-Alive for Service Worker
+// Passive Learning: Auto-memorize pages user spends > 45 seconds actively viewing
+chrome.tabs.onActivated.addListener((activeInfo) => {
+    const tabId = activeInfo.tabId;
+
+    // Clear any existing passive learning alarm
+    chrome.alarms.clear("passiveLearn");
+
+    // Start new passive learning timer using Chrome Alarms for reliability
+    chrome.alarms.create("passiveLearn", { delayInMinutes: 0.75 }); // 45 seconds
+
+    // Store current active tab for the alarm handler
+    chrome.storage.session.set({ activeLearningTabId: tabId });
+});
+
+// Alarm Handler
 chrome.alarms.create("keepAlive", { periodInMinutes: 4 });
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === "keepAlive") {
         console.log("Jules Bridge Keep-Alive Ping.");
+    }
+
+    if (alarm.name === "passiveLearn") {
+        chrome.storage.session.get(['activeLearningTabId'], (result) => {
+            const tabId = result.activeLearningTabId;
+            if (tabId && contextCache[tabId]) {
+                const cached = contextCache[tabId];
+                if (cached.payload && cached.payload.url) {
+                    console.log("Passive Learning Triggered for:", cached.payload.url);
+                    fetch('http://localhost:10000/api/mnemosyne/remember', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cached.payload)
+                    }).catch(() => {}); // Silent fail
+                }
+            }
+        });
     }
 });

@@ -6,11 +6,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from solomon_jules_bridge import JulesBridge
 from solomon_casino_lab import CasinoLab
+from solomon_learning_pipeline import LearningPipeline
 
 app = Flask(__name__)
 CORS(app) # Enable CORS for Chrome Extension communication
 bridge = JulesBridge()
 casino_lab = CasinoLab()
+learning_pipeline = LearningPipeline()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 app.start_time = time.time()
@@ -68,7 +70,7 @@ def chat():
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
                 ],
-                timeout=10 # ensure we don't hang forever
+                request_timeout=10 # correct kwarg for openai < 1.0.0
             )
             return jsonify({"reply": response.choices[0].message["content"]})
         except openai.error.Timeout:
@@ -81,9 +83,27 @@ def chat():
 @app.route("/api/browser/context", methods=["POST"])
 def receive_context():
     data = request.json
-    # In a full implementation, we might store this context in a local DB or memory card
+    # The browser sends telemetry/context changes here.
+    # In Phase 2, we don't automatically memorize EVERYTHING to avoid spam,
+    # but we log the reception. The explicit 'Remember' button hits the pipeline.
     print(f"Received context from {data.get('url')}: {data.get('type')}")
     return jsonify({"status": "Context received successfully"})
+
+@app.route("/api/mnemosyne/remember", methods=["POST"])
+def trigger_learning_pipeline():
+    """
+    Explicit trigger to push browser context into the Perpetual Learning Pipeline.
+    """
+    data = request.json
+    if not data or "url" not in data:
+        return jsonify({"error": "Invalid context payload"}), 400
+
+    card = learning_pipeline.process_observation(data)
+    return jsonify({
+        "status": "memorized",
+        "card_id": card["card_id"],
+        "message": f"Successfully created memory card: {card['card_id']}"
+    })
 
 @app.route("/api/browser/action-log", methods=["POST"])
 def log_action():
