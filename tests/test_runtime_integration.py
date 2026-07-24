@@ -111,7 +111,7 @@ def test_chat_retrieval_integration_with_clearance(mock_chat, client):
     global_repo.create_card(internal_card)
 
     # 2. Call /chat endpoint with low clearance (PUBLIC)
-    response = client.post("/chat", json={
+    response = client.post("/chat", headers={"Authorization": "Bearer solomon-dev-token-99"}, json={
         "message": "I got a port error",
         "security_classification": "PUBLIC"
     })
@@ -121,7 +121,7 @@ def test_chat_retrieval_integration_with_clearance(mock_chat, client):
     assert "RC-INTERNAL-TEST" not in res_data["retrieved_context"]
 
     # 3. Call /chat endpoint with standard clearance (INTERNAL)
-    response_internal = client.post("/chat", json={
+    response_internal = client.post("/chat", headers={"Authorization": "Bearer solomon-dev-token-99"}, json={
         "message": "I got a port error",
         "security_classification": "INTERNAL"
     })
@@ -131,7 +131,7 @@ def test_chat_retrieval_integration_with_clearance(mock_chat, client):
     assert "RC-INTERNAL-TEST" in res_data_internal["retrieved_context"]
 
     # 4. Call /chat endpoint with RESTRICTED clearance
-    response_restricted = client.post("/chat", json={
+    response_restricted = client.post("/chat", headers={"Authorization": "Bearer solomon-dev-token-99"}, json={
         "message": "I got a port error",
         "security_classification": "RESTRICTED"
     })
@@ -162,7 +162,7 @@ def test_worker_report_extraction_and_review_flow(client):
         }
     }
 
-    resp = client.post("/worker-report", json=report_payload)
+    resp = client.post("/worker-report", headers={"Authorization": "Bearer solomon-dev-token-99"}, json=report_payload)
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["success"] is True
@@ -179,13 +179,13 @@ def test_worker_report_extraction_and_review_flow(client):
     assert repair_card["status"] == "DRAFT"
 
     # 2. Verify we can list cards via /cards
-    list_resp = client.get("/cards")
+    list_resp = client.get("/cards", headers={"Authorization": "Bearer solomon-dev-token-99"})
     assert list_resp.status_code == 200
     list_data = list_resp.get_json()
     assert list_data["count"] == 2
 
     # 3. Promote FAILURE card from DRAFT -> REVIEWED via /review
-    rev_resp = client.post("/review", json={
+    rev_resp = client.post("/review", headers={"Authorization": "Bearer solomon-dev-token-99"}, json={
         "card_id": fail_card["card_id"],
         "action": "review",
         "notes": "Failure is highly accurate and verified."
@@ -196,7 +196,7 @@ def test_worker_report_extraction_and_review_flow(client):
     assert rev_data["status"] == "REVIEWED"
 
     # 4. Promote FAILURE card from REVIEWED -> APPROVED
-    app_resp = client.post("/review", json={
+    app_resp = client.post("/review", headers={"Authorization": "Bearer solomon-dev-token-99"}, json={
         "card_id": fail_card["card_id"],
         "action": "approve"
     })
@@ -206,7 +206,7 @@ def test_worker_report_extraction_and_review_flow(client):
     assert app_data["validation_state"] == "VALID"
 
     # 5. Promote FAILURE card from APPROVED -> ACTIVE
-    act_resp = client.post("/review", json={
+    act_resp = client.post("/review", headers={"Authorization": "Bearer solomon-dev-token-99"}, json={
         "card_id": fail_card["card_id"],
         "action": "activate"
     })
@@ -215,7 +215,7 @@ def test_worker_report_extraction_and_review_flow(client):
     assert act_data["status"] == "ACTIVE"
 
     # 6. Reject the REPAIR card (DRAFT -> DEPRECATED)
-    rej_resp = client.post("/review", json={
+    rej_resp = client.post("/review", headers={"Authorization": "Bearer solomon-dev-token-99"}, json={
         "card_id": repair_card["card_id"],
         "action": "reject",
         "reason": "This is a simple syntax error. No remediation playbook needed."

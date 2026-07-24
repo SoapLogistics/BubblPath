@@ -1,4 +1,3 @@
-flask
-openai
-requests
-watchdog
+flask==3.1.3
+openai==2.47.0
+psutil

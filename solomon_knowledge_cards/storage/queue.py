@@ -43,32 +43,38 @@ class TaskQueue:
     def dequeue(self) -> Optional[Dict[str, Any]]:
         conn = self._get_conn()
         cursor = conn.cursor()
-        cursor.execute('BEGIN IMMEDIATE')
 
-        cursor.execute('''
-            SELECT id, task_type, payload
-            FROM task_queue
-            WHERE status = 'PENDING'
-            ORDER BY created_at ASC
-            LIMIT 1
-        ''')
-        row = cursor.fetchone()
+        # BEGIN EXCLUSIVE prevents race conditions across multiple docker workers
+        cursor.execute('BEGIN EXCLUSIVE')
 
-        if row:
+        try:
             cursor.execute('''
-                UPDATE task_queue
-                SET status = 'PROCESSING', updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            ''', (row['id'],))
-            conn.commit()
-            return {
-                "id": row['id'],
-                "task_type": row['task_type'],
-                "payload": json.loads(row['payload'])
-            }
-        else:
+                SELECT id, task_type, payload
+                FROM task_queue
+                WHERE status = 'PENDING'
+                ORDER BY created_at ASC
+                LIMIT 1
+            ''')
+            row = cursor.fetchone()
+
+            if row:
+                cursor.execute('''
+                    UPDATE task_queue
+                    SET status = 'PROCESSING', updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (row['id'],))
+                conn.commit()
+                return {
+                    "id": row['id'],
+                    "task_type": row['task_type'],
+                    "payload": json.loads(row['payload'])
+                }
+            else:
+                conn.rollback()
+                return None
+        except Exception as e:
             conn.rollback()
-            return None
+            raise e
 
     def mark_completed(self, task_id: int):
         conn = self._get_conn()

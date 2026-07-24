@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+solomon_mnemosyne.db
+test.db
+test_*.db
+*.log

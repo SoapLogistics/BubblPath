@@ -64,7 +64,6 @@ class DatabaseManager:
                                 why_created TEXT NOT NULL,
                                 problem_solved TEXT NOT NULL,
                                 future_work_dependent TEXT NOT NULL,
-                                embedding TEXT,
                                 extra_metadata TEXT,
                                 deleted INTEGER DEFAULT 0
                             );
@@ -140,14 +139,14 @@ class DatabaseManager:
                             card_id, card_type, schema_version, title, summary, body, status,
                             confidence, validation_state, created_at, updated_at, created_by,
                             source_type, security_classification, evidence, supersedes, superseded_by,
-                            why_created, problem_solved, future_work_dependent, embedding, extra_metadata, deleted
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                            why_created, problem_solved, future_work_dependent, extra_metadata, deleted
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                     """, (
                         card.card_id, card.card_type, card.schema_version, card.title, card.summary,
                         card.body, card.status, card.confidence, card.validation_state, card.created_at,
                         card.updated_at, card.created_by, card.source_type, card.security_classification,
                         card.evidence, card.supersedes, card.superseded_by, card.why_created,
-                        card.problem_solved, card.future_work_dependent, json.dumps(card.embedding), meta_json
+                        card.problem_solved, card.future_work_dependent, meta_json
                     ))
                     revision_num = 1
                 else:
@@ -157,13 +156,13 @@ class DatabaseManager:
                             card_type = ?, schema_version = ?, title = ?, summary = ?, body = ?, status = ?,
                             confidence = ?, validation_state = ?, updated_at = ?, source_type = ?,
                             security_classification = ?, evidence = ?, supersedes = ?, superseded_by = ?,
-                            why_created = ?, problem_solved = ?, future_work_dependent = ?, embedding = ?, extra_metadata = ?
+                            why_created = ?, problem_solved = ?, future_work_dependent = ?, extra_metadata = ?
                         WHERE card_id = ? AND deleted = 0
                     """, (
                         card.card_type, card.schema_version, card.title, card.summary, card.body, card.status,
                         card.confidence, card.validation_state, card.updated_at, card.source_type,
                         card.security_classification, card.evidence, card.supersedes, card.superseded_by,
-                        card.why_created, card.problem_solved, card.future_work_dependent, json.dumps(card.embedding), meta_json,
+                        card.why_created, card.problem_solved, card.future_work_dependent, meta_json,
                         card.card_id
                     ))
                     # Get next revision number
@@ -189,9 +188,6 @@ class DatabaseManager:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'RELATED')", (card.card_id, r_id))
                 if card.supersedes:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'SUPERSEDES')", (card.card_id, card.supersedes))
-
-                # Semantic Graph Relations can be injected directly into db via direct SQL if needed outside of standard card update
-                # Or handled separately by repository layer.
 
                 # Write full revision log
                 serialized = json.dumps(card.to_dict())
@@ -239,7 +235,6 @@ class DatabaseManager:
                 cursor.execute("SELECT target_id FROM card_links WHERE source_id = ? AND link_type = 'RELATED'", (card_id,))
                 card_data["related_card_ids"] = [r[0] for r in cursor.fetchall()]
 
-                card_data["embedding"] = json.loads(card_data["embedding"]) if card_data.get("embedding") else []
                 card_data["extra_metadata"] = json.loads(card_data["extra_metadata"]) if card_data.get("extra_metadata") else {}
 
                 return KnowledgeCard.from_dict(card_data)
