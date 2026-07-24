@@ -1,19 +1,17 @@
 from typing import Any, Dict
 
 class QuantizationCore:
-    """
-    Quantization is a first-class architectural principle governing
-    embeddings, memory, routing, and local inference.
-    """
-
     def __init__(self):
         self.supported_precisions = ["FP16", "INT8", "INT4", "1-bit"]
+        # Phase 13: Quantization Precision Penalties
+        self.precision_penalties = {
+            "FP16": 0.0,
+            "INT8": 0.05,
+            "INT4": 0.15,
+            "1-bit": 0.40
+        }
 
     def determine_optimal_precision(self, task_complexity: float, available_vram: float) -> str:
-        """
-        Dynamically determine if a model should run in 8-bit, 4-bit, or mixed precision
-        based on available memory and the complexity of the task.
-        """
         if available_vram > 8000 and task_complexity > 0.8:
             return "FP16"
         elif available_vram > 4000:
@@ -21,11 +19,10 @@ class QuantizationCore:
         else:
             return "INT4"
 
+    def get_confidence_penalty(self, precision: str) -> float:
+        return self.precision_penalties.get(precision, 0.0)
+
 class LocalAIStack:
-    """
-    One single inference stack. Every local model plugs into it.
-    Quantization automatically determines the deployment strategy.
-    """
     def __init__(self, quant_core: QuantizationCore):
         self.quant_core = quant_core
         self.active_models: Dict[str, Any] = {}
@@ -35,8 +32,14 @@ class LocalAIStack:
         self.active_models[model_name] = {"status": "loaded", "precision": precision}
         return precision
 
-    def execute(self, model_name: str, prompt: str) -> str:
+    def execute(self, model_name: str, prompt: str) -> Dict[str, Any]:
         if model_name not in self.active_models:
             raise ValueError(f"Model {model_name} not loaded.")
         precision = self.active_models[model_name]["precision"]
-        return f"Executed '{prompt[:10]}...' using {model_name} at {precision} precision."
+
+        # Phase 13 implementation: return result with a calculated confidence penalty
+        penalty = self.quant_core.get_confidence_penalty(precision)
+        return {
+            "result": f"Executed '{prompt[:10]}...' using {model_name} at {precision}",
+            "confidence": 1.0 - penalty
+        }
