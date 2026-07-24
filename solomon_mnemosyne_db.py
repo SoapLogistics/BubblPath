@@ -12,6 +12,8 @@ import sqlite3
 import json
 import math
 import hashlib
+import functools
+from collections import Counter
 from typing import List, Dict, Any, Tuple, Optional
 import datetime
 from solomon_embeddings import EmbeddingProvider, DeterministicHashProvider, DenseEmbeddingProvider
@@ -34,7 +36,11 @@ class SolomonMnemosyneDB:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        # 1. Create knowledge_cards table (including embedding and confidence)
+        # Opt 1: WAL Mode for concurrency speed
+        cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.execute("PRAGMA synchronous=NORMAL;")
+
+        # Opt 3: is_canonical flag added to schema
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_cards (
                 card_id TEXT PRIMARY KEY,
@@ -42,17 +48,24 @@ class SolomonMnemosyneDB:
                 focus TEXT,
                 content TEXT NOT NULL,
                 embedding TEXT,
-                confidence REAL DEFAULT 1.0
+                confidence REAL DEFAULT 1.0,
+                is_canonical BOOLEAN DEFAULT 0
             )
         """)
 
-        # Dynamic Migration check: Add confidence if missing in pre-existing DB
+        # Opt 2: Indexing
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_kc_family ON knowledge_cards(family);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_kc_focus ON knowledge_cards(focus);")
+
+        # Dynamic Migration check: Add confidence/is_canonical if missing in pre-existing DB
         cursor.execute("PRAGMA table_info(knowledge_cards)")
         columns = [info[1] for info in cursor.fetchall()]
         if "confidence" not in columns:
             cursor.execute("ALTER TABLE knowledge_cards ADD COLUMN confidence REAL DEFAULT 1.0")
+        if "is_canonical" not in columns:
+            cursor.execute("ALTER TABLE knowledge_cards ADD COLUMN is_canonical BOOLEAN DEFAULT 0")
 
-        # 2. Create card_links table supporting relational directed links
+        # Create card_links table supporting relational directed links
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS card_links (
                 source_id TEXT,
@@ -64,8 +77,7 @@ class SolomonMnemosyneDB:
             )
         """)
 
-        conn.commit()
-        # 3. Create versioned embeddings table
+        # Create versioned embeddings table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS card_embeddings (
                 card_id TEXT,
@@ -82,23 +94,46 @@ class SolomonMnemosyneDB:
                 FOREIGN KEY (card_id) REFERENCES knowledge_cards (card_id) ON DELETE CASCADE
             )
         """)
+
+        conn.commit()
         conn.close()
 
-    def compute_local_embedding(self, text: str) -> List[float]:
+    @functools.lru_cache(maxsize=1024)
+    def compute_local_embedding(self, text: str) -> Tuple[float, ...]:
         """
         Uses the configured embedding provider to compute the embedding vector.
-        Maintains API compatibility with previous versions.
+        Cached for speed. Returns tuple for hashability.
         """
-        return self.embedding_provider.embed_texts([text])[0]
+        return tuple(self.embedding_provider.embed_texts([text])[0])
 
-    def upsert_card(self, card_id: str, family: str, focus: str, content: str) -> bool:
+    def upsert_card(self, card_id: str, family: str, focus: str, content: str, is_canonical: bool = False) -> bool:
         """
         Upserts a SOK card, automatically calculating and caching its local vector embedding.
-        Preserves existing confidence scores on update if already on disk.
-        Saves versioned embeddings to `card_embeddings`.
+        Checks for Canonical protection and Semantic Deduplication.
+        Auto-chunks extremely long texts (>1500 chars) sequentially.
         """
+        # Opt 10: Auto-chunking
+        if len(content) > 1500:
+            chunks = [content[i:i+1500] for i in range(0, len(content), 1500)]
+            success = True
+            for i, chunk in enumerate(chunks):
+                chunk_id = f"{card_id}_chunk{i}" if i > 0 else card_id
+                if not self._upsert_single_card(chunk_id, family, focus, chunk, is_canonical):
+                    success = False
+            return success
+        else:
+            return self._upsert_single_card(card_id, family, focus, content, is_canonical)
+
+    def _upsert_single_card(self, card_id: str, family: str, focus: str, content: str, is_canonical: bool = False) -> bool:
+        # Opt 4: Deduplication check (skip for chunks of same card to avoid false positives)
+        if not "_chunk" in card_id:
+            existing_matches = self.semantic_search(content, top_k=1)
+            if existing_matches and existing_matches[0]["similarity"] > 0.99 and existing_matches[0]["card_id"] != card_id:
+                # Found a near-exact duplicate, reject upsert to keep DB clean
+                return False
+
         embedding_vector = self.compute_local_embedding(content)
-        embedding_json = json.dumps(embedding_vector)
+        embedding_json = json.dumps(list(embedding_vector))
 
         provider_meta = self.embedding_provider.get_metadata()
         content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -108,20 +143,26 @@ class SolomonMnemosyneDB:
         cursor = conn.cursor()
 
         try:
-            # Check if card already exists to preserve confidence
-            cursor.execute("SELECT confidence FROM knowledge_cards WHERE card_id = ?", (card_id,))
+            # Check if card exists and is canonical
+            cursor.execute("SELECT confidence, is_canonical FROM knowledge_cards WHERE card_id = ?", (card_id,))
             row = cursor.fetchone()
             confidence = row[0] if row else 1.0
 
+            # Opt 3: Canonical Protection
+            if row and row[1] and not is_canonical:
+                # Cannot overwrite a canonical card without explicit flag
+                return False
+
             cursor.execute("""
-                INSERT INTO knowledge_cards (card_id, family, focus, content, embedding, confidence)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO knowledge_cards (card_id, family, focus, content, embedding, confidence, is_canonical)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(card_id) DO UPDATE SET
                     family=excluded.family,
                     focus=excluded.focus,
                     content=excluded.content,
-                    embedding=excluded.embedding
-            """, (card_id, family, focus, content, embedding_json, confidence))
+                    embedding=excluded.embedding,
+                    is_canonical=excluded.is_canonical
+            """, (card_id, family, focus, content, embedding_json, confidence, is_canonical))
 
             # Upsert into card_embeddings
             cursor.execute("""
@@ -168,12 +209,17 @@ class SolomonMnemosyneDB:
         cursor = conn.cursor()
 
         try:
-            cursor.execute("SELECT confidence FROM knowledge_cards WHERE card_id = ?", (card_id,))
+            cursor.execute("SELECT confidence, is_canonical FROM knowledge_cards WHERE card_id = ?", (card_id,))
             row = cursor.fetchone()
             if not row:
                 return False, 1.0
 
             old_confidence = row[0]
+            is_canonical = row[1]
+
+            # Opt 5: Canonical cards are immune to dynamic confidence degradation to remain stable anchors
+            if is_canonical:
+                return True, old_confidence
 
             # Apply reinforcement factor
             if outcome == "success":
@@ -186,14 +232,27 @@ class SolomonMnemosyneDB:
             # Enforce strict confidence boundaries [0.1, 2.0]
             new_confidence = max(0.1, min(2.0, new_confidence))
 
-            cursor.execute("""
-                UPDATE knowledge_cards SET confidence = ?
-                WHERE card_id = ?
-            """, (new_confidence, card_id))
+            cursor.execute("UPDATE knowledge_cards SET confidence = ? WHERE card_id = ?", (new_confidence, card_id))
             conn.commit()
             return True, float(round(new_confidence, 4))
         except sqlite3.Error:
             return False, 1.0
+        finally:
+            conn.close()
+
+    def run_maintenance(self) -> bool:
+        """
+        Opt 6: Background DB maintenance (Vacuum & Optimize)
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("PRAGMA optimize;")
+            cursor.execute("VACUUM;")
+            conn.commit()
+            return True
+        except sqlite3.Error:
+            return False
         finally:
             conn.close()
 
@@ -275,12 +334,16 @@ class SolomonMnemosyneDB:
             conn.close()
         return cards
 
+    @functools.lru_cache(maxsize=256)
+    def _get_query_keywords(self, query: str) -> Tuple[str, ...]:
+        return tuple(set(w for w in query.lower().replace(",", " ").replace(".", " ").split() if len(w) > 3))
+
     def semantic_search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
-        Executes a cosine similarity search against cached embeddings.
-        Prioritizes dense embeddings from card_embeddings, falling back to legacy/fallback hash embeddings.
+        Executes a hybrid cosine similarity search against cached embeddings + basic keyword overlap.
         """
         query_vector = self.compute_local_embedding(query)
+        query_keywords = self._get_query_keywords(query)
         meta = self.embedding_provider.get_metadata()
 
         conn = sqlite3.connect(self.db_path)
@@ -289,7 +352,6 @@ class SolomonMnemosyneDB:
 
         results = []
         try:
-            # Join knowledge_cards with card_embeddings using the preferred provider/model
             cursor.execute("""
                 SELECT kc.card_id, kc.family, kc.focus, kc.content, kc.confidence, kc.embedding as fallback_embedding,
                        ce.embedding_vector as preferred_embedding, ce.provider
@@ -299,8 +361,12 @@ class SolomonMnemosyneDB:
 
             for row in cursor.fetchall():
                 card = dict(row)
+                content_lower = card["content"].lower()
 
-                # Use preferred if available and query vector matches dimensions, else fallback
+                # Hybrid Keyword Overlap (Opt 8)
+                overlap_count = sum(1 for kw in query_keywords if kw in content_lower)
+                keyword_boost = min(0.15, overlap_count * 0.03) # Max 15% boost
+
                 use_fallback = False
                 if card.get("preferred_embedding"):
                     card_vector = json.loads(card["preferred_embedding"])
@@ -313,8 +379,6 @@ class SolomonMnemosyneDB:
                     if not card["fallback_embedding"]:
                         continue
                     card_vector = json.loads(card["fallback_embedding"])
-                    # If we are using a dense model for query but only have fallback hash for this card,
-                    # the dimension will mismatch. We must re-compute query with fallback to compare.
                     if len(card_vector) != len(query_vector):
                         from solomon_embeddings import DeterministicHashProvider
                         fallback_query_vector = DeterministicHashProvider().embed_texts([query])[0]
@@ -324,7 +388,6 @@ class SolomonMnemosyneDB:
                 else:
                     actual_query_vector = query_vector
 
-                # Compute Cosine Similarity
                 dot_product = sum(q * c for q, c in zip(actual_query_vector, card_vector))
                 query_norm = math.sqrt(sum(q ** 2 for q in actual_query_vector))
                 card_norm = math.sqrt(sum(c ** 2 for c in card_vector))
@@ -337,13 +400,16 @@ class SolomonMnemosyneDB:
 
                 similarity = max(-1.0, min(1.0, similarity))
 
+                # Apply hybrid boost
+                final_score = min(1.0, similarity + keyword_boost)
+
                 results.append({
                     "card_id": card["card_id"],
                     "family": card["family"],
                     "focus": card["focus"],
                     "content": card["content"],
                     "confidence": card["confidence"],
-                    "similarity": round(float(similarity), 4),
+                    "similarity": round(float(final_score), 4),
                     "embedding_type": "preferred" if not use_fallback else "fallback"
                 })
         except sqlite3.Error as e:
