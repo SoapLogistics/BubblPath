@@ -251,7 +251,36 @@ class DatabaseManager:
                     """)
                     conn.execute("INSERT INTO migrations (version) VALUES (7);")
 
+
+                # Migration 8: Loki Arbitrage, ML, Notifications, and Streaks
+                if current_v < 8:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_ml_features (
+                            bet_id TEXT PRIMARY KEY,
+                            feature_json TEXT NOT NULL,
+                            timestamp TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_notifications (
+                            notification_id TEXT PRIMARY KEY,
+                            type TEXT NOT NULL,
+                            message TEXT NOT NULL,
+                            is_read INTEGER DEFAULT 0,
+                            created_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS loki_team_stats (
+                            team_name TEXT PRIMARY KEY,
+                            current_streak INTEGER DEFAULT 0,
+                            updated_at TEXT NOT NULL
+                        );
+                    """)
+                    conn.execute("INSERT INTO migrations (version) VALUES (8);")
+
         finally:
+
 
 
             conn.close()

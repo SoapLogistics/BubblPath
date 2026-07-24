@@ -106,7 +106,7 @@ def test_loki_simulation_cycle(runtime_test):
 
         # Run another tick to resolve the pending bets
         res2 = loki.simulate_tick()
-        assert res2["resolved_bets_count"] == result["new_bets_count"]
+        assert res2["resolved_bets_count"] + res2.get("hedged_bets_count", 0) == result["new_bets_count"]
 
         # Stats should calculate profit, win rate, ROI
         stats = loki.get_betting_stats()

@@ -1,3 +1,4 @@
+import json
 import math
 import random
 import uuid
@@ -92,6 +93,32 @@ def calculate_kelly_fraction(true_prob: float, odds: float, risk_fraction: float
         return 0.0
     return f_star * risk_fraction
 
+
+def poisson_probability(lam: float, k: int) -> float:
+    """Returns the probability of exactly k occurrences given lambda."""
+    return (math.exp(-lam) * (lam ** k)) / math.factorial(k)
+
+def solve_soccer_poisson(home_xg: float, away_xg: float) -> List[float]:
+    """
+    Runs a Poisson distribution monte-carlo approximation for Soccer (Home Win, Draw, Away Win).
+    Caps at 10 goals. Returns [Home%, Draw%, Away%].
+    """
+    home_win, draw, away_win = 0.0, 0.0, 0.0
+    for home_goals in range(10):
+        for away_goals in range(10):
+            prob = poisson_probability(home_xg, home_goals) * poisson_probability(away_xg, away_goals)
+            if home_goals > away_goals:
+                home_win += prob
+            elif home_goals == away_goals:
+                draw += prob
+            else:
+                away_win += prob
+
+    # Normalize
+    total = home_win + draw + away_win
+    if total == 0: return [0.33, 0.34, 0.33]
+    return [home_win/total, draw/total, away_win/total]
+
 class LokiEngine:
     """Project Loki sports betting intelligence and predictive arbitrage engine."""
     def __init__(self, runtime):
@@ -152,42 +179,57 @@ class LokiEngine:
                 conn.close()
 
     def generate_fixtures(self) -> List[Dict[str, Any]]:
-        """Generates a list of live fixtures with soft bookmaker odds and Pinnacle benchmarks."""
+        """Generates fixtures with multi-book line shopping (DraftKings, FanDuel, BetMGM)."""
         fixtures = []
         for sport, matchups in MOCK_TEAMS.items():
             for home, away in matchups:
-                # 1. Main Moneyline Market
                 fixture_id = str(uuid.uuid4())[:8]
                 is_three_way = (sport == "Premier League")
 
-                # Base probabilities
-                home_base_prob = random.uniform(0.35, 0.55)
+                # Feature 4: Mock Weather & Injury Variance
+                volatility_multiplier = random.uniform(1.0, 1.5) if random.random() < 0.2 else 1.0
+
+                # Feature 2: Poisson Solver for Soccer (Base probabilities)
                 if is_three_way:
-                    draw_base_prob = random.uniform(0.20, 0.28)
-                    away_base_prob = 1.0 - home_base_prob - draw_base_prob
-                    base_probs = [home_base_prob, draw_base_prob, away_base_prob]
+                    home_xg = random.uniform(0.5, 3.5)
+                    away_xg = random.uniform(0.5, 3.5)
+                    base_probs = solve_soccer_poisson(home_xg, away_xg)
                     outcomes = [f"{home} Win", "Draw", f"{away} Win"]
                 else:
+                    home_base_prob = random.uniform(0.35, 0.55)
                     away_base_prob = 1.0 - home_base_prob
                     base_probs = [home_base_prob, away_base_prob]
                     outcomes = [f"{home} Win", f"{away} Win"]
 
-                # Generate tight Pinnacle odds representing true probability + 2% vig
+                # Pinnacle true odds
                 pinnacle_vig = 1.02
                 pinnacle_odds = [pinnacle_vig / p for p in base_probs]
 
-                # Generate soft bookmaker odds representing true probability + 6% average overround,
-                # but occasionally we inflate one side to represent an arbitrage / soft line!
-                soft_vig = 1.06
-                soft_odds = [soft_vig / p for p in base_probs]
+                # Feature 5: Multi-Bookmaker Line Shopping
+                books = ["DraftKings", "FanDuel", "BetMGM"]
+                multi_book_odds = {}
+                for book in books:
+                    soft_vig = random.uniform(1.04, 1.08)
+                    odds = [soft_vig / p for p in base_probs]
 
-                # Introduce deliberate soft lines with 30% probability
-                is_soft_line = (random.random() < 0.3)
-                chosen_idx = None
-                if is_soft_line:
-                    chosen_idx = random.randint(0, len(outcomes) - 1)
-                    # Inflate the decimal odds for the chosen outcome by 10-18% (creating high EV!)
-                    soft_odds[chosen_idx] = soft_odds[chosen_idx] * random.uniform(1.10, 1.18)
+                    if random.random() < 0.3: # Random soft line injection
+                        idx = random.randint(0, len(outcomes) - 1)
+                        odds[idx] *= random.uniform(1.10, 1.18)
+
+                    multi_book_odds[book] = odds
+
+                # Resolve the "best" odds by line shopping
+                best_odds = []
+                best_book_for_outcome = []
+                for idx in range(len(outcomes)):
+                    best = 0.0
+                    bb = ""
+                    for book, odds_list in multi_book_odds.items():
+                        if odds_list[idx] > best:
+                            best = odds_list[idx]
+                            bb = book
+                    best_odds.append(best)
+                    best_book_for_outcome.append(bb)
 
                 fixtures.append({
                     "fixture_id": fixture_id,
@@ -197,30 +239,41 @@ class LokiEngine:
                     "outcomes": outcomes,
                     "base_probabilities": base_probs,
                     "pinnacle_odds": pinnacle_odds,
-                    "soft_odds": soft_odds,
-                    "is_soft_line": is_soft_line,
-                    "soft_outcome_index": chosen_idx
+                    "soft_odds": best_odds,
+                    "best_books": best_book_for_outcome,
+                    "volatility_multiplier": volatility_multiplier
                 })
 
-                # 2. Add a Prop Bet Market
+                # Prop Bet Market
                 prop_fixture_id = str(uuid.uuid4())[:8]
-                if sport == "Premier League":
-                    prop_outcomes = ["Over 2.5 Goals", "Under 2.5 Goals"]
-                elif sport == "NBA":
-                    prop_outcomes = [f"{home} Star Points Over 25.5", f"{home} Star Points Under 25.5"]
-                else:
-                    prop_outcomes = [f"{home} QB Passing Yards Over 250.5", f"{home} QB Passing Yards Under 250.5"]
+                if sport == "Premier League": prop_outcomes = ["Over 2.5 Goals", "Under 2.5 Goals"]
+                elif sport == "NBA": prop_outcomes = [f"{home} Star Points Over 25.5", f"{home} Star Points Under 25.5"]
+                else: prop_outcomes = [f"{home} QB Passing Yards Over 250.5", f"{home} QB Passing Yards Under 250.5"]
 
                 prop_base = random.uniform(0.40, 0.60)
                 prop_base_probs = [prop_base, 1.0 - prop_base]
                 prop_pinnacle_odds = [pinnacle_vig / p for p in prop_base_probs]
-                prop_soft_odds = [soft_vig / p for p in prop_base_probs]
 
-                prop_is_soft = (random.random() < 0.3)
-                prop_chosen_idx = None
-                if prop_is_soft:
-                    prop_chosen_idx = random.randint(0, 1)
-                    prop_soft_odds[prop_chosen_idx] = prop_soft_odds[prop_chosen_idx] * random.uniform(1.10, 1.18)
+                multi_prop_odds = {}
+                for book in books:
+                    soft_vig = random.uniform(1.04, 1.08)
+                    p_odds = [soft_vig / p for p in prop_base_probs]
+                    if random.random() < 0.3:
+                        idx = random.randint(0, 1)
+                        p_odds[idx] *= random.uniform(1.10, 1.18)
+                    multi_prop_odds[book] = p_odds
+
+                best_prop_odds = []
+                best_prop_books = []
+                for idx in range(2):
+                    best = 0.0
+                    bb = ""
+                    for book, odds_list in multi_prop_odds.items():
+                        if odds_list[idx] > best:
+                            best = odds_list[idx]
+                            bb = book
+                    best_prop_odds.append(best)
+                    best_prop_books.append(bb)
 
                 fixtures.append({
                     "fixture_id": prop_fixture_id,
@@ -230,9 +283,9 @@ class LokiEngine:
                     "outcomes": prop_outcomes,
                     "base_probabilities": prop_base_probs,
                     "pinnacle_odds": prop_pinnacle_odds,
-                    "soft_odds": prop_soft_odds,
-                    "is_soft_line": prop_is_soft,
-                    "soft_outcome_index": prop_chosen_idx
+                    "soft_odds": best_prop_odds,
+                    "best_books": best_prop_books,
+                    "volatility_multiplier": volatility_multiplier
                 })
 
         return fixtures
@@ -257,11 +310,6 @@ class LokiEngine:
                 conn.close()
 
     def nightly_learning_review(self) -> Dict[str, Any]:
-        """
-        Reviews all resolved bets to improve future forecasting.
-        Calculates win rate by sport/market/odds_band and updates confidence multipliers.
-        Generates a summary card for Gabriel.
-        """
         conn = self.runtime.db.get_connection()
         try:
             with conn:
@@ -275,8 +323,9 @@ class LokiEngine:
                     band = "Favorite" if bet["odds"] < 1.75 else ("Coinflip" if bet["odds"] < 2.5 else "Longshot")
                     cat = f"{bet['sport']}_{bet['market']}_{band}".replace(" ", "_")
                     if cat not in stats:
-                        stats[cat] = {"sport": bet["sport"], "market": bet["market"], "band": band, "total": 0, "won": 0}
+                        stats[cat] = {"sport": bet["sport"], "market": bet["market"], "band": band, "total": 0, "won": 0, "implied_sum": 0.0}
                     stats[cat]["total"] += 1
+                    stats[cat]["implied_sum"] += (1.0 / bet["odds"])
                     total_bets_count += 1
                     total_profit += bet["profit_loss"]
                     if bet["status"] == "WON":
@@ -286,11 +335,10 @@ class LokiEngine:
                 for cat, data in stats.items():
                     win_rate = data["won"] / data["total"] if data["total"] > 0 else 0
 
-                    baseline = 0.5238
-                    if data["band"] == "Favorite": baseline = 0.60
-                    elif data["band"] == "Longshot": baseline = 0.35
+                    # Feature 6: Dynamic Baseline thresholds based on actual implied odds
+                    dynamic_baseline = data["implied_sum"] / data["total"] if data["total"] > 0 else 0.5238
 
-                    diff = win_rate - baseline
+                    diff = win_rate - dynamic_baseline
                     modifier = max(0.5, min(1.5, 1.0 + (diff * 2.0)))
 
                     conn.execute("""
@@ -307,13 +355,13 @@ class LokiEngine:
                         "category": cat,
                         "total_bets": data["total"],
                         "won_bets": data["won"],
-                        "new_modifier": round(modifier, 4)
+                        "new_modifier": round(modifier, 4),
+                        "baseline": round(dynamic_baseline, 4)
                     })
 
-                # Feature 10: Automated Reporting Card
                 card_id = f"loki_report_{datetime.utcnow().strftime('%Y%m%d')}"
                 summary = f"Loki processed {total_bets_count} total bets for a net profit of {total_profit:.2f}."
-                body = "Learning Adjustments:\n" + "\n".join([f"- {u['category']}: Modifier -> {u['new_modifier']}" for u in updates])
+                body = "Learning Adjustments:\n" + "\n".join([f"- {u['category']}: Modifier -> {u['new_modifier']} (vs {u['baseline']})" for u in updates])
                 conn.execute("""
                     INSERT OR REPLACE INTO knowledge_cards (card_id, card_type, title, summary, body, confidence, validation_state, security_classification, source_ids, created_at, updated_at)
                     VALUES (?, 'SYSTEM_REPORT', ?, ?, ?, 1.0, 'ACTIVE', 'INTERNAL', '[]', ?, ?)
@@ -332,60 +380,108 @@ class LokiEngine:
         n = len(implied_probs)
         return [p - (margin / n) for p in implied_probs]
 
-    def get_active_value_picks(self) -> List[Dict[str, Any]]:
-        """
-        Scours live mock fixtures, runs overround correction, and identifies value.
-        """
+    def notify(self, type_str: str, message: str, conn=None):
+        """Feature 9: Event-Driven Webhook / Notification Protocol"""
+        close_conn = False
+        if conn is None:
+            conn = self.runtime.db.get_connection()
+            close_conn = True
+        try:
+            conn.execute("INSERT INTO loki_notifications (notification_id, type, message, created_at) VALUES (?, ?, ?, ?)", (str(uuid.uuid4())[:8], type_str, message, datetime.utcnow().isoformat()))
+        finally:
+            if close_conn: conn.close()
+
+    def get_team_streak_modifier(self, team: str, conn=None) -> float:
+        """Feature 3: Team Form Streak tracking"""
+        close_conn = False
+        if conn is None:
+            conn = self.runtime.db.get_connection()
+            close_conn = True
+        try:
+            cursor = conn.execute("SELECT current_streak FROM loki_team_stats WHERE team_name = ?", (team,))
+            row = cursor.fetchone()
+            streak = row["current_streak"] if row else 0
+            if streak >= 3: return 1.05 # Hot
+            if streak <= -3: return 0.95 # Cold
+            return 1.0
+        except: return 1.0
+        finally:
+            if close_conn: conn.close()
+
+    def get_active_value_picks(self, conn=None) -> List[Dict[str, Any]]:
+        close_conn = False
+        if conn is None:
+            conn = self.runtime.db.get_connection()
+            close_conn = True
+
         fixtures = self.generate_fixtures()
         picks = []
 
-        for f in fixtures:
-            pinnacle_implied = [1.0 / o for o in f["pinnacle_odds"]]
-            market = f.get("market", "Moneyline")
+        try:
+            for f in fixtures:
+                pinnacle_implied = [1.0 / o for o in f["pinnacle_odds"]]
+                market = f.get("market", "Moneyline")
 
-            # Feature 9: Market-Specific Vig Elimination
-            if market == "Prop_Bet":
-                true_probs = self.solve_mpo_probabilities(pinnacle_implied)
-            else:
-                z, true_probs = solve_shin_probabilities(pinnacle_implied)
+                if market == "Prop_Bet":
+                    true_probs = self.solve_mpo_probabilities(pinnacle_implied)
+                else:
+                    z, true_probs = solve_shin_probabilities(pinnacle_implied)
 
-            sport = f["sport"]
+                sport = f["sport"]
+                volatility = f.get("volatility_multiplier", 1.0)
 
-            for idx, outcome in enumerate(f["outcomes"]):
-                true_p = true_probs[idx]
-                if true_p <= 0.0: continue
-                soft_o = f["soft_odds"][idx]
+                best_implied_sum = sum(1.0 / o for o in f["soft_odds"])
+                if best_implied_sum < 0.99:
+                    self.notify("ARBITRAGE_DETECTED", f"Arb found in {f['fixture']}! Implied sum: {best_implied_sum:.3f} across {f['best_books']}", conn)
 
-                modifier = self.get_confidence_modifier(sport, market, soft_o)
-                expected_value = true_p * soft_o * modifier
+                for idx, outcome in enumerate(f["outcomes"]):
+                    true_p = true_probs[idx]
+                    if true_p <= 0.0: continue
+                    soft_o = f["soft_odds"][idx]
 
-                # Feature 8: Time-decay Variance (mock it as getting closer to game time)
-                # Later bets are sharper, decrease our EV slightly if we assume this is late
-                time_decay = random.uniform(0.95, 1.0)
-                expected_value *= time_decay
+                    team_name = outcome.replace(" Win", "").replace(" Over 2.5 Goals", "").strip()
+                    streak_mod = self.get_team_streak_modifier(team_name, conn)
 
-                if expected_value > 1.02:
-                    kelly_frac = calculate_kelly_fraction(true_p, soft_o, risk_fraction=0.25)
-                    adjusted_kelly = kelly_frac * modifier
-                    if adjusted_kelly > 0:
-                        picks.append({
-                            "fixture_id": f["fixture_id"],
-                            "sport": sport,
-                            "fixture": f["fixture"],
-                            "market": market,
-                            "outcome": outcome,
-                            "outcome_index": idx,
-                            "odds": round(soft_o, 2),
-                            "pinnacle_odds": round(f["pinnacle_odds"][idx], 2),
-                            "shin_true_prob": round(true_p, 4),
-                            "expected_value": round(expected_value, 4),
-                            "kelly_fraction": round(adjusted_kelly, 4),
-                            "base_probabilities": f["base_probabilities"],
-                            "confidence_modifier": round(modifier, 4)
-                        })
+                    modifier = self.get_confidence_modifier(sport, market, soft_o, conn)
 
-        picks.sort(key=lambda x: x["expected_value"], reverse=True)
-        return picks
+                    expected_value = true_p * soft_o * modifier * streak_mod
+                    time_decay = random.uniform(0.95, 1.0)
+                    expected_value *= time_decay
+
+                    required_edge = 1.02 * volatility
+
+                    if expected_value > required_edge:
+                        kelly_frac = calculate_kelly_fraction(true_p, soft_o, risk_fraction=0.25)
+                        adjusted_kelly = kelly_frac * modifier
+                        if adjusted_kelly > 0:
+
+                            max_liquidity = 250.0 if market == "Prop_Bet" else 1000.0
+
+                            duration_scalar = 1.0 if market != "Futures" else 0.5
+
+                            picks.append({
+                                "fixture_id": f["fixture_id"],
+                                "sport": sport,
+                                "fixture": f["fixture"],
+                                "market": market,
+                                "outcome": outcome,
+                                "outcome_index": idx,
+                                "odds": round(soft_o, 2),
+                                "book": f["best_books"][idx],
+                                "pinnacle_odds": round(f["pinnacle_odds"][idx], 2),
+                                "shin_true_prob": round(true_p, 4),
+                                "expected_value": round(expected_value, 4),
+                                "kelly_fraction": round(adjusted_kelly * duration_scalar, 4),
+                                "max_liquidity": max_liquidity,
+                                "volatility": volatility,
+                                "streak_mod": streak_mod
+                            })
+
+            picks.sort(key=lambda x: x["expected_value"], reverse=True)
+            return picks
+        finally:
+            if close_conn:
+                conn.close()
 
     def get_vault(self, conn=None) -> float:
         close_conn = False
@@ -488,7 +584,7 @@ class LokiEngine:
                 conn.execute("INSERT INTO loki_equity_snapshots (snapshot_id, bankroll, vault, timestamp) VALUES (?, ?, ?, ?)", (snapshot_id, current_bankroll, vault, datetime.utcnow().isoformat()))
 
                 if active_mode == "LIVE_BETTING":
-                    picks = self.get_active_value_picks()
+                    picks = self.get_active_value_picks(conn)
 
                     # Calculate recent form for Dynamic Kelly (Feature 2)
                     cursor_form = conn.execute("SELECT status FROM loki_bets WHERE status != 'PENDING' AND status != 'HEDGED' ORDER BY created_at DESC LIMIT 10")
@@ -512,8 +608,8 @@ class LokiEngine:
                         stake = round(stake / 5.0) * 5.0
                         if stake < 10.0: continue
 
-                        # Feature 4b: Dynamic Max Stake Cap (15% normally, but hard limit $1000)
-                        max_stake = min(current_bankroll * 0.15, 1000.0)
+                    # Feature 4b: Dynamic Max Stake Cap & Feature 7 Liquidity
+                        max_stake = min(current_bankroll * 0.15, pick.get("max_liquidity", 1000.0))
                         if stake > max_stake: stake = round(max_stake / 5.0) * 5.0
 
                         if current_bankroll >= stake:
@@ -526,6 +622,16 @@ class LokiEngine:
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 0.0, ?)
                             """, (bet_id, pick["sport"], pick["fixture"], pick["market"], pick["outcome"], pick["odds"], pick["shin_true_prob"], pick["kelly_fraction"], stake, datetime.utcnow().isoformat()))
 
+                            # Feature 8: ML Feature Extraction logging
+                            ml_features = {
+                                "ev": pick["expected_value"],
+                                "shin": pick["shin_true_prob"],
+                                "volatility": pick.get("volatility", 1.0),
+                                "streak_mod": pick.get("streak_mod", 1.0),
+                                "book": pick.get("book", "Unknown")
+                            }
+                            conn.execute("INSERT INTO loki_ml_features (bet_id, feature_json, timestamp) VALUES (?, ?, ?)", (bet_id, json.dumps(ml_features), datetime.utcnow().isoformat()))
+
                             self.update_bankroll(-stake, conn)
                             current_bankroll -= stake
 
@@ -535,6 +641,7 @@ class LokiEngine:
                                 "outcome": pick["outcome"],
                                 "stake": stake
                             })
+
                 else:
                     logger.info("Loki is in RESEARCH_ONLY mode. Skipping simulated live bet executions.")
 
