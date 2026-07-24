@@ -109,3 +109,62 @@ class KnowledgeGraph:
                             "relationship_type": edge["relationship_type"]
                         })
         return safeguards
+
+
+class SelfStudyOptimizer:
+    """SOSS Phase 6 Self-Study Optimizer Engine."""
+    def __init__(self, runtime):
+        self.runtime = runtime
+        self.retrieval_threshold = 0.50
+
+    def optimize_retrieval_thresholds(self, success_rate: float) -> Dict[str, Any]:
+        """
+        Dynamically tunes SOK search similarity thresholds based on downstream
+        worker outcome feedback latency.
+        """
+        old_threshold = self.retrieval_threshold
+        # If success rate is high (>85%), lower threshold slightly to broaden recall
+        if success_rate > 0.85:
+            self.retrieval_threshold = max(0.20, self.retrieval_threshold - 0.05)
+        # If success rate is low, increase threshold to narrow matches to high-confidence cards
+        else:
+            self.retrieval_threshold = min(0.85, self.retrieval_threshold + 0.08)
+
+        return {
+            "old_threshold": round(old_threshold, 4),
+            "new_threshold": round(self.retrieval_threshold, 4),
+            "tuned_retrieval_gain": round(self.retrieval_threshold - old_threshold, 4),
+            "feedback_success_rate": success_rate
+        }
+
+
+class PrometheusCuriosityEngine:
+    """SOSS Phase 10 Prometheus Curiosity & Active Gap Discovery Engine."""
+    def __init__(self, runtime):
+        self.runtime = runtime
+
+    def scan_for_knowledge_gaps(self) -> List[Dict[str, Any]]:
+        """
+        Proactively audits SOK card links to locate informational density gaps
+        and return suggested research targets.
+        """
+        graph = KnowledgeGraph(self.runtime)
+        nodes, edges = graph.load_graph()
+
+        gaps = []
+        for cid, node in nodes.items():
+            # Check how many links connect to this card
+            card_degree = 0
+            for edge in edges:
+                if edge["source_id"] == cid or edge["target_id"] == cid:
+                    card_degree += 1
+
+            # A degree of 0 means the card is completely isolated (isolated knowledge island!)
+            if card_degree == 0:
+                gaps.append({
+                    "target_card_id": cid,
+                    "target_title": node["title"],
+                    "gap_detected": "Isolated Knowledge Node (0 linked references)",
+                    "suggested_curiosity_subject": f"Establish semantic dependencies and links for: {node['title']}"
+                })
+        return gaps

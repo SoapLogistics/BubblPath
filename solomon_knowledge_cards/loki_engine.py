@@ -97,6 +97,26 @@ class LokiEngine:
     """Project Loki sports betting intelligence and predictive arbitrage engine."""
     def __init__(self, runtime):
         self.runtime = runtime
+        self.risk_profile = "QUARTER_KELLY"
+
+    def get_risk_fraction(self) -> float:
+        """Translates active risk profile into numerical multiplier."""
+        profile = self.risk_profile.upper()
+        if profile == "FULL_KELLY":
+            return 1.0
+        elif profile == "HALF_KELLY":
+            return 0.5
+        # Default fallback is Quarter-Kelly for capital safety
+        return 0.25
+
+    def set_risk_profile(self, profile: str) -> bool:
+        """Sets the active risk profile dynamically."""
+        valid_profiles = ("QUARTER_KELLY", "HALF_KELLY", "FULL_KELLY")
+        if profile.upper() in valid_profiles:
+            self.risk_profile = profile.upper()
+            logger.info(f"Loki risk profile calibrated dynamically to: {self.risk_profile}")
+            return True
+        return False
 
     def get_bankroll(self, conn=None) -> float:
         """Retrieves current virtual bankroll balance."""
@@ -266,7 +286,7 @@ class LokiEngine:
                 expected_value = true_p * soft_o
 
                 if expected_value > 1.02: # Clear 2%+ edge
-                    kelly_frac = calculate_kelly_fraction(true_p, soft_o, risk_fraction=0.25)
+                    kelly_frac = calculate_kelly_fraction(true_p, soft_o, risk_fraction=self.get_risk_fraction())
                     if kelly_frac > 0:
                         picks.append({
                             "fixture_id": f["fixture_id"],
@@ -449,3 +469,83 @@ class LokiEngine:
             }
         finally:
             conn.close()
+
+
+class KalshiPredictor:
+    """SOSS Phase 16 Prediction Market Active Inference Kalshi module."""
+    def __init__(self, runtime):
+        self.runtime = runtime
+
+    def get_active_contracts(self) -> List[Dict[str, Any]]:
+        """Simulates / loads active Kalshi event contracts (e.g. US interest rates, tech indices)."""
+        return [
+            {
+                "ticker": "FED-26-JULY",
+                "title": "US Fed Interest Rate remains unchanged in July 2026",
+                "yes_price_cents": 58,
+                "no_price_cents": 44,
+                "pinnacle_true_prob": 0.65
+            },
+            {
+                "ticker": "TECH-NVDA-ATH",
+                "title": "NVIDIA hits new All-Time High in August 2026",
+                "yes_price_cents": 72,
+                "no_price_cents": 30,
+                "pinnacle_true_prob": 0.80
+            },
+            {
+                "ticker": "AI-AGI-2026",
+                "title": "AGI declared by major research labs in 2026",
+                "yes_price_cents": 35,
+                "no_price_cents": 67,
+                "pinnacle_true_prob": 0.45
+            }
+        ]
+
+    def calculate_contract_value_picks(self) -> List[Dict[str, Any]]:
+        """
+        Compares true probabilities with Kalshi cents contract prices.
+        Calculates positive Expected Value (EV) and Kelly staking sizes.
+        """
+        contracts = self.get_active_contracts()
+        picks = []
+        for c in contracts:
+            # Yes
+            yes_odds = 100.0 / c["yes_price_cents"]
+            yes_true_p = c["pinnacle_true_prob"]
+            yes_ev = yes_true_p * yes_odds
+
+            if yes_ev > 1.02:
+                b = yes_odds - 1.0
+                f_star = (yes_true_p * yes_odds - 1.0) / b
+                kelly_stake = max(0.0, f_star * 0.25)
+                if kelly_stake > 0:
+                    picks.append({
+                        "ticker": c["ticker"],
+                        "title": c["title"],
+                        "selection": "YES",
+                        "price_cents": c["yes_price_cents"],
+                        "true_probability": yes_true_p,
+                        "expected_value": round(yes_ev, 4),
+                        "kelly_fraction": round(kelly_stake, 4)
+                    })
+
+            # No
+            no_odds = 100.0 / c["no_price_cents"]
+            no_true_p = 1.0 - yes_true_p
+            no_ev = no_true_p * no_odds
+            if no_ev > 1.02:
+                b = no_odds - 1.0
+                f_star = (no_true_p * no_odds - 1.0) / b
+                kelly_stake = max(0.0, f_star * 0.25)
+                if kelly_stake > 0:
+                    picks.append({
+                        "ticker": c["ticker"],
+                        "title": c["title"],
+                        "selection": "NO",
+                        "price_cents": c["no_price_cents"],
+                        "true_probability": no_true_p,
+                        "expected_value": round(no_ev, 4),
+                        "kelly_fraction": round(kelly_stake, 4)
+                    })
+        return picks

@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 from datetime import datetime
+from typing import Dict, Any
 
 # Setup logs directory safely
 LOGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "logs"))
@@ -86,3 +87,34 @@ def enforce_resource_caps(max_memory_mb: float = 1536.0) -> bool:
         # Normal trace logs
         telemetry_logger.info(f"HEALTH CHECK: Memory footprint stable at {mem_used:.2f}MB. Cap scaled to {max_memory_mb:.2f}MB.")
         return True
+
+
+class DynamicContextBudgeter:
+    """SOSS Phase 20 Dynamic Context Budgeter."""
+    def __init__(self, base_budget_chars: int = 16000):
+        self.base_budget = base_budget_chars
+
+    def calculate_sliding_context_budget(self) -> Dict[str, Any]:
+        """
+        Dynamically adjusts the sliding prompt memory context size budget
+        based on active RSS memory headroom to avoid local OOM limits.
+        """
+        mem_used = get_memory_footprint_mb()
+        scaled_budget = self.base_budget
+        congested = False
+
+        # If memory footprint is over 1GB (1024MB), compress context budget by 50%
+        if mem_used > 1024.0:
+            scaled_budget = self.base_budget // 2
+            congested = True
+        # If memory is extremely constrained (>1.3GB), compress context by 80%
+        if mem_used > 1300.0:
+            scaled_budget = self.base_budget // 5
+            congested = True
+
+        return {
+            "current_memory_usage_mb": round(mem_used, 2),
+            "base_context_budget_chars": self.base_budget,
+            "allocated_context_budget_chars": scaled_budget,
+            "memory_congested_state": congested
+        }

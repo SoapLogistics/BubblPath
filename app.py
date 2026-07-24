@@ -809,6 +809,172 @@ def render_workspace_view():
     return render_template("solomon_loki_workspace.html")
 
 
+# --- SOSS 10 Advanced Phases Endpoints ---
+
+@app.route("/api/command-center/loki/calibrate", methods=["POST"])
+def cc_loki_calibrate():
+    """Phase 11: Dynamic Risk-Profile Configuration for Loki."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    data = request.json or {}
+    profile = data.get("risk_profile", "QUARTER_KELLY")
+
+    success = loki_engine.set_risk_profile(profile)
+    if success:
+        return jsonify({"ok": True, "risk_profile": profile, "risk_fraction": loki_engine.get_risk_fraction()})
+    return jsonify({"ok": False, "error": f"Invalid risk profile '{profile}'."}), 400
+
+@app.route("/api/command-center/kalshi/simulate", methods=["POST"])
+def cc_kalshi_simulate():
+    """Phase 16: Kalshi Prediction Market Active Inference Simulator."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    try:
+        from solomon_knowledge_cards.loki_engine import KalshiPredictor
+        predictor = KalshiPredictor(runtime)
+        picks = predictor.calculate_contract_value_picks()
+        return jsonify({"ok": True, "kalshi_picks": picks, "count": len(picks)})
+    except Exception as e:
+        logger.error(f"Kalshi simulation failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/sentinel/verify", methods=["POST"])
+def cc_sentinel_verify():
+    """Phase 17: Self-Created Verification & Diagnostic Sentinel."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    try:
+        from solomon_knowledge_cards.advanced_optimizers import SystemSentinel
+        sentinel = SystemSentinel()
+        report = sentinel.scan_workspace_syntax()
+        return jsonify({"ok": True, "sentinel_report": report})
+    except Exception as e:
+        logger.error(f"Sentinel verification failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/tensor/coherence", methods=["POST"])
+def cc_tensor_coherence():
+    """Phase 18: Quantum-Inspired Tensor Coherence Optimizer."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    data = request.json or {}
+    try:
+        initial = float(data.get("initial_coherence", 0.55))
+    except ValueError:
+        initial = 0.55
+    try:
+        from solomon_knowledge_cards.advanced_optimizers import TensorCoherenceOptimizer
+        optimizer = TensorCoherenceOptimizer(initial)
+        result = optimizer.optimize_coherence()
+        return jsonify({"ok": True, "coherence_optimization": result})
+    except Exception as e:
+        logger.error(f"Coherence optimization failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/consensus/vote", methods=["POST"])
+def cc_consensus_vote():
+    """Phase 19: Collaborative Multi-Agent Worker Consensus Protocol."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    data = request.json or {}
+    action = data.get("action", "DRAFT_PLAYBOOK_MUTATION")
+    votes = data.get("votes", {"gabriel": True, "mnemosyne": True, "prometheus": True, "loki": False})
+
+    try:
+        from solomon_knowledge_cards.advanced_optimizers import MultiAgentConsensus
+        consensus = MultiAgentConsensus()
+        result = consensus.evaluate_consensus(action, votes)
+        return jsonify({"ok": True, "consensus_result": result})
+    except Exception as e:
+        logger.error(f"Consensus voting failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/context/budget", methods=["POST"])
+def cc_context_budget():
+    """Phase 20: Dynamic Context Budgeter."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    try:
+        from solomon_knowledge_cards.resource_monitor import DynamicContextBudgeter
+        budgeter = DynamicContextBudgeter()
+        result = budgeter.calculate_sliding_context_budget()
+        return jsonify({"ok": True, "context_budget": result})
+    except Exception as e:
+        logger.error(f"Context budget calculation failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/vector/compress", methods=["POST"])
+def cc_vector_compress():
+    """Phase 21: RAG Semantic Vector Compressor."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    data = request.json or {}
+    vector = data.get("vector", [0.15, -0.22, 0.88, -0.01])
+    try:
+        from solomon_knowledge_cards.embeddings import RAGVectorCompressor
+        compressor = RAGVectorCompressor()
+        compressed = compressor.compress_vector_to_1bit(vector)
+        savings = compressor.estimate_compression_savings(100, len(vector))
+        return jsonify({"ok": True, "compressed_vector": compressed, "savings_telemetry": savings})
+    except Exception as e:
+        logger.error(f"Vector compression failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/model/fusion", methods=["POST"])
+def cc_model_fusion():
+    """Phase 22: Dynamic Multi-Model Fusion Routing Preferences."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    data = request.json or {}
+    constraints = data.get("constraints", {"sla_max_latency_sec": 2.0, "vram_available_gb": 8.0})
+    try:
+        from solomon_knowledge_cards.advanced_optimizers import MultiModelFusionRouter
+        router = MultiModelFusionRouter()
+        result = router.select_optimal_model_lane(constraints)
+        return jsonify({"ok": True, "model_fusion_routing": result})
+    except Exception as e:
+        logger.error(f"Model fusion routing failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/command-center/performance/predict", methods=["POST"])
+def cc_performance_predict():
+    """Phase 23: Autonomous Performance Benchmark Predictor."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    data = request.json or {}
+    try:
+        seq_length = int(data.get("sequence_length", 2048))
+    except ValueError:
+        seq_length = 2048
+    try:
+        from solomon_knowledge_cards.advanced_optimizers import PerformancePredictor
+        predictor = PerformancePredictor()
+        result = predictor.predict_performance_footprint(seq_length)
+        return jsonify({"ok": True, "predicted_footprint": result})
+    except Exception as e:
+        logger.error(f"Performance prediction failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/mnemosyne/study/optimize", methods=["POST"])
+def cc_study_optimize():
+    """Phase 6: Self-Study Optimizer similarity threshold tuning."""
+    if not verify_auth():
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+    data = request.json or {}
+    try:
+        success_rate = float(data.get("success_rate", 0.88))
+    except ValueError:
+        success_rate = 0.88
+    try:
+        from solomon_knowledge_cards.graph_engine import SelfStudyOptimizer
+        optimizer = SelfStudyOptimizer(runtime)
+        result = optimizer.optimize_retrieval_thresholds(success_rate)
+        return jsonify({"ok": True, "self_study_optimization": result})
+    except Exception as e:
+        logger.error(f"Self-study optimization failed: {str(e)}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 if __name__ == "__main__":
     # Parse port from SOLOMON_API_BASE_URL (e.g., http://127.0.0.1:18789)
     api_url = os.environ.get("SOLOMON_API_BASE_URL", "http://127.0.0.1:18789")

@@ -2,7 +2,7 @@ import os
 import re
 import math
 import hashlib
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 try:
     import openai
@@ -122,3 +122,37 @@ class SemanticEmbedder:
 
         sim = dot_product / (mag_a * mag_b)
         return max(-1.0, min(1.0, sim))
+
+
+class RAGVectorCompressor:
+    """SOSS Phase 21 RAG Semantic Vector Compressor."""
+    def __init__(self):
+        pass
+
+    def compress_vector_to_1bit(self, vector: List[float]) -> List[int]:
+        """
+        Compresses a high-dimensional dense concept vector into a 1-bit sign configuration
+        representing dimensions as either -1 or +1 to shrink RAM footprint.
+        """
+        if not vector:
+            return []
+        # Quantize components: +1 if component >= 0.0 else -1
+        return [1 if val >= 0.0 else -1 for val in vector]
+
+    def estimate_compression_savings(self, initial_vector_count: int, dimension: int = 128) -> Dict[str, Any]:
+        """Calculates expected index footprint reductions on memory and storage."""
+        # Dense float requires 4 bytes per dimension
+        initial_bytes = initial_vector_count * dimension * 4
+        # Compressed requires 1 bit per dimension -> packed as bits: (dimension / 8) bytes
+        compressed_bytes = initial_vector_count * math.ceil(dimension / 8.0)
+
+        savings_ratio = initial_bytes / max(1, compressed_bytes)
+
+        return {
+            "vectors_index_count": initial_vector_count,
+            "vector_dimensions": dimension,
+            "original_dense_size_bytes": initial_bytes,
+            "compressed_1bit_size_bytes": compressed_bytes,
+            "footprint_reduction_ratio": round(savings_ratio, 2),
+            "percentage_saved": f"{round((1.0 - (compressed_bytes / initial_bytes)) * 100, 2)}%" if initial_bytes > 0 else "0%"
+        }
