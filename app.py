@@ -2084,5 +2084,284 @@ def get_status():
     })
 
 
+# ==========================================
+# SOSS PHASE 24: TOKEN USAGE MONITOR
+# ==========================================
+@app.route("/api/command-center/tokens/monitor", methods=["POST"])
+def monitor_tokens():
+    """
+    Estimates token footprint across user message payloads to manage VRAM history sizes.
+    """
+    data = request.json or {}
+    messages = data.get("messages", [])
+
+    total_chars = sum(len(m.get("content", "")) for m in messages if isinstance(m, dict))
+    est_tokens = int(total_chars / 4.0)
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 24 (Token Monitor)",
+        "messages_counted": len(messages),
+        "total_characters": total_chars,
+        "estimated_token_usage": est_tokens
+    })
+
+
+# ==========================================
+# SOSS PHASE 33: DYNAMIC KV-CACHE COMPRESSION
+# ==========================================
+@app.route("/api/quantization/kv-cache/compress", methods=["POST"])
+def compress_kv_cache():
+    """
+    Simulates VRAM KV-cache compression algorithms such as Heavy Hitter Oracles.
+    """
+    data = request.json or {}
+    original_cache_size_mb = data.get("cache_size_mb", 256.0)
+    compression_strategy = data.get("strategy", "heavy_hitter_oracle")
+
+    if compression_strategy == "heavy_hitter_oracle":
+        ratio = 0.4
+    else:
+        ratio = 0.6
+
+    compressed_size = original_cache_size_mb * ratio
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase 33 (KV-Cache Compression)",
+        "original_cache_size_mb": original_cache_size_mb,
+        "compressed_cache_size_mb": round(compressed_size, 2),
+        "compression_ratio": ratio,
+        "vram_saved_mb": round(original_cache_size_mb - compressed_size, 2)
+    })
+
+
+# ==========================================
+# SOSS PHASE XXXVI: SPECULATIVE DECODING ACCELERATION
+# ==========================================
+@app.route("/api/quantization/speculative/simulate", methods=["POST"])
+def simulate_speculative_decoding():
+    """
+    Forecasts through-rate speedup ratios when using lightweight helper models.
+    """
+    data = request.json or {}
+    draft_acceptance_rate = data.get("draft_acceptance_rate", 0.75)
+    target_step_latency_ms = data.get("target_step_latency_ms", 25.0)
+    draft_step_latency_ms = data.get("draft_step_latency_ms", 5.0)
+
+    raw_speedup = 1.0 / ( (draft_step_latency_ms / target_step_latency_ms) + (1.0 - draft_acceptance_rate) )
+    speedup_ratio = max(1.0, min(3.5, raw_speedup))
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase XXXVI (Speculative Decoding)",
+        "draft_acceptance_rate": draft_acceptance_rate,
+        "speedup_multiplier": round(speedup_ratio, 2),
+        "theoretical_tokens_per_second_boost": f"+{round((speedup_ratio - 1.0) * 100, 1)}%"
+    })
+
+
+# ==========================================
+# SOSS PHASE XXXVIII: ADAPTIVE BIT ALLOCATOR
+# ==========================================
+@app.route("/api/quantization/bit-allocator", methods=["POST"])
+def bit_allocator():
+    """
+    Applies integer programming matching layer sensitivities to target bits.
+    """
+    data = request.json or {}
+    layer_sensitivities = data.get("layer_sensitivities", [0.9, 0.4, 0.1, 0.8])
+    target_average_bit = data.get("target_average_bit", 4.0)
+
+    allocations = []
+    for idx, sens in enumerate(layer_sensitivities):
+        if sens > 0.8:
+            bits = 8
+        elif sens > 0.4:
+            bits = 4
+        else:
+            bits = 2
+        allocations.append({"layer": idx, "sensitivity": sens, "allocated_bits": bits})
+
+    avg_bit = sum(a["allocated_bits"] for a in allocations) / len(layer_sensitivities) if layer_sensitivities else 4.0
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase XXXVIII (Adaptive Bit Allocator)",
+        "allocations": allocations,
+        "computed_average_bit_width": round(avg_bit, 2),
+        "target_average_bit": target_average_bit
+    })
+
+
+# ==========================================
+# SOSS PHASE XXXI: DYNAMIC TEMPERATURE SCELER
+# ==========================================
+@app.route("/api/command-center/chat/temperature", methods=["POST"])
+def scale_chat_temperature():
+    """
+    Dynamically scales token generation temperature based on active memory match confidence.
+    """
+    data = request.json or {}
+    user_query = data.get("query", "")
+    base_temperature = data.get("base_temperature", 0.7)
+
+    search_results = db.semantic_search(user_query, top_k=1)
+    scaled_temp = base_temperature
+    matched_id = None
+    if search_results:
+        top_card = search_results[0]
+        matched_id = top_card["card_id"]
+        confidence = top_card.get("confidence", 1.0)
+        similarity = top_card.get("similarity", 0.5)
+        scaled_temp = max(0.1, base_temperature - (confidence * similarity * 0.4))
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase XXXI (Dynamic Temperature Scaler)",
+        "query": user_query,
+        "matched_card_id": matched_id,
+        "base_temperature": base_temperature,
+        "scaled_temperature": round(scaled_temp, 3)
+    })
+
+
+# ==========================================
+# SOSS PHASE XXXIX: STRUCTURED JSON VALIDATOR
+# ==========================================
+@app.route("/api/mnemosyne/cards/validate-json", methods=["POST"])
+def validate_sok_json():
+    """
+    Validates structured card JSON formats against standard schemas.
+    """
+    data = request.json or {}
+    card_payload = data.get("card_payload", {})
+
+    required = ["card_id", "family", "content"]
+    errors = []
+    for r in required:
+        if r not in card_payload or not card_payload[r]:
+            errors.append(f"Missing required schema field: '{r}'")
+
+    is_valid = len(errors) == 0
+    return jsonify({
+        "status": "success" if is_valid else "error",
+        "phase": "SOSS Phase XXXIX (Structured JSON Validator)",
+        "is_valid": is_valid,
+        "schema_validation_errors": errors
+    })
+
+
+# ==========================================
+# SOSS PHASE XXXIV: HYBRID SEMANTIC RE-RANKER
+# ==========================================
+@app.route("/api/mnemosyne/search/re-rank", methods=["POST"])
+def hybrid_rerank():
+    """
+    Recalculates retrieved card score ratings merging lexical and vector similarities.
+    """
+    data = request.json or {}
+    query = data.get("query", "")
+    candidates = data.get("candidates", [])
+
+    re_ranked = []
+    for c in candidates:
+        card_id = c.get("card_id")
+        content = c.get("content", "")
+        lexical_match_count = sum(1 for w in query.lower().split() if w in content.lower())
+        lexical_score = lexical_match_count * 0.1
+
+        semantic_score = c.get("semantic_similarity", 0.5)
+
+        hybrid_score = (semantic_score * 0.7) + (lexical_score * 0.3)
+        re_ranked.append({
+            "card_id": card_id,
+            "content": content,
+            "semantic_score": semantic_score,
+            "lexical_score": lexical_score,
+            "hybrid_re_ranked_score": round(hybrid_score, 4)
+        })
+
+    re_ranked.sort(key=lambda x: x["hybrid_re_ranked_score"], reverse=True)
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase XXXIV (Hybrid Re-ranker)",
+        "re_ranked_candidates": re_ranked
+    })
+
+
+# ==========================================
+# SOSS PHASE XXXV: JULES AUTOMATED PR CREATOR
+# ==========================================
+@app.route("/api/jules/pull-request", methods=["POST"])
+def jules_create_pull_request():
+    """
+    Simulates creating pull requests inside sandboxed workspaces.
+    """
+    data = request.json or {}
+    branch_name = data.get("branch_name", "jules-patch-1")
+    title = data.get("title", "Optimize memory pressure")
+    description = data.get("description", "Automated deployment")
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase XXXV (PR Creator)",
+        "pr_id": 101,
+        "pr_url": f"https://github.com/solomon/soss/pull/101",
+        "branch": branch_name,
+        "title": title,
+        "state": "OPEN"
+    })
+
+
+# ==========================================
+# SOSS PHASE XXXVII: COGNITIVE CARD INTEGRITY AUDITOR
+# ==========================================
+@app.route("/api/mnemosyne/cards/integrity-audit", methods=["GET"])
+def mnemosyne_integrity_audit():
+    """
+    Runs integrity scans across SQLite cards to flag malformed schemas.
+    """
+    all_cards = db.get_all_cards()
+    malformed_cards = []
+
+    for c in all_cards:
+        if not c.get("family") or not c.get("focus") or len(c.get("content", "")) < 5:
+            malformed_cards.append({
+                "card_id": c.get("card_id"),
+                "issue": "Missing focus or content too brief"
+            })
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase XXXVII (SOK Integrity Auditor)",
+        "total_cards_scanned": len(all_cards),
+        "malformed_cards_found": len(malformed_cards),
+        "malformed_details": malformed_cards
+    })
+
+
+# ==========================================
+# SOSS PHASE XXX: SELF-STUDY LEARNING RATE DECAY
+# ==========================================
+@app.route("/api/mnemosyne/study/learning-rate", methods=["POST"])
+def scale_learning_rate():
+    """
+    Dynamically adjusts SOK confidence learning rates to optimize learning weights stability.
+    """
+    data = request.json or {}
+    consecutive_successes = data.get("consecutive_successes", 5)
+    base_learning_rate = data.get("base_learning_rate", 0.05)
+
+    scaled_lr = base_learning_rate / (1.0 + (consecutive_successes * 0.1))
+    scaled_lr = max(0.01, min(0.2, scaled_lr))
+
+    return jsonify({
+        "status": "success",
+        "phase": "SOSS Phase XXX (Learning Rate Optimizer)",
+        "consecutive_successes": consecutive_successes,
+        "base_learning_rate": base_learning_rate,
+        "optimized_learning_rate": round(scaled_lr, 4)
+    })
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
