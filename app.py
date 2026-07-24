@@ -2,9 +2,11 @@ import os
 import openai
 from flask import Flask, request, jsonify
 from solomon_quantization_optimization import QuantizationOptimizer
+from solomon_50_step_optimizers import FiftyStepQuantizationOptimizer
 
 app = Flask(__name__)
 quant_optimizer = QuantizationOptimizer()
+fifty_step_optimizer = FiftyStepQuantizationOptimizer()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 @app.route("/chat", methods=["POST"])
@@ -86,6 +88,13 @@ def api_quant_sparse():
     if not data:
         return jsonify({"error": "Missing JSON payload"}), 400
     return jsonify(quant_optimizer.sparse_quantization(data.get("model_id", "default"), data.get("density", 0.5)))
+
+@app.route("/api/quantization/50-step-optimize", methods=["POST"])
+def api_quant_50_step_optimize():
+    data = request.json
+    if not data:
+        return jsonify({"error": "Missing JSON payload"}), 400
+    return jsonify(fifty_step_optimizer.optimize_all(data.get("model_id", "default_model")))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
