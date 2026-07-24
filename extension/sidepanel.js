@@ -3,6 +3,33 @@
 const chatContainer = document.getElementById('chat-container');
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
+const contextBanner = document.getElementById('context-banner');
+
+let activeContext = null;
+
+// Initialize context on load
+chrome.runtime.sendMessage({ type: 'GET_CURRENT_CONTEXT' }, (response) => {
+    if (response) {
+        updateContextBanner(response);
+    }
+});
+
+// Listen for context updates from background
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'CONTEXT_UPDATED') {
+        updateContextBanner(request.payload);
+    }
+});
+
+function updateContextBanner(contextPayload) {
+    activeContext = contextPayload;
+    if (contextPayload && contextPayload.type) {
+        contextBanner.style.display = 'block';
+        contextBanner.textContent = `👀 Context: ${contextPayload.type.toUpperCase()}`;
+    } else {
+        contextBanner.style.display = 'none';
+    }
+}
 
 function appendMessage(sender, text) {
     const messageDiv = document.createElement('div');
@@ -32,13 +59,18 @@ async function sendMessageToSolomon(message) {
     appendMessage('User', message);
     chatInput.value = '';
 
+    const payload = {
+        message: message,
+        context: activeContext // Pass the current browser context to the backend
+    };
+
     try {
         const response = await fetch('http://localhost:10000/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
@@ -49,7 +81,7 @@ async function sendMessageToSolomon(message) {
         appendMessage('Solomon', data.reply);
     } catch (error) {
         console.error("Error communicating with Solomon backend:", error);
-        appendMessage('System', 'Error connecting to Solomon backend.');
+        appendMessage('System', 'Error connecting to Solomon backend. Ensure app.py is running.');
     }
 }
 
