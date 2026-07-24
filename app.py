@@ -32,6 +32,7 @@ from solomon_vector_compressor import RAGVectorCompressor
 from solomon_model_fusion import MultiModelFusionRouter
 from solomon_performance_predictor import PerformancePredictor
 from solomon_knowledge_graph import KnowledgeGraph
+from solomon_25_step_optimizers import TwentyFiveStepOptimizers
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -1140,5 +1141,18 @@ def predict_performance():
     })
 
 
+@app.route("/api/command-center/optimization/pipeline", methods=["POST"])
+def run_25_step_optimization_pipeline():
+    """
+    Executes the 25-step deep optimization pipeline for caching, quantization, and RAG tuning.
+    """
+    results = TwentyFiveStepOptimizers.execute_all()
+    return jsonify({
+        "status": "success",
+        "optimization_pipeline_report": results,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Verify KV Cache footprints and graph sizes in the telemetry monitor."
+    })
+
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=10000)
