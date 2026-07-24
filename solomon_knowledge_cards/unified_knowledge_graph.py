@@ -8,8 +8,6 @@ class GraphNode:
         self.node_type = node_type
         self.data = data
         self.timestamp = time.time()
-        self.quantized_embedding: Optional[List[int]] = None
-        # Phase 5: TTL Node Pruning
         self.expires_at = time.time() + ttl_seconds if ttl_seconds else None
 
     def is_expired(self) -> bool:
@@ -18,7 +16,7 @@ class GraphNode:
 class UniversalKnowledgeGraph:
     def __init__(self):
         self.nodes: Dict[str, GraphNode] = {}
-        self.edges: Dict[str, List[Dict[str, str]]] = {}
+        self.edges: Dict[str, List[Dict[str, Any]]] = {}
 
     def add_node(self, node: GraphNode):
         self._prune_expired()
@@ -26,31 +24,30 @@ class UniversalKnowledgeGraph:
         if node.node_id not in self.edges:
             self.edges[node.node_id] = []
 
-    def link_nodes(self, source_id: str, target_id: str, relationship: str):
+    def link_nodes(self, source_id: str, target_id: str, relationship: str, weight: float = 1.0):
+        # Phase 23: Graph Relationship Strength Weighting
         self._prune_expired()
         if source_id in self.nodes and target_id in self.nodes:
-            self.edges[source_id].append({"target": target_id, "rel": relationship})
+            self.edges[source_id].append({"target": target_id, "rel": relationship, "weight": weight})
 
-    def get_neighbors(self, node_id: str) -> List[Dict[str, str]]:
+    def get_neighbors(self, node_id: str) -> List[Dict[str, Any]]:
         self._prune_expired()
-        return self.edges.get(node_id, [])
+        # Sort by weight
+        neighbors = self.edges.get(node_id, [])
+        return sorted(neighbors, key=lambda x: x.get("weight", 0.0), reverse=True)
 
-    # Phase 4: Subgraph BFS Querying
     def get_subgraph_bfs(self, start_id: str, max_depth: int = 2) -> List[str]:
         self._prune_expired()
-        if start_id not in self.nodes:
-            return []
-
+        if start_id not in self.nodes: return []
         visited = set([start_id])
         queue = [(start_id, 0)]
         result = [start_id]
 
         while queue:
             curr_id, depth = queue.pop(0)
-            if depth >= max_depth:
-                continue
+            if depth >= max_depth: continue
 
-            for edge in self.edges.get(curr_id, []):
+            for edge in self.get_neighbors(curr_id): # Uses weighted sorting
                 neighbor = edge["target"]
                 if neighbor not in visited:
                     visited.add(neighbor)
@@ -59,16 +56,18 @@ class UniversalKnowledgeGraph:
 
         return result
 
-    # Phase 5: TTL Enforcement
     def _prune_expired(self):
         expired_ids = [n_id for n_id, node in self.nodes.items() if node.is_expired()]
         for e_id in expired_ids:
             del self.nodes[e_id]
-            if e_id in self.edges:
-                del self.edges[e_id]
-            # Prune dangling edges
+            if e_id in self.edges: del self.edges[e_id]
             for src, edges in self.edges.items():
                 self.edges[src] = [e for e in edges if e["target"] != e_id]
+
+    # Phase 30: Federated Knowledge Sync Hook
+    def ingest_federated_graph(self, remote_nodes: Dict[str, Any], remote_edges: Dict[str, Any]):
+        # Mock ingestion of peer-to-peer data
+        pass
 
 class UnifiedEmbeddingEngine:
     def __init__(self):
