@@ -61,6 +61,20 @@ class SolomonMnemosyneDB:
             )
         """)
 
+        # 3. Create worker_modes table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS worker_modes (
+                worker_id TEXT PRIMARY KEY,
+                mode TEXT NOT NULL
+            )
+        """)
+
+        # Seed default worker modes if empty
+        cursor.execute("SELECT COUNT(*) FROM worker_modes")
+        if cursor.fetchone()[0] == 0:
+            for worker in ["Gabriel", "Mnemosyne", "Prometheus", "Loki"]:
+                cursor.execute("INSERT INTO worker_modes (worker_id, mode) VALUES (?, 'LIVE')", (worker,))
+
         conn.commit()
         conn.close()
 
@@ -302,3 +316,34 @@ class SolomonMnemosyneDB:
 
         results.sort(key=lambda x: x["similarity"], reverse=True)
         return results[:top_k]
+
+    def get_worker_modes(self) -> Dict[str, str]:
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT worker_id, mode FROM worker_modes")
+            modes = {row[0]: row[1] for row in cursor.fetchall()}
+            if not modes:
+                for w in ["Gabriel", "Mnemosyne", "Prometheus", "Loki"]:
+                    modes[w] = "LIVE"
+            return modes
+        except sqlite3.Error:
+            return {"Gabriel": "LIVE", "Mnemosyne": "LIVE", "Prometheus": "LIVE", "Loki": "LIVE"}
+        finally:
+            conn.close()
+
+    def set_worker_mode(self, worker_id: str, mode: str) -> bool:
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO worker_modes (worker_id, mode)
+                VALUES (?, ?)
+                ON CONFLICT(worker_id) DO UPDATE SET mode = excluded.mode
+            """, (worker_id, mode))
+            conn.commit()
+            return True
+        except sqlite3.Error:
+            return False
+        finally:
+            conn.close()
