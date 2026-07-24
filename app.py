@@ -63,6 +63,11 @@ from solomon_vector_compressor import RAGVectorCompressor
 from solomon_model_fusion import MultiModelFusionRouter
 from solomon_performance_predictor import PerformancePredictor
 
+# Import Phases 24 to 37 SOSS Engines
+from solomon_context_and_cache import MultiTenantContextIsolator, KVCachePageEvictionManager, P2PRAGSyncer, VirtualKVPageAllocator
+from solomon_classifiers_and_guardrails import ModelDriftWatchdog, HallucinationClassifier, EthicalGuardrails, TensorRefiner, ConsensusBallotBox
+from solomon_advanced_quantization import TernaryEntropyCalibrator, SpinQuantRotator, QATDistillationHeuristics, ActivationMSEMinimizer, WeightPruningSparsity
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -96,6 +101,22 @@ context_budgeter = DynamicContextBudgeter(db)
 vector_compressor = RAGVectorCompressor(db)
 model_fusion_router = MultiModelFusionRouter(db)
 performance_predictor = PerformancePredictor(db)
+
+# Instantiations for Phases 24 to 37
+context_isolator = MultiTenantContextIsolator()
+page_evictor = KVCachePageEvictionManager(max_pages=100)
+p2p_rag_syncer = P2PRAGSyncer(db)
+virtual_page_allocator = VirtualKVPageAllocator()
+drift_watchdog = ModelDriftWatchdog()
+hallucination_classifier = HallucinationClassifier()
+ethical_guardrails = EthicalGuardrails()
+tensor_refiner = TensorRefiner()
+consensus_ballot_box = ConsensusBallotBox()
+ternary_calibrator = TernaryEntropyCalibrator()
+spinquant_rotator = SpinQuantRotator()
+qat_distillation = QATDistillationHeuristics()
+activation_mse_minimizer = ActivationMSEMinimizer()
+weight_pruning_sparsity = WeightPruningSparsity()
 
 # Telemetry tracking for AST-fusion/injections
 ast_fusion_stats = {
@@ -1462,6 +1483,237 @@ def run_performance_predict():
         seq_len=seq_len
     )
     return jsonify(report)
+
+
+# ==========================================
+# ENDPOINTS FOR PHASES 24 TO 37 (CORE OPTIMIZATIONS & GUARDRAILS)
+# ==========================================
+
+@app.route("/api/command-center/context/isolate", methods=["POST"])
+def run_context_isolate():
+    data = request.json or {}
+    tenant_id = data.get("tenant_id")
+    role = data.get("role")
+    content = data.get("content")
+
+    if not tenant_id or not role or not content:
+        return jsonify({"error": "Missing tenant_id, role, or content."}), 400
+
+    context_isolator.append_message(tenant_id, role, content)
+    return jsonify({
+        "status": "success",
+        "tenant_id": tenant_id,
+        "context": context_isolator.get_tenant_context(tenant_id)
+    })
+
+
+@app.route("/api/command-center/kv/evict", methods=["POST"])
+def run_kv_evict():
+    data = request.json or {}
+    page_id = data.get("page_id")
+    content = data.get("content", "default_page_content")
+
+    if not page_id:
+        return jsonify({"error": "Missing page_id."}), 400
+
+    page_evictor.access_page(page_id, content)
+    return jsonify({
+        "status": "success",
+        "page_id_accessed": page_id,
+        "total_active_pages": len(page_evictor.pages),
+        "cached_pages": list(page_evictor.pages.keys())
+    })
+
+
+@app.route("/api/command-center/rag/sync", methods=["POST"])
+def run_rag_sync():
+    data = request.json or {}
+    peer_cards = data.get("peer_cards")
+
+    if not peer_cards or not isinstance(peer_cards, list):
+        return jsonify({"error": "Missing or invalid peer_cards list."}), 400
+
+    report = p2p_rag_syncer.sync_peer_card_updates(peer_cards)
+    return jsonify(report)
+
+
+@app.route("/api/command-center/kv/allocate", methods=["POST"])
+def run_kv_allocate():
+    data = request.json or {}
+    try:
+        size_mb = float(data.get("size_mb", 16.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid size_mb."}), 400
+
+    pages = virtual_page_allocator.allocate_virtual_pages(size_mb)
+    return jsonify({
+        "status": "success",
+        "pages_allocated": pages,
+        "total_blocks_allocated": virtual_page_allocator.allocated_blocks
+    })
+
+
+@app.route("/api/command-center/model/drift", methods=["POST"])
+def run_model_drift():
+    data = request.json or {}
+    baseline = data.get("baseline")
+    current = data.get("current")
+
+    if not baseline or not current or not isinstance(baseline, list) or not isinstance(current, list):
+        return jsonify({"error": "Missing or invalid baseline/current vector lists."}), 400
+
+    drift = drift_watchdog.calculate_parameter_drift(baseline, current)
+    return jsonify({
+        "status": "success",
+        "parameter_drift_ratio": drift,
+        "drift_threshold_exceeded": drift > 0.05
+    })
+
+
+@app.route("/api/command-center/hallucination/classify", methods=["POST"])
+def run_hallucination_classify():
+    data = request.json or {}
+    response = data.get("response")
+    verified_facts = data.get("verified_facts")
+
+    if not response or not verified_facts or not isinstance(verified_facts, list):
+        return jsonify({"error": "Missing response or verified_facts list."}), 400
+
+    hallucinated = hallucination_classifier.is_hallucinated(response, verified_facts)
+    return jsonify({
+        "status": "success",
+        "hallucinated": hallucinated,
+        "classification": "HALLUCINATION" if hallucinated else "VERIFIED"
+    })
+
+
+@app.route("/api/command-center/query/safety", methods=["POST"])
+def run_query_safety():
+    data = request.json or {}
+    query = data.get("query")
+
+    if not query:
+        return jsonify({"error": "Missing query."}), 400
+
+    report = ethical_guardrails.audit_query_safety(query)
+    return jsonify(report)
+
+
+@app.route("/api/command-center/tensor/align", methods=["POST"])
+def run_tensor_align():
+    data = request.json or {}
+    clusters = data.get("clusters")
+
+    if not clusters or not isinstance(clusters, list):
+        return jsonify({"error": "Missing or invalid clusters list."}), 400
+
+    aligned = tensor_refiner.align_tensor_clusters(clusters)
+    return jsonify({
+        "status": "success",
+        "aligned_clusters": aligned
+    })
+
+
+@app.route("/api/command-center/consensus/ballot", methods=["POST"])
+def run_consensus_ballot():
+    data = request.json or {}
+    votes = data.get("votes")
+
+    if not votes or not isinstance(votes, dict):
+        return jsonify({"error": "Missing votes dictionary."}), 400
+
+    passed = consensus_ballot_box.run_ballot(votes)
+    return jsonify({
+        "status": "success",
+        "consensus_passed": passed,
+        "total_votes_sum": sum(votes.values())
+    })
+
+
+@app.route("/api/command-center/ternary/calibrate", methods=["POST"])
+def run_ternary_calibrate():
+    data = request.json or {}
+    weights = data.get("weights")
+
+    if not weights or not isinstance(weights, list):
+        return jsonify({"error": "Missing weights list."}), 400
+
+    delta = ternary_calibrator.calibrate_ternary_threshold(weights)
+    return jsonify({
+        "status": "success",
+        "optimal_threshold_delta": delta
+    })
+
+
+@app.route("/api/command-center/spinquant/rotate", methods=["POST"])
+def run_spinquant_rotate():
+    data = request.json or {}
+    weights = data.get("weights")
+    try:
+        outliers = int(data.get("outliers", 150))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid outliers."}), 400
+
+    if not weights or not isinstance(weights, list):
+        return jsonify({"error": "Missing weights list."}), 400
+
+    report = spinquant_rotator.apply_orthogonal_rotation(weights, outliers)
+    return jsonify({
+        "status": "success",
+        "spinquant_report": report
+    })
+
+
+@app.route("/api/command-center/qat/distill", methods=["POST"])
+def run_qat_distill():
+    data = request.json or {}
+    teacher_logits = data.get("teacher_logits")
+    student_logits = data.get("student_logits")
+
+    if not teacher_logits or not student_logits or not isinstance(teacher_logits, list) or not isinstance(student_logits, list):
+        return jsonify({"error": "Missing teacher/student logits lists."}), 400
+
+    loss = qat_distillation.calculate_kl_divergence_loss(teacher_logits, student_logits)
+    return jsonify({
+        "status": "success",
+        "kl_divergence_distillation_loss": loss
+    })
+
+
+@app.route("/api/command-center/activation/mse", methods=["POST"])
+def run_activation_mse():
+    data = request.json or {}
+    original = data.get("original")
+    quantized = data.get("quantized")
+
+    if not original or not quantized or not isinstance(original, list) or not isinstance(quantized, list):
+        return jsonify({"error": "Missing original/quantized vectors."}), 400
+
+    mse = activation_mse_minimizer.minimize_activation_mse(original, quantized)
+    return jsonify({
+        "status": "success",
+        "mean_squared_error": mse
+    })
+
+
+@app.route("/api/command-center/weight/prune", methods=["POST"])
+def run_weight_prune():
+    data = request.json or {}
+    weights = data.get("weights")
+    try:
+        sparsity = float(data.get("sparsity", 0.30))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid sparsity."}), 400
+
+    if not weights or not isinstance(weights, list):
+        return jsonify({"error": "Missing weights."}), 400
+
+    pruned = weight_pruning_sparsity.prune_weights_by_magnitude(weights, sparsity)
+    return jsonify({
+        "status": "success",
+        "pruned_weights": pruned,
+        "zeros_count": pruned.count(0.0)
+    })
 
 
 if __name__ == "__main__":
