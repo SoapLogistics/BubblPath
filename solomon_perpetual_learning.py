@@ -50,6 +50,21 @@ class PerpetualLearningEngine:
                 SELECT MIN(id) FROM learning_events GROUP BY content
             )
         """)
+
+        # Phase 3: Detect contradictions (mock: flag antonyms or 'not ' in similar strings)
+        cursor.execute("SELECT id, content FROM learning_events WHERE status = 'active'")
+        active = cursor.fetchall()
+        for i in range(len(active)):
+            for j in range(i+1, len(active)):
+                c1 = active[i]['content'].lower()
+                c2 = active[j]['content'].lower()
+                # Dummy conflict heuristic
+                if ("not" in c1 and c1.replace("not ", "") in c2) or ("not" in c2 and c2.replace("not ", "") in c1):
+                    cursor.execute(
+                        "INSERT INTO memory_conflicts (event_id_1, event_id_2) VALUES (?, ?)",
+                        (active[i]['id'], active[j]['id'])
+                    )
+
         conn.commit()
         return updates
 
@@ -83,6 +98,19 @@ class PerpetualLearningEngine:
         conn.commit()
         return extracted
 
+    def rollback_broken_procedure(self, procedure_id, reason="Failed multiple times"):
+        """Phase 4: Detect procedure regressions and roll back."""
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("UPDATE procedures SET status = 'rolled_back' WHERE id = ?", (procedure_id,))
+        cursor.execute(
+            "INSERT INTO procedure_rollbacks (procedure_id, reason) VALUES (?, ?)",
+            (procedure_id, reason)
+        )
+        conn.commit()
+        return True
+
     # --- Phase 5: Reinforcement ---
     def apply_reinforcement(self, event_id, success=True):
         """Reward successful knowledge, penalize incorrect knowledge (forgetting curve logic)."""
@@ -111,6 +139,22 @@ class PerpetualLearningEngine:
             UPDATE learning_events
             SET status = 'archived'
             WHERE confidence < 0.2 AND usage_count < 2 AND julianday('now') - julianday(last_accessed) > 7
+        """)
+        conn.commit()
+
+    def prioritize_knowledge(self):
+        """Rebalance memory priorities: promote frequently used, demote noise."""
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+
+        # Promote high usage
+        cursor.execute("UPDATE learning_events SET confidence = MIN(1.0, confidence + 0.05) WHERE usage_count > 10")
+
+        # Archive noise (low confidence, 0 usage, old)
+        cursor.execute("""
+            UPDATE learning_events
+            SET status = 'archived'
+            WHERE usage_count = 0 AND confidence < 0.3 AND julianday('now') - julianday(timestamp) > 30
         """)
         conn.commit()
 

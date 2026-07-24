@@ -60,5 +60,16 @@ class TestAdvancedCognitiveArchitecture(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["new_chunk_size"], 256)
 
+    def test_run_background_loop(self):
+        flask_app.cognitive_architecture.log_meta_metric("embedding_accuracy", 0.9, context="text-embedding-ada-002")
+        flask_app.cognitive_architecture.log_tool_effectiveness("bash", "terminal_planning", 0.8)
+
+        res = self.client.post('/api/command-center/cognitive/advanced/run-background-loop')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data["status"], "success")
+        self.assertIn("embedding_models_comparison", data)
+        self.assertIn("planning_styles", data)
+
 if __name__ == '__main__':
     unittest.main()

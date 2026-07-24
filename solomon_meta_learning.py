@@ -53,3 +53,32 @@ class MetaLearningEngine:
 
         self.log_meta_metric("optimized_chunk_size", new_size, context="auto_tuned")
         return new_size
+
+    def compare_embedding_models(self):
+        """Compare retrieval performance of different embedding models."""
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+
+        # Pull metrics labeled with context corresponding to embedding models
+        cursor.execute("SELECT context, AVG(metric_value) as avg_score FROM meta_learning_metrics WHERE metric_name = 'embedding_accuracy' GROUP BY context")
+        models = cursor.fetchall()
+
+        if not models:
+            return None
+
+        best_model = max(models, key=lambda x: x['avg_score'])
+        return {
+            "best_model": best_model['context'],
+            "accuracy": round(best_model['avg_score'], 3),
+            "alternatives": [{"model": m['context'], "accuracy": round(m['avg_score'], 3)} for m in models]
+        }
+
+    def analyze_planning_styles(self):
+        """Learn which planning styles succeed for coding vs research."""
+        conn = self.db.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT category, AVG(success_rate) as success FROM tool_effectiveness WHERE category LIKE '%_planning' GROUP BY category")
+        styles = cursor.fetchall()
+
+        return {s['category']: round(s['success'], 2) for s in styles}

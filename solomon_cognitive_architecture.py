@@ -42,6 +42,12 @@ class SolomonCognitiveArchitecture:
     def log_experiment(self, *args, **kwargs):
         return self.autonomous_growth.log_experiment(*args, **kwargs)
 
+    def evaluate_experiment(self, *args, **kwargs):
+        return self.autonomous_growth.evaluate_experiment(*args, **kwargs)
+
+    def schedule_improvement(self, *args, **kwargs):
+        return self.autonomous_growth.schedule_improvement(*args, **kwargs)
+
     def add_research_goal(self, *args, **kwargs):
         return self.autonomous_growth.add_research_goal(*args, **kwargs)
 
@@ -57,3 +63,9 @@ class SolomonCognitiveArchitecture:
 
     def log_tool_effectiveness(self, *args, **kwargs):
         return self.meta_learning.log_tool_effectiveness(*args, **kwargs)
+
+    def compare_embedding_models(self, *args, **kwargs):
+        return self.meta_learning.compare_embedding_models(*args, **kwargs)
+
+    def analyze_planning_styles(self, *args, **kwargs):
+        return self.meta_learning.analyze_planning_styles(*args, **kwargs)

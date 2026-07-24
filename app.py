@@ -171,5 +171,37 @@ def repair_graph():
     orphans = cognitive_architecture.knowledge_graph.detect_orphan_nodes()
     return jsonify({"status": "success", "orphans_repaired": orphans})
 
+@app.route("/api/command-center/cognitive/advanced/run-background-loop", methods=["POST"])
+def run_background_loop():
+    """Aggregates background worker processes across all 4 campaigns."""
+    # Campaign I
+    cognitive_architecture.perpetual_learning.classify_memories()
+    procedures = cognitive_architecture.perpetual_learning.extract_procedures()
+    cognitive_architecture.perpetual_learning.run_forgetting_curve()
+    cognitive_architecture.perpetual_learning.prioritize_knowledge()
+
+    # Campaign II
+    edges = cognitive_architecture.knowledge_graph.semantic_link_nodes()
+    orphans = cognitive_architecture.knowledge_graph.detect_orphan_nodes()
+
+    # Campaign III
+    opps = cognitive_architecture.autonomous_growth.detect_opportunities()
+
+    # Campaign IV
+    chunk_size = cognitive_architecture.meta_learning.optimize_chunk_size()
+    embeddings = cognitive_architecture.compare_embedding_models()
+    styles = cognitive_architecture.analyze_planning_styles()
+
+    return jsonify({
+        "status": "success",
+        "procedures_extracted": procedures,
+        "semantic_edges_created": edges,
+        "orphans_repaired": orphans,
+        "opportunities_detected": opps,
+        "optimized_chunk_size": chunk_size,
+        "embedding_models_comparison": embeddings,
+        "planning_styles": styles
+    })
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

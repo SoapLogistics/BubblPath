@@ -53,6 +53,25 @@ class SolomonDBManager:
                 steps TEXT,
                 quality_score REAL,
                 version INTEGER DEFAULT 1,
+                status TEXT DEFAULT 'active',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS procedure_rollbacks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                procedure_id INTEGER,
+                reason TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS memory_conflicts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id_1 INTEGER,
+                event_id_2 INTEGER,
+                status TEXT DEFAULT 'pending_review',
+                resolution TEXT,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
