@@ -20,7 +20,9 @@ class DeterministicHashProvider(EmbeddingProvider):
             dimensions = 128
             vector = [0.0] * dimensions
 
-            words = text.lower().replace(",", " ").replace(".", " ").split()
+            raw_words = text.lower().replace(",", " ").replace(".", " ").split()
+            stopwords = {"the", "and", "is", "a", "an", "of", "to", "in", "for", "with", "on", "at"}
+            words = [w for w in raw_words if w not in stopwords]
             if not words:
                 vector[0] = 1.0
                 embeddings.append(vector)

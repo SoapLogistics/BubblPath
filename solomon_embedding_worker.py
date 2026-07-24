@@ -88,36 +88,32 @@ class AsyncEmbeddingWorker:
             embeddings = self.provider.embed_texts(texts)
             creation_timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+            # Opt 17: Batched execution for embedding async worker
+            insert_data = []
             for i, card_id in enumerate(card_ids):
                 emb_json = json.dumps(embeddings[i])
                 content_hash = hashlib.sha256(texts[i].encode("utf-8")).hexdigest()
-
-                cursor.execute("""
-                    INSERT INTO card_embeddings (
-                        card_id, provider, model, vector_dimension, model_fingerprint,
-                        creation_timestamp, source_content_hash, status,
-                        confidence_classification, embedding_vector
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(card_id, provider, model) DO UPDATE SET
-                        vector_dimension=excluded.vector_dimension,
-                        model_fingerprint=excluded.model_fingerprint,
-                        creation_timestamp=excluded.creation_timestamp,
-                        source_content_hash=excluded.source_content_hash,
-                        status=excluded.status,
-                        confidence_classification=excluded.confidence_classification,
-                        embedding_vector=excluded.embedding_vector
-                """, (
-                    card_id,
-                    meta["provider"],
-                    meta["model"],
-                    meta["vector_dimension"],
-                    meta["model_fingerprint"],
-                    creation_timestamp,
-                    content_hash,
-                    "active",
-                    meta["confidence_classification"],
-                    emb_json
+                insert_data.append((
+                    card_id, meta["provider"], meta["model"], meta["vector_dimension"],
+                    meta["model_fingerprint"], creation_timestamp, content_hash,
+                    "active", meta["confidence_classification"], emb_json
                 ))
+
+            cursor.executemany("""
+                INSERT INTO card_embeddings (
+                    card_id, provider, model, vector_dimension, model_fingerprint,
+                    creation_timestamp, source_content_hash, status,
+                    confidence_classification, embedding_vector
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(card_id, provider, model) DO UPDATE SET
+                    vector_dimension=excluded.vector_dimension,
+                    model_fingerprint=excluded.model_fingerprint,
+                    creation_timestamp=excluded.creation_timestamp,
+                    source_content_hash=excluded.source_content_hash,
+                    status=excluded.status,
+                    confidence_classification=excluded.confidence_classification,
+                    embedding_vector=excluded.embedding_vector
+            """, insert_data)
 
             conn.commit()
 

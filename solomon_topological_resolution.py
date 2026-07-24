@@ -64,7 +64,7 @@ class TopologicalResolutionEngine:
                     rel_type = link["relationship_type"]
 
                     if rel_type == "DEPENDS_ON":
-                        explanations.append(f"Card '{card_id}' depends on '{target_id}'. Resolving '{target_id}' first.")
+                        explanations.append({"action": "dependency_chain", "source": card_id, "target": target_id})
                         if not dfs(target_id):
                             # Circular dependency caught deeper
                             pass
@@ -83,7 +83,7 @@ class TopologicalResolutionEngine:
                         })
 
                     elif rel_type in ("REPAIRS", "CAUSED_FAILURE"):
-                        explanations.append(f"Noting historical edge: '{card_id}' {rel_type} '{target_id}'.")
+                        explanations.append({"action": "history_note", "source": card_id, "target": target_id, "type": rel_type})
 
             except sqlite3.Error as e:
                 warnings.append({"type": "DB_ERROR", "message": str(e)})

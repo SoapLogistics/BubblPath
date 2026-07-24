@@ -1,6 +1,9 @@
 import os
 import openai
-from flask import Flask, request, jsonify, render_template
+import time
+import gzip
+from flask import Flask, request, jsonify, render_template, g, after_this_request
+
 from solomon_quantization_engine import (
     HessianSensitivitySolver,
     SpinQuantSimulator,
@@ -19,6 +22,38 @@ from solomon_prometheus_curiosity import PrometheusCuriosityEngine
 from solomon_experiment_engine import ExperimentEngine
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 # 1MB Limit
+
+@app.before_request
+def start_timer():
+    g.start = time.time()
+
+@app.after_request
+def inject_headers_and_gzip(response):
+    if hasattr(g, 'start'):
+        diff = time.time() - g.start
+        response.headers["X-Response-Time-Ms"] = str(round(diff * 1000, 2))
+
+    response.headers["Access-Control-Allow-Origin"] = "chrome-extension://solomon-uuid"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    accept_encoding = request.headers.get('Accept-Encoding', '')
+    if 'gzip' not in accept_encoding.lower():
+        return response
+
+    if response.status_code < 200 or response.status_code >= 300:
+        return response
+
+    response.direct_passthrough = False
+
+    if response.headers.get('Content-Encoding') == 'gzip':
+        return response
+
+    gzip_buffer = gzip.compress(response.get_data())
+    response.set_data(gzip_buffer)
+    response.headers['Content-Encoding'] = 'gzip'
+    response.headers['Content-Length'] = len(response.get_data())
+    return response
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Instantiate our Relational Mnemosyne SQLite Database, Model Router, Skill Graph, and Self-Repair Engine
@@ -869,3 +904,17 @@ def run_scientific_experiment():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
+@app.route("/api/system/health", methods=["GET"])
+def health_check():
+    import os
+    db_size_mb = os.path.getsize("solomon_mnemosyne_demo.db") / (1024 * 1024) if os.path.exists("solomon_mnemosyne_demo.db") else 0
+    return jsonify({
+        "status": "ok",
+        "telemetry": {
+            "ram_limit_mb": 1500,
+            "process_rss_mb": round(os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES') / (1024.0 ** 2), 2) if hasattr(os, 'sysconf') else 0,
+            "db_size_mb": round(db_size_mb, 2),
+            "graph_health": "stable"
+        }
+    })

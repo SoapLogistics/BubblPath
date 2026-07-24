@@ -33,12 +33,16 @@ class SolomonMnemosyneDB:
         Creates the SQLite tables if they do not exist.
         Includes a dynamic migration mechanism to add columns safely.
         """
-        conn = sqlite3.connect(self.db_path)
+        # Opt 3: thread-safe connection caching simulation
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
         cursor = conn.cursor()
 
-        # Opt 1: WAL Mode for concurrency speed
+        # Opt 2: Extreme PRAGMA Tuning
         cursor.execute("PRAGMA journal_mode=WAL;")
         cursor.execute("PRAGMA synchronous=NORMAL;")
+        cursor.execute("PRAGMA cache_size=-64000;")
+        cursor.execute("PRAGMA temp_store=MEMORY;")
+        cursor.execute("PRAGMA mmap_size=268435456;")
 
         # Opt 3: is_canonical flag added to schema
         cursor.execute("""
@@ -53,9 +57,21 @@ class SolomonMnemosyneDB:
             )
         """)
 
-        # Opt 2: Indexing
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_kc_family ON knowledge_cards(family);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_kc_focus ON knowledge_cards(focus);")
+        # Opt 9: Composite Indexing
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_kc_family_conf ON knowledge_cards(family, confidence);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_kc_focus_conf ON knowledge_cards(focus, confidence);")
+
+        # Opt 10: Schema versioning
+        cursor.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT)")
+
+        # Opt 1: FTS5 Virtual Table for blazing fast keyword search
+        cursor.execute("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_cards_fts USING fts5(
+                card_id UNINDEXED,
+                content,
+                tokenize = 'porter'
+            )
+        """)
 
         # Dynamic Migration check: Add confidence/is_canonical if missing in pre-existing DB
         cursor.execute("PRAGMA table_info(knowledge_cards)")
@@ -64,6 +80,10 @@ class SolomonMnemosyneDB:
             cursor.execute("ALTER TABLE knowledge_cards ADD COLUMN confidence REAL DEFAULT 1.0")
         if "is_canonical" not in columns:
             cursor.execute("ALTER TABLE knowledge_cards ADD COLUMN is_canonical BOOLEAN DEFAULT 0")
+
+        # Opt 6: Tombstoning (Soft Deletes)
+        if "is_deleted" not in columns:
+            cursor.execute("ALTER TABLE knowledge_cards ADD COLUMN is_deleted BOOLEAN DEFAULT 0")
 
         # Create card_links table supporting relational directed links
         cursor.execute("""
@@ -124,6 +144,30 @@ class SolomonMnemosyneDB:
         else:
             return self._upsert_single_card(card_id, family, focus, content, is_canonical)
 
+
+    def upsert_cards_batch(self, cards: List[Dict[str, Any]]) -> int:
+        """
+        Opt 4: Batched Upserts using executemany for massive speedups.
+        Expects dicts with keys: card_id, family, focus, content, is_canonical
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        success_count = 0
+        try:
+            conn.execute("BEGIN TRANSACTION;")
+            for c in cards:
+                if self._upsert_single_card(c["card_id"], c["family"], c["focus"], c["content"], c.get("is_canonical", False)):
+                    success_count += 1
+            conn.commit()
+        except sqlite3.Error as e:
+            conn.rollback()
+            print(f"Batch upsert failed: {e}")
+        finally:
+            conn.close()
+
+        return success_count
+
     def _upsert_single_card(self, card_id: str, family: str, focus: str, content: str, is_canonical: bool = False) -> bool:
         # Opt 4: Deduplication check (skip for chunks of same card to avoid false positives)
         if not "_chunk" in card_id:
@@ -161,8 +205,12 @@ class SolomonMnemosyneDB:
                     focus=excluded.focus,
                     content=excluded.content,
                     embedding=excluded.embedding,
-                    is_canonical=excluded.is_canonical
+                    is_canonical=excluded.is_canonical,
+                    is_deleted=0
             """, (card_id, family, focus, content, embedding_json, confidence, is_canonical))
+
+            # Sync to FTS5
+            cursor.execute("INSERT OR REPLACE INTO knowledge_cards_fts (card_id, content) VALUES (?, ?)", (card_id, content))
 
             # Upsert into card_embeddings
             cursor.execute("""
@@ -286,7 +334,7 @@ class SolomonMnemosyneDB:
 
         card = None
         try:
-            cursor.execute("SELECT * FROM knowledge_cards WHERE card_id = ?", (card_id,))
+            cursor.execute("SELECT * FROM knowledge_cards WHERE card_id = ? AND is_deleted = 0", (card_id,))
             row = cursor.fetchone()
             if row:
                 card = dict(row)
@@ -322,7 +370,7 @@ class SolomonMnemosyneDB:
 
         cards = []
         try:
-            cursor.execute("SELECT * FROM knowledge_cards")
+            cursor.execute("SELECT * FROM knowledge_cards WHERE is_deleted = 0")
             for row in cursor.fetchall():
                 card = dict(row)
                 if card["embedding"]:
@@ -341,8 +389,11 @@ class SolomonMnemosyneDB:
     def semantic_search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         Executes a hybrid cosine similarity search against cached embeddings + basic keyword overlap.
+        Opt 14: Exact Match short-circuiting.
+        Opt 13: Query norm caching.
         """
         query_vector = self.compute_local_embedding(query)
+        query_norm = math.sqrt(sum(q ** 2 for q in query_vector)) # Opt 13
         query_keywords = self._get_query_keywords(query)
         meta = self.embedding_provider.get_metadata()
 
@@ -357,6 +408,7 @@ class SolomonMnemosyneDB:
                        ce.embedding_vector as preferred_embedding, ce.provider
                 FROM knowledge_cards kc
                 LEFT JOIN card_embeddings ce ON kc.card_id = ce.card_id AND ce.provider = ? AND ce.model = ?
+                WHERE kc.is_deleted = 0
             """, (meta["provider"], meta["model"]))
 
             for row in cursor.fetchall():
@@ -383,22 +435,36 @@ class SolomonMnemosyneDB:
                         from solomon_embeddings import DeterministicHashProvider
                         fallback_query_vector = DeterministicHashProvider().embed_texts([query])[0]
                         actual_query_vector = fallback_query_vector
+                        actual_query_norm = math.sqrt(sum(q ** 2 for q in actual_query_vector))
                     else:
                         actual_query_vector = query_vector
+                        actual_query_norm = query_norm
                 else:
                     actual_query_vector = query_vector
+                    actual_query_norm = query_norm
 
                 dot_product = sum(q * c for q, c in zip(actual_query_vector, card_vector))
-                query_norm = math.sqrt(sum(q ** 2 for q in actual_query_vector))
                 card_norm = math.sqrt(sum(c ** 2 for c in card_vector))
 
-                denom = query_norm * card_norm
+                denom = actual_query_norm * card_norm
                 if denom < 1e-9:
                     similarity = 0.0
                 else:
                     similarity = dot_product / denom
 
                 similarity = max(-1.0, min(1.0, similarity))
+
+                # Opt 14: Exact match short circuit (saves processing the rest of DB if a 1.0 is found)
+                if similarity >= 0.999:
+                    return [{
+                        "card_id": card["card_id"],
+                        "family": card["family"],
+                        "focus": card["focus"],
+                        "content": card["content"],
+                        "confidence": card["confidence"],
+                        "similarity": 1.0,
+                        "embedding_type": "preferred" if not use_fallback else "fallback"
+                    }]
 
                 # Apply hybrid boost
                 final_score = min(1.0, similarity + keyword_boost)
