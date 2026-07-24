@@ -13,9 +13,14 @@
     <div class="max-w-5xl mx-auto space-y-8">
 
         <!-- Header -->
-        <header class="border-b border-gray-700 pb-4">
-            <h1 class="text-4xl font-bold text-orange-500">Hephaestus App Forge</h1>
-            <p class="text-sm text-gray-400 mt-2">Solomon's Master Multi-Platform Application Builder</p>
+        <header class="border-b border-gray-700 pb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-4xl font-bold text-orange-500">Hephaestus App Forge</h1>
+                <p class="text-sm text-gray-400 mt-2">Solomon's Master Multi-Platform Application Builder</p>
+            </div>
+            <button onclick="runOptimizations()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded transition shadow-lg border border-purple-800">
+                Run 50-Step Optimization
+            </button>
         </header>
 
         <!-- Main Controls -->
@@ -153,6 +158,30 @@
                 }
             } catch (err) {
                 logMessage(`[ERROR] Failed to contact Hephaestus API: ${err.message}`);
+            }
+        }
+
+        async function runOptimizations() {
+            logMessage(`Triggering 50-Step Optimization Pipeline...`);
+            try {
+                const response = await fetch('/api/command-center/hephaestus/optimize-pipeline', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    logMessage(`[SUCCESS] Pipeline executed ${data.optimizations_ran} optimizations in ${data.execution_time_ms}ms.`);
+                    // print first 5 and last 5 to not flood UI
+                    logMessage(`Head: \n - ${data.log.slice(0, 5).join('\n - ')}`);
+                    logMessage(`... skipping middle ...`);
+                    logMessage(`Tail: \n - ${data.log.slice(-5).join('\n - ')}`);
+                } else {
+                    logMessage(`[ERROR] Pipeline failed.`);
+                }
+            } catch (err) {
+                logMessage(`[ERROR] Failed to contact API: ${err.message}`);
             }
         }
     </script>
