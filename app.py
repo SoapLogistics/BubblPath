@@ -34,6 +34,7 @@ from solomon_performance_predictor import PerformancePredictor
 from solomon_knowledge_graph import KnowledgeGraph
 from solomon_25_step_optimizers import TwentyFiveStepOptimizers
 from solomon_50_step_optimizers import FiftyStepOptimizers
+from solomon_50_more_step_optimizers import FiftyMoreStepOptimizers
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -1166,7 +1167,20 @@ def run_50_step_optimization_pipeline():
         "recommended_next_step": "RECOMMENDED NEXT STEP: Calibrate routing thresholds based on LLM quantizations."
     })
 
+@app.route("/api/command-center/optimization/ultra-deep-pipeline", methods=["POST"])
+def run_50_more_step_optimization_pipeline():
+    """
+    Executes the 50 more steps ultra-deep optimization pipeline for RLHF, networking, and clusters.
+    """
+    results = FiftyMoreStepOptimizers.execute_all()
+    return jsonify({
+        "status": "success",
+        "ultra_deep_optimization_pipeline_report": results,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Scale your clusters with the optimized network policies."
+    })
+
 if __name__ == "__main__":
+
 
 
     app.run(host="0.0.0.0", port=10000)
