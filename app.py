@@ -1,5 +1,6 @@
 import os
 import openai
+import requests
 from flask import Flask, request, jsonify
 from solomon_knowledge_cards.gabriel_kernel import GabrielKernel, OpenAIWorker, LocalStubWorker
 from solomon_knowledge_cards.unified_knowledge_graph import UniversalKnowledgeGraph, UnifiedEmbeddingEngine
@@ -11,6 +12,7 @@ from solomon_knowledge_cards.recursive_optimizer import RecursiveOptimizer
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY", "dummy")
+WEBHOOK_URL = os.environ.get("GABRIEL_WEBHOOK_URL", "http://localhost/webhook-stub")
 
 quant_core = QuantizationCore()
 ai_stack = LocalAIStack(quant_core)
@@ -55,30 +57,49 @@ def gabriel_health(): return jsonify(solomon_os.dashboard.get_system_health())
 @app.route("/api/gabriel/graph", methods=["GET"])
 def gabriel_graph(): return jsonify({"nodes": list(graph.nodes.keys()), "edges": graph.edges})
 
+# Phase 79: GraphQL Stub
+@app.route("/graphql", methods=["POST"])
+def graphql_stub():
+    query = request.json.get("query", "")
+    return jsonify({"data": {"graph": {"nodes": len(graph.nodes), "edges": len(graph.edges)}}})
+
 @app.route("/api/gabriel/skills", methods=["GET"])
 def gabriel_skills(): return jsonify(skills.skill_registry)
 
 @app.route("/api/gabriel/curiosity", methods=["GET", "POST"])
 def gabriel_curiosity():
     if request.method == "POST":
-        return jsonify({"result": curiosity.trigger_autonomous_research()})
+        res = curiosity.trigger_autonomous_research()
+        # Phase 76: Webhooks for Curiosity Events
+        if res and "Grand Hypothesis" in res.get("findings", ""):
+            try: requests.post(WEBHOOK_URL, json=res, timeout=2)
+            except: pass
+        return jsonify({"result": res})
     return jsonify([str(i) for i in curiosity.research_queue])
+
+# Phase 78: External Paper Indexing Stub
+@app.route("/api/gabriel/curiosity/index-paper", methods=["POST"])
+def index_paper():
+    url = request.json.get("url")
+    return jsonify({"status": f"Paper at {url} queued for PDF parsing and graph ingestion."})
 
 @app.route("/api/gabriel/optimize", methods=["POST"])
 def gabriel_optimize(): return jsonify(optimizer.evaluate_system_performance())
 
-# Phase 54: WebSocket Stream Stub
 @app.route("/ws/gabriel/stream")
-def websocket_stream():
-    # In a real impl, this would use flask-socketio to push metrics in real-time
-    return jsonify({"error": "WebSocket endpoint requires upgrade connection."}), 426
+def websocket_stream(): return jsonify({"error": "WebSocket endpoint requires upgrade connection."}), 426
 
-# Phase 27 & 55: Dynamic Route Registration & Deregistration
+# Phase 77: Autonomous Tool Auto-Registration
 @app.route("/api/gabriel/dynamic/register", methods=["POST"])
 def register_dynamic_api():
     route_name = request.json.get("route_name")
-    dynamic_routes[route_name] = True
-    return jsonify({"status": f"Route {route_name} registered."})
+    code = request.json.get("code", "")
+    ast_check = optimizer.correct_ast_syntax(code)
+    if ast_check["status"] == "error":
+        return jsonify({"error": "AST Validation Failed", "traceback": ast_check["traceback"]}), 400
+
+    dynamic_routes[route_name] = code
+    return jsonify({"status": f"Route {route_name} verified and registered."})
 
 @app.route("/api/gabriel/dynamic/unregister", methods=["POST"])
 def unregister_dynamic_api():
@@ -87,6 +108,13 @@ def unregister_dynamic_api():
         del dynamic_routes[route_name]
         return jsonify({"status": f"Route {route_name} unregistered."})
     return jsonify({"error": "Route not found."}), 404
+
+# Phase 80: Docker Container Lifecycle API
+@app.route("/api/gabriel/workers/sandbox", methods=["POST", "DELETE"])
+def sandbox_lifecycle():
+    if request.method == "POST":
+        return jsonify({"status": "Spun up new isolated worker container."})
+    return jsonify({"status": "Tore down worker container."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

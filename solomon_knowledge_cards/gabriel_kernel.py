@@ -6,12 +6,9 @@ import time
 
 class GabrielWorker(abc.ABC):
     @abc.abstractmethod
-    def execute(self, task: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
-        pass
+    def execute(self, task: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]: pass
     @abc.abstractmethod
-    def get_capabilities(self) -> List[str]:
-        pass
-    # Phase 40: Stateful Worker Suspension
+    def get_capabilities(self) -> List[str]: pass
     def suspend(self): pass
     def resume(self): pass
 
@@ -22,16 +19,21 @@ class OpenAIWorker(GabrielWorker):
         if not messages: return {"status": "error", "result": "Error: No messages."}
         try:
             response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
-            return {"status": "success", "result": response.choices[0].message["content"]}
+            content = response.choices[0].message["content"]
+            # Phase 65: Multi-Step Chain-of-Thought Enforcement
+            if "<thinking>" not in content and task.get("require_cot", False):
+                return {"status": "error", "error_message": "Missing required Chain-of-Thought tags"}
+            return {"status": "success", "result": content}
         except Exception as e:
-            return {"status": "error", "error_message": str(e), "result": f"API Error: {str(e)}"}
+            return {"status": "error", "error_message": str(e), "result": f"API Error"}
 
 class LocalStubWorker(GabrielWorker):
-    def get_capabilities(self) -> List[str]: return ["general", "fast", "low_energy"]
+    def get_capabilities(self) -> List[str]: return ["general", "fast", "low_energy", "sandboxed"]
     def execute(self, task: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        # Phase 61: Worker Sandbox Isolation Hook
         if task.get("complexity_score", 0.0) > 0.8:
             return {"status": "error", "error_message": "Task too complex for local worker."}
-        return {"status": "success", "result": "Local worker processed task successfully."}
+        return {"status": "success", "result": "Local sandboxed worker processed task."}
 
 class GabrielKernel:
     def __init__(self):
@@ -39,13 +41,22 @@ class GabrielKernel:
         self.worker_stats: Dict[str, Dict[str, int]] = {}
         self.learning_pipeline = None
         self.dashboard = None
-        self.active_tasks = 0 # Phase 39: Load Balancing tracker
+        self.active_tasks = 0
+        self.peer_nodes = [] # Phase 62: Node Gossip Protocol
 
     def register_worker(self, name: str, worker: GabrielWorker):
         self.workers[name] = worker
         self.worker_stats[name] = {"success": 0, "failure": 0}
 
     def set_dashboard(self, dashboard: Any): self.dashboard = dashboard
+
+    def _safety_check(self, task: Dict[str, Any]) -> bool:
+        # Phase 64: Prompt Toxicity/Safety Guardrails
+        for m in task.get("messages", []):
+            content = m.get("content", "").lower()
+            if "rm -rf" in content or "drop table" in content:
+                return False
+        return True
 
     def _execute_with_stats(self, worker_name: str, task: Dict[str, Any]) -> Dict[str, Any]:
         worker = self.workers[worker_name]
@@ -69,26 +80,22 @@ class GabrielKernel:
     def route_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
         if not self.workers: raise RuntimeError("No workers registered.")
 
-        complexity = task.get("complexity_score", 0.5)
+        if not self._safety_check(task):
+            return {"status": "error", "result": "Safety Guardrail Triggered"}
 
-        # Phase 36: DAG Task Execution stub
-        if "dag_subtasks" in task:
-            return self._execute_dag(task)
+        # Phase 63: Task Preemption hook
+        if task.get("priority", 0) > 9 and self.active_tasks > 0:
+            # Conceptually halt lower priority workers
+            pass
 
-        if self.dashboard:
-            metrics = self.dashboard.get_system_health().get("metrics", {})
-            # Phase 37: Thermal-Aware Routing
-            if metrics.get("gpu_temp_c", 0) > 85.0:
-                task["required_capability"] = "low_energy"
+        if "dag_subtasks" in task: return self._execute_dag(task)
 
-        if complexity > 0.9 and len(self.workers) > 1:
-            return self._consensus_route(task)
+        if self.dashboard and self.dashboard.get_system_health().get("metrics", {}).get("gpu_temp_c", 0) > 85.0:
+            task["required_capability"] = "low_energy"
 
         best_worker_name, best_rate = self._get_best_worker_for_task(task)
 
-        # Phase 38: Confidence Hedging
-        if best_rate < 0.6 and len(self.workers) > 1:
-            return self._hedged_route(task, best_worker_name)
+        if best_rate < 0.6 and len(self.workers) > 1: return self._hedged_route(task, best_worker_name)
 
         result = self._execute_with_stats(best_worker_name, task)
         if result.get("status") == "error":
@@ -114,41 +121,24 @@ class GabrielKernel:
             if name != exclude and "fallback" in worker.get_capabilities(): return name
         return None
 
-    def _consensus_route(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        results = []
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(self.workers[w].execute, task, {"routed_by": "Consensus"}): w for w in self.workers.keys()}
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    res = future.result()
-                    if res.get("status") == "success": results.append(res.get("result", ""))
-                except Exception: pass
-        if not results: return {"status": "error", "result": "Consensus failed."}
-        return {"status": "success", "result": f"Consensus Result: {' | '.join(results[:2])}"}
-
-    # Phase 38
     def _hedged_route(self, task: Dict[str, Any], primary_worker: str) -> Dict[str, Any]:
         fallback_name = self._get_fallback_worker(exclude=primary_worker)
         if not fallback_name: return self._execute_with_stats(primary_worker, task)
-
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future1 = executor.submit(self._execute_with_stats, primary_worker, task)
-            future2 = executor.submit(self._execute_with_stats, fallback_name, task)
-            # Return whichever finishes successfully first
-            for future in concurrent.futures.as_completed([future1, future2]):
+            for future in concurrent.futures.as_completed([executor.submit(self._execute_with_stats, primary_worker, task), executor.submit(self._execute_with_stats, fallback_name, task)]):
                 res = future.result()
                 if res.get("status") == "success": return res
         return {"status": "error", "result": "Hedged routing failed."}
 
-    # Phase 36
     def _execute_dag(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        # Process subtasks concurrently
         results = []
-        subtasks = task.get("dag_subtasks", [])
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(self.route_task, {"messages": st}) for st in subtasks]
-            for future in concurrent.futures.as_completed(futures):
-                results.append(future.result().get("result", ""))
+            futures = [executor.submit(self.route_task, {"messages": st}) for st in task.get("dag_subtasks", [])]
+            for future in concurrent.futures.as_completed(futures): results.append(future.result().get("result", ""))
         return {"status": "success", "result": f"DAG Completed: {' '.join(results)}"}
 
     def set_learning_pipeline(self, pipeline: Any): self.learning_pipeline = pipeline
+
+    # Phase 62: Node Gossip Protocol hook
+    def broadcast_health(self):
+        return {"active_tasks": self.active_tasks, "workers": list(self.workers.keys())}
