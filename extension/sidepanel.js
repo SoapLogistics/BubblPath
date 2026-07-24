@@ -320,10 +320,70 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // --- Offline Lab Logic ---
+let currentSessionId = "session_" + Date.now();
+let globalRunningCount = 0;
+let globalDecksRemaining = 6.0;
+
+const quickInput = document.getElementById('quick-card-input');
+const resetShoeBtn = document.getElementById('reset-shoe-btn');
+
+quickInput.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+        const card = quickInput.value.trim();
+        if (!card) return;
+
+        quickInput.value = ''; // clear immediately
+
+        try {
+            const response = await fetch('http://localhost:10000/api/casino/blackjack/shoe/deal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentSessionId, card: card })
+            });
+            const data = await response.json();
+
+            if (data.error) {
+                quickInput.placeholder = data.error;
+                setTimeout(() => quickInput.placeholder = "Card (e.g. 10) + Enter", 2000);
+            } else {
+                document.getElementById('shoe-rc').textContent = data.running_count;
+                document.getElementById('shoe-tc').textContent = data.true_count.toFixed(1);
+                document.getElementById('shoe-cards').textContent = data.cards_remaining;
+                document.getElementById('shoe-history').textContent = JSON.stringify(data.recent_history);
+
+                globalRunningCount = data.running_count;
+                globalDecksRemaining = Math.max(0.5, data.cards_remaining / 52.0);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+});
+
+resetShoeBtn.addEventListener('click', async () => {
+    try {
+        const response = await fetch('http://localhost:10000/api/casino/blackjack/shoe/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: currentSessionId, decks: 6 })
+        });
+        const data = await response.json();
+        if (data.status === 'reset') {
+            document.getElementById('shoe-rc').textContent = '0';
+            document.getElementById('shoe-tc').textContent = '0.0';
+            document.getElementById('shoe-cards').textContent = '312';
+            document.getElementById('shoe-history').textContent = '[]';
+            globalRunningCount = 0;
+            globalDecksRemaining = 6.0;
+        }
+    } catch (err) {
+        console.error(err);
+    }
+});
+
 document.getElementById('lab-advise-btn').addEventListener('click', async () => {
     const playerRaw = document.getElementById('lab-player').value;
     const dealer = document.getElementById('lab-dealer').value.trim();
-    const count = parseInt(document.getElementById('lab-count').value) || 0;
 
     if (!playerRaw || !dealer) return;
 
@@ -340,7 +400,8 @@ document.getElementById('lab-advise-btn').addEventListener('click', async () => 
             body: JSON.stringify({
                 player_cards: player,
                 dealer_upcard: dealer,
-                running_count: count
+                running_count: globalRunningCount,
+                decks_remaining: globalDecksRemaining
             })
         });
         const data = await response.json();

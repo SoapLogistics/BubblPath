@@ -151,6 +151,23 @@ def blackjack_advice():
     advice = casino_lab.get_blackjack_advice(player, dealer, rc, decks)
     return jsonify(advice)
 
+# Offline Lab: Quick Input Shoe Memory
+@app.route("/api/casino/blackjack/shoe/deal", methods=["POST"])
+def log_shoe_card():
+    data = request.json
+    session_id = data.get("session_id", "default_user")
+    card = data.get("card", "")
+    result = casino_lab.log_card(session_id, card)
+    return jsonify(result)
+
+@app.route("/api/casino/blackjack/shoe/reset", methods=["POST"])
+def reset_shoe():
+    data = request.json
+    session_id = data.get("session_id", "default_user")
+    decks = data.get("decks", 6)
+    result = casino_lab.init_shoe(session_id, decks)
+    return jsonify({"status": "reset", "state": result})
+
 # 5. Rules Endpoint
 @app.route("/api/casino/rules", methods=["GET"])
 def casino_rules():

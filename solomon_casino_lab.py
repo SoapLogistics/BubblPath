@@ -12,6 +12,44 @@ class CasinoLab:
             "craps": "Pass line is the fundamental bet. 7 or 11 on come-out wins. 2, 3, or 12 loses.",
             "roulette": "European (single zero) has better odds than American (double zero). Outside bets (Red/Black) are nearly 50/50."
         }
+        # Stateful Shoe Memory for Quick-Input
+        self.shoes = {} # Dictionary mapping session_ids to shoe state
+
+    def init_shoe(self, session_id: str, total_decks: int = 6):
+        self.shoes[session_id] = {
+            "cards_dealt": [],
+            "running_count": 0,
+            "total_decks": total_decks,
+            "cards_remaining": total_decks * 52
+        }
+        return self.shoes[session_id]
+
+    def log_card(self, session_id: str, card_str: str):
+        if session_id not in self.shoes:
+            self.init_shoe(session_id)
+
+        shoe = self.shoes[session_id]
+        card_str = card_str.upper().strip()
+
+        # Validate simple card input (2-10, J, Q, K, A)
+        valid_cards = [str(i) for i in range(2, 11)] + ['J', 'Q', 'K', 'A']
+        if card_str not in valid_cards:
+            return {"error": f"Invalid card: {card_str}"}
+
+        # Update state
+        shoe["cards_dealt"].append(card_str)
+        shoe["running_count"] += self.get_hi_lo_value(card_str)
+        shoe["cards_remaining"] -= 1
+
+        decks_remaining = max(0.5, shoe["cards_remaining"] / 52.0)
+        true_count = shoe["running_count"] / decks_remaining
+
+        return {
+            "running_count": shoe["running_count"],
+            "true_count": true_count,
+            "cards_remaining": shoe["cards_remaining"],
+            "recent_history": shoe["cards_dealt"][-10:] # Last 10 cards
+        }
 
     def get_card_value(self, card_str: str) -> int:
         card = card_str.upper().strip()

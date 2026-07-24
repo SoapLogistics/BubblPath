@@ -365,14 +365,25 @@
     <h3 style="margin-top:0; font-size: 14px;">Offline Blackjack Advisor</h3>
     <p style="font-size: 11px; color: #666;">Manual input only. Real-time extraction blocked.</p>
 
+    <div style="background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px;">
+        <h4 style="margin:0 0 5px 0; font-size: 12px;">Quick Input Memory</h4>
+        <div style="display: flex; gap: 5px;">
+             <input type="text" id="quick-card-input" class="lab-input" style="margin-bottom:0;" placeholder="Card (e.g. 10) + Enter">
+             <button id="reset-shoe-btn" class="tool-btn" style="height: 33px;">Reset</button>
+        </div>
+        <div style="font-size: 11px; color: #444; margin-top: 5px;" id="shoe-stats">
+             Count: <strong id="shoe-rc">0</strong> | True: <strong id="shoe-tc">0.0</strong> | Cards: <strong id="shoe-cards">312</strong>
+        </div>
+        <div style="font-size: 10px; color: #888; margin-top: 2px;">
+             History: <span id="shoe-history">[]</span>
+        </div>
+    </div>
+
     <label style="font-size: 12px; font-weight: bold;">Player Cards (e.g. 10, A)</label>
     <input type="text" id="lab-player" class="lab-input" placeholder="10, 8">
 
     <label style="font-size: 12px; font-weight: bold;">Dealer Upcard (e.g. 6)</label>
     <input type="text" id="lab-dealer" class="lab-input" placeholder="6">
-
-    <label style="font-size: 12px; font-weight: bold;">Running Count (Hi-Lo)</label>
-    <input type="number" id="lab-count" class="lab-input" value="0">
 
     <button id="lab-advise-btn" style="width: 100%; margin-top: 5px;">Get Advice</button>
 
