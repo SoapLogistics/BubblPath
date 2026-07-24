@@ -19,6 +19,19 @@ from solomon_prometheus_curiosity import PrometheusCuriosityEngine
 from solomon_experiment_engine import ExperimentEngine
 from solomon_wisdom_layer import WisdomLayer
 
+# Imports for SOSS Phases 13 through 23
+from solomon_orchestrator import WorkerForemanOrchestrator
+from solomon_neural_synapse_mapper import NeuralSynapseMapper
+from solomon_self_evolving_codex import SelfEvolvingCodex
+from solomon_kalshi_predictor import KalshiPredictor
+from solomon_system_sentinel import SystemSentinel
+from solomon_tensor_coherence import TensorCoherenceOptimizer
+from solomon_multi_agent_consensus import MultiAgentConsensus
+from solomon_context_budgeter import DynamicContextBudgeter
+from solomon_vector_compressor import RAGVectorCompressor
+from solomon_model_fusion import MultiModelFusionRouter
+from solomon_performance_predictor import PerformancePredictor
+
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -30,6 +43,10 @@ repair_engine = SelfRepairEngine(db)
 curiosity_engine = PrometheusCuriosityEngine(db)
 experiment_engine = ExperimentEngine(db)
 wisdom_layer = WisdomLayer(db)
+
+# Instances for SOSS Phases 13 through 23
+orchestrator = WorkerForemanOrchestrator(db)
+synapse_mapper = NeuralSynapseMapper(db)
 
 # ==========================================
 # SIMULATED LIVE MODEL-LOADING PIPELINE INITIALIZATION & DATABASE SEEDING
@@ -905,6 +922,193 @@ def evaluate_wisdom_compliance():
             "Always wrap your active workspace API queries inside this /api/mnemosyne/wisdom/evaluate gate "
             "to guarantee complete ethical compliance, safety, and strict process memory boundaries!</span>"
         )
+    })
+
+
+# ==========================================
+# SOSS PHASES 13 THROUGH 23 API ROUTES
+# ==========================================
+
+@app.route("/api/command-center/orchestrator/delegate", methods=["POST"])
+def delegate_orchestrated_message():
+    data = request.json or {}
+    message = data.get("message", "")
+    if not message:
+        return jsonify({"error": "Missing 'message' parameter to delegate."}), 400
+    res = orchestrator.delegate_message(message)
+    return jsonify({
+        "status": "success",
+        "delegation_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Utilize prefix tags like Loki: or Gabriel: to target queries."
+    })
+
+
+@app.route("/api/command-center/synapse/blend", methods=["POST"])
+def blend_sok_synapses():
+    data = request.json or {}
+    rel_type = data.get("relationship_type", "DEPENDS_ON")
+    res = synapse_mapper.blend_synapses(rel_type)
+    return jsonify({
+        "status": "success",
+        "synapse_blend_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Check the fused cards in the SOK database to verify coherence."
+    })
+
+
+@app.route("/api/command-center/codex/compile", methods=["POST"])
+def compile_codex_instruction():
+    data = request.json or {}
+    instruction = data.get("instruction")
+    func_name = data.get("function_name", "custom_dynamic_fn")
+    if not instruction:
+        return jsonify({"error": "Missing 'instruction' parameter."}), 400
+    res = SelfEvolvingCodex.compile_instruction(instruction, func_name)
+    return jsonify({
+        "status": "success",
+        "codex_compilation_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Execute the sandboxed compiled function to verify dynamic logic."
+    })
+
+
+@app.route("/api/command-center/kalshi/simulate", methods=["POST"])
+def simulate_prediction_market():
+    data = request.json or {}
+    try:
+        price = float(data.get("market_price_cents", 50.0))
+        prob = float(data.get("model_probability", 0.6))
+        bankroll = float(data.get("bankroll", 1000.0))
+        mult = float(data.get("fractional_multiplier", 0.5))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid float parameters: {str(e)}"}), 400
+
+    res = KalshiPredictor.calculate_kelly_stake(price, prob, bankroll, mult)
+    return jsonify({
+        "status": "success",
+        "kalshi_simulation_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Monitor contract price dynamics to adjust model probabilities."
+    })
+
+
+@app.route("/api/command-center/sentinel/verify", methods=["POST"])
+def verify_system_sentinel():
+    data = request.json or {}
+    filepath = data.get("filepath", "app.py")
+    res = SystemSentinel.audit_file_syntax(filepath)
+    return jsonify({
+        "status": "success",
+        "sentinel_verification_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Run periodic system sentinel audits to proactively discover syntax warnings."
+    })
+
+
+@app.route("/api/command-center/tensor/coherence", methods=["POST"])
+def optimize_tensor_coherence():
+    data = request.json or {}
+    scores = data.get("initial_scores", [0.8, 0.4, 0.9, 0.3])
+    if not isinstance(scores, list):
+        return jsonify({"error": "'initial_scores' must be a list of floats."}), 400
+    try:
+        float_scores = [float(x) for x in scores]
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid list item: {str(e)}"}), 400
+
+    res = TensorCoherenceOptimizer.optimize_coherence(float_scores)
+    return jsonify({
+        "status": "success",
+        "tensor_coherence_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Sync optimized coherence scores directly to relational memory card weights."
+    })
+
+
+@app.route("/api/command-center/consensus/vote", methods=["POST"])
+def vote_multi_agent_consensus():
+    data = request.json or {}
+    proposal = data.get("action_proposal")
+    try:
+        risk = float(data.get("risk_score", 0.5))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid 'risk_score': {str(e)}"}), 400
+
+    if not proposal:
+        return jsonify({"error": "Missing 'action_proposal' parameter."}), 400
+
+    res = MultiAgentConsensus.cast_consensus_votes(proposal, risk)
+    return jsonify({
+        "status": "success",
+        "consensus_vote_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Trigger the action only if the status is APPROVED."
+    })
+
+
+@app.route("/api/command-center/context/budget", methods=["POST"])
+def budget_context_size():
+    data = request.json or {}
+    history = data.get("history", [])
+    try:
+        max_chars = int(data.get("max_context_chars", 1000))
+        ram = float(data.get("system_ram_mb", 1000.0))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid numeric parameters: {str(e)}"}), 400
+
+    res = DynamicContextBudgeter.budget_context(history, max_chars, ram)
+    return jsonify({
+        "status": "success",
+        "context_budget_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Prune active prompt buffers before routing to low-memory lanes."
+    })
+
+
+@app.route("/api/command-center/vector/compress", methods=["POST"])
+def compress_semantic_vector():
+    data = request.json or {}
+    embeddings = data.get("embeddings")
+    if not embeddings or not isinstance(embeddings, list):
+        return jsonify({"error": "Missing or invalid 'embeddings' list."}), 400
+
+    res = RAGVectorCompressor.process_and_compress(embeddings)
+    return jsonify({
+        "status": "success",
+        "vector_compression_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Utilize compressed binary vectors with Hamming distance similarity."
+    })
+
+
+@app.route("/api/command-center/model/fusion", methods=["POST"])
+def calculate_model_fusion():
+    data = request.json or {}
+    try:
+        vram = float(data.get("available_vram_gb", 16.0))
+        acc = float(data.get("accuracy_requirement", 0.9))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid numeric parameters: {str(e)}"}), 400
+
+    profiles = data.get("model_profiles", [
+        {"model_name": "Local INT4 Edge", "vram_required_gb": 4.0, "accuracy_score": 0.85},
+        {"model_name": "Cloud FP16 Target", "vram_required_gb": 32.0, "accuracy_score": 0.99}
+    ])
+    res = MultiModelFusionRouter.calculate_fusion_routing(vram, acc, profiles)
+    return jsonify({
+        "status": "success",
+        "model_fusion_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Weight generation logits according to these computed shares."
+    })
+
+
+@app.route("/api/command-center/performance/predict", methods=["POST"])
+def predict_performance():
+    data = request.json or {}
+    try:
+        params = float(data.get("num_parameters", 8e9))
+        bits = int(data.get("precision_bits", 4))
+        tokens = int(data.get("context_tokens", 2048))
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid numeric parameters: {str(e)}"}), 400
+
+    res = PerformancePredictor.predict_performance_metrics(params, bits, tokens)
+    return jsonify({
+        "status": "success",
+        "performance_prediction_result": res,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Run latency estimators before launching high-parameter models."
     })
 
 
