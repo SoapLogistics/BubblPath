@@ -73,21 +73,24 @@ function extractGenericNews() {
 
     const article = document.querySelector('article');
     if (article) {
-        return `News Title: ${ogTitle}\nDesc: ${ogDesc}\nContent: ${article.innerText.substring(0, 1500)}`;
+        return `News Title: ${ogTitle}\nDesc: ${ogDesc}\nContent: ${article.innerText.substring(0, 1000)}`;
     }
-    return `Page: ${ogTitle}\nBody: ${document.body.innerText.substring(0, 1000)}`;
+    return `Page: ${ogTitle}\nBody: ${document.body.innerText.substring(0, 800)}`;
 }
 
 function extractForms() {
     // Look for visible input fields that might need filling
     const inputs = document.querySelectorAll('input:not([type="hidden"]), textarea');
     let formHints = "\nVisible Inputs:\n";
-    inputs.forEach((input, index) => {
-        if (index < 5 && input.getBoundingClientRect().height > 0) {
+    let extractedCount = 0;
+    for (let input of inputs) {
+        if (input.type === 'password') continue; // Skip passwords for security
+        if (input.getBoundingClientRect().height > 0 && extractedCount < 10) {
             formHints += `- ID: #${input.id || 'none'} | Name: ${input.name || 'none'} | Type: ${input.type}\n`;
+            extractedCount++;
         }
-    });
-    return formHints;
+    }
+    return extractedCount > 0 ? formHints : "";
 }
 
 function extractPageContent() {
@@ -123,7 +126,18 @@ function extractPageContent() {
     });
 }
 
-// Extract content when the page loads, and perhaps on URL change for SPAs
+// Debounce helper
+function debounce(func, timeout = 500){
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
+
+const debouncedExtract = debounce(extractPageContent, 500);
+
+// Extract content when the page loads
 extractPageContent();
 
 // Simple SPA listener (for sites like Kalshi/Polymarket)
@@ -132,9 +146,9 @@ new MutationObserver(() => {
   const url = location.href;
   if (url !== lastUrl) {
     lastUrl = url;
-    setTimeout(extractPageContent, 2000); // Wait for render
+    debouncedExtract();
   }
-}).observe(document, {subtree: true, childList: true});
+}).observe(document.body, {subtree: true, childList: true}); // Limit observe to body
 
 // --- Action Execution Logic ---
 let currentHighlight = null;
@@ -159,6 +173,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 currentHighlight.style.zIndex = '999999';
                 currentHighlight.style.pointerEvents = 'none'; // Don't block clicks
                 currentHighlight.style.boxShadow = '0 0 10px #ff9800';
+                currentHighlight.style.transition = 'all 0.3s ease'; // Smooth visual transitions
 
                 const rect = el.getBoundingClientRect();
                 currentHighlight.style.top = (rect.top + window.scrollY - 5) + 'px';

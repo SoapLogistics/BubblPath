@@ -28,7 +28,14 @@ def chat():
         "To validate and request approval for a patch, output [JULES_VALIDATE: task_id]. "
     )
     if context_data:
-        system_prompt += f" The user is currently looking at {context_data.get('type', 'a webpage')} at {context_data.get('url', '')}. Here is the extracted context: {context_data.get('data', '')}"
+        # Context Compression
+        raw_data = context_data.get('data', '')
+        compressed_data = raw_data[:2000] + ("..." if len(raw_data) > 2000 else "")
+        system_prompt += f" The user is currently looking at {context_data.get('type', 'a webpage')} at {context_data.get('url', '')}. Here is the extracted context: {compressed_data}"
+
+    # Global Halt Check
+    if getattr(app, 'halt_active', False):
+        return jsonify({"reply": "🛑 HALT ACTIVE: Backend operations are currently suspended. Clear the halt state to resume."})
 
     try:
         response = openai.ChatCompletion.create(
@@ -39,8 +46,10 @@ def chat():
             ],
         )
         return jsonify({"reply": response.choices[0].message["content"]})
+    except openai.error.Timeout:
+        return jsonify({"reply": "Error: OpenAI API request timed out. Please try again."}), 504
     except Exception as e:
-        return jsonify({"reply": f"Error: {str(e)}"}), 500
+        return jsonify({"reply": f"Error communicating with AI: {str(e)}"}), 500
 
 @app.route("/api/browser/context", methods=["POST"])
 def receive_context():
@@ -91,8 +100,26 @@ def approve_task():
 @app.route("/api/browser/halt", methods=["POST"])
 def emergency_halt():
     # Kill switch for pending backend operations.
-    print("🛑 EMERGENCY HALT TRIGGERED BY USER")
-    return jsonify({"status": "halted", "message": "All operations aborted safely."})
+    app.halt_active = request.json.get("active", True)
+    if app.halt_active:
+        print("🛑 EMERGENCY HALT TRIGGERED BY USER")
+        return jsonify({"status": "halted", "message": "All operations aborted safely."})
+    else:
+        print("✅ HALT CLEARED")
+        return jsonify({"status": "active", "message": "Halt state cleared."})
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    import psutil
+    process = psutil.Process(os.getpid())
+    mem = process.memory_info().rss / (1024 * 1024)
+    tasks = len(bridge.list_jules_tasks())
+    return jsonify({
+        "status": "healthy",
+        "memory_mb": round(mem, 2),
+        "active_jules_tasks": tasks,
+        "halt_active": getattr(app, 'halt_active', False)
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

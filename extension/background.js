@@ -7,15 +7,20 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'EXTRACT_DOM') {
         console.log("Received DOM extraction data:", request.payload);
-        currentContext = request.payload;
 
-        // Notify side panel that new context is available
-        chrome.runtime.sendMessage({
-            type: 'CONTEXT_UPDATED',
-            payload: currentContext
-        }).catch(err => {
-            // Ignore error if side panel is closed
-        });
+        // Context Diffing: Only broadcast if url or type changed
+        if (!currentContext || currentContext.url !== request.payload.url || currentContext.type !== request.payload.type) {
+            currentContext = request.payload;
+            // Notify side panel that new context is available
+            chrome.runtime.sendMessage({
+                type: 'CONTEXT_UPDATED',
+                payload: currentContext
+            }).catch(err => {
+                // Ignore error if side panel is closed
+            });
+        } else {
+             currentContext = request.payload; // Update data silently
+        }
 
         // Optional: Send to local backend for logging/processing
         fetch('http://localhost:10000/api/browser/context', {
@@ -54,5 +59,13 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.active) {
         chrome.tabs.sendMessage(tabId, { type: 'REQUEST_DOM_EXTRACTION' }).catch(() => {});
+    }
+});
+
+// Keep-Alive for Service Worker
+chrome.alarms.create("keepAlive", { periodInMinutes: 4 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === "keepAlive") {
+        console.log("Jules Bridge Keep-Alive Ping.");
     }
 });
