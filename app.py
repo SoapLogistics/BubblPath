@@ -31,6 +31,8 @@ gabriel.set_learning_pipeline(learning_pipeline)
 solomon_os = SolomonOSKernel(gabriel, graph, context_engine, ai_stack, learning_pipeline)
 optimizer = RecursiveOptimizer(solomon_os.dashboard)
 
+dynamic_routes = {}
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
@@ -48,39 +50,43 @@ def chat():
     })
 
 @app.route("/api/gabriel/health", methods=["GET"])
-def gabriel_health():
-    return jsonify(solomon_os.dashboard.get_system_health())
+def gabriel_health(): return jsonify(solomon_os.dashboard.get_system_health())
 
 @app.route("/api/gabriel/graph", methods=["GET"])
-def gabriel_graph():
-    return jsonify({"nodes": list(graph.nodes.keys()), "edges": graph.edges})
+def gabriel_graph(): return jsonify({"nodes": list(graph.nodes.keys()), "edges": graph.edges})
 
 @app.route("/api/gabriel/skills", methods=["GET"])
-def gabriel_skills():
-    return jsonify(skills.skill_registry)
+def gabriel_skills(): return jsonify(skills.skill_registry)
 
 @app.route("/api/gabriel/curiosity", methods=["GET", "POST"])
 def gabriel_curiosity():
     if request.method == "POST":
-        res = curiosity.trigger_autonomous_research()
-        return jsonify({"result": res})
-    # Cannot serialize priority queue easily, return string format
+        return jsonify({"result": curiosity.trigger_autonomous_research()})
     return jsonify([str(i) for i in curiosity.research_queue])
 
 @app.route("/api/gabriel/optimize", methods=["POST"])
-def gabriel_optimize():
-    return jsonify(optimizer.evaluate_system_performance())
+def gabriel_optimize(): return jsonify(optimizer.evaluate_system_performance())
 
-# Phase 27 & 30: Dynamic APIs & Federated Sync Hooks
+# Phase 54: WebSocket Stream Stub
+@app.route("/ws/gabriel/stream")
+def websocket_stream():
+    # In a real impl, this would use flask-socketio to push metrics in real-time
+    return jsonify({"error": "WebSocket endpoint requires upgrade connection."}), 426
+
+# Phase 27 & 55: Dynamic Route Registration & Deregistration
 @app.route("/api/gabriel/dynamic/register", methods=["POST"])
 def register_dynamic_api():
-    return jsonify({"status": "API registered in memory."})
+    route_name = request.json.get("route_name")
+    dynamic_routes[route_name] = True
+    return jsonify({"status": f"Route {route_name} registered."})
 
-@app.route("/api/gabriel/federated/sync", methods=["POST"])
-def federated_sync():
-    data = request.json
-    graph.ingest_federated_graph(data.get("nodes", {}), data.get("edges", {}))
-    return jsonify({"status": "Federated graph synced."})
+@app.route("/api/gabriel/dynamic/unregister", methods=["POST"])
+def unregister_dynamic_api():
+    route_name = request.json.get("route_name")
+    if route_name in dynamic_routes:
+        del dynamic_routes[route_name]
+        return jsonify({"status": f"Route {route_name} unregistered."})
+    return jsonify({"error": "Route not found."}), 404
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
