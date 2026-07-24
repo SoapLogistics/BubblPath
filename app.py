@@ -39,6 +39,7 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 db = SolomonMnemosyneDB("solomon_mnemosyne_demo.db")
 router = ModelRouter(db)
 skills_graph = SkillGraph()
+from solomon_dynamic_quantization_optimizers import DynamicQuantizationOptimizer
 repair_engine = SelfRepairEngine(db)
 curiosity_engine = PrometheusCuriosityEngine(db)
 experiment_engine = ExperimentEngine(db)
@@ -1114,3 +1115,17 @@ def predict_performance():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
+@app.route("/api/command-center/quantization/dynamic-optimize", methods=["POST"])
+def dynamic_quantization_optimize():
+    """
+    Applies the 25-step dynamic quantization optimization pipeline.
+    """
+    data = request.json or {}
+    results = DynamicQuantizationOptimizer.apply_all_optimizations(data)
+
+    return jsonify({
+        "status": "success",
+        "optimization_results": results,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Load the dynamically optimized model parameters into the Model Router."
+    })
