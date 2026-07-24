@@ -142,11 +142,34 @@ def mock_curiosity_queue():
     return jsonify({"status": "mock_success", "questions_added": 1, "goals_added": 1})
 
 @app.route("/api/command-center/cognitive/advanced/optimize-learning", methods=["POST"])
-def mock_optimize_learning():
+def optimize_learning():
     """Meta-Learning: Optimize chunk sizes and retrieval strategies."""
-    # In a real system, this would analyze retrieval accuracy metrics
-    cognitive_architecture.log_meta_metric("optimized_chunk_size", 512, context="code_retrieval")
-    return jsonify({"status": "mock_success", "new_chunk_size": 512})
+    new_size = cognitive_architecture.meta_learning.optimize_chunk_size()
+    return jsonify({"status": "success", "new_chunk_size": new_size})
+
+@app.route("/api/command-center/cognitive/advanced/classify-memories", methods=["POST"])
+def classify_memories():
+    """Perpetual Learning: Classify facts vs procedures."""
+    updates = cognitive_architecture.perpetual_learning.classify_memories()
+    return jsonify({"status": "success", "classified_memories": updates})
+
+@app.route("/api/command-center/cognitive/advanced/learning-report", methods=["GET"])
+def learning_report():
+    """Perpetual Learning: Get learning self-evaluation report."""
+    report = cognitive_architecture.perpetual_learning.generate_learning_report()
+    return jsonify(report)
+
+@app.route("/api/command-center/cognitive/advanced/detect-opportunities", methods=["POST"])
+def detect_opportunities():
+    """Autonomous Growth: Analyze observations to create research goals."""
+    detected = cognitive_architecture.autonomous_growth.detect_opportunities()
+    return jsonify({"status": "success", "opportunities_detected": detected})
+
+@app.route("/api/command-center/cognitive/advanced/repair-graph", methods=["POST"])
+def repair_graph():
+    """Knowledge Graph: Detect and fix orphan nodes."""
+    orphans = cognitive_architecture.knowledge_graph.detect_orphan_nodes()
+    return jsonify({"status": "success", "orphans_repaired": orphans})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
