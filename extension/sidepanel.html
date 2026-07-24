@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Solomon Companion</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #f9fafb;
+      color: #111827;
+    }
+    h1 {
+      font-size: 1.25rem;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .status-bar {
+      font-size: 0.875rem;
+      color: #4b5563;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .chat-box {
+      background-color: white;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 12px;
+      height: 250px;
+      margin-bottom: 12px;
+      overflow-y: auto;
+      font-size: 0.875rem;
+    }
+    .panel-section {
+      background-color: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .panel-section h2 {
+      font-size: 1rem;
+      margin-top: 0;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 4px;
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-bottom: 4px;
+      margin-top: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 0.875rem;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 8px;
+      margin-top: 8px;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    .btn-stop {
+      background-color: #ef4444;
+    }
+    .btn-stop:hover {
+      background-color: #dc2626;
+    }
+    .hidden {
+      display: none;
+    }
+    .btn-secondary {
+      background-color: #4b5563;
+    }
+    .btn-secondary:hover {
+      background-color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <h1>Solomon Companion</h1>
+  <div class="status-bar" id="status">Mode: Phase 5 (Full Prototype)</div>
+
+  <div class="chat-box" id="chat">
+    <p><em>Solomon initialized. Awaiting commands.</em></p>
+  </div>
+
+  <div class="panel-section">
+    <h2>Page Interactions</h2>
+    <button id="btn-read-page">Read Current Page</button>
+    <button id="btn-scroll-down" class="btn-secondary">Scroll Down</button>
+    <button id="btn-highlight-text" class="btn-secondary">Highlight Selected Text</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Kalshi Intelligence</h2>
+    <button id="btn-kalshi-test">Analyze Divergence (Simulated)</button>
+    <div id="kalshi-order-form" class="hidden">
+      <label>Market Ticker</label>
+      <input type="text" id="kalshi-ticker" value="KXUSGDP-24">
+      <label>Order Type</label>
+      <input type="text" id="kalshi-type" value="LIMIT_YES">
+      <label>Price (Cents)</label>
+      <input type="text" id="kalshi-price" value="48">
+      <label>Quantity</label>
+      <input type="text" id="kalshi-quantity" value="50">
+      <button id="btn-prepare-kalshi">Prepare Order Payload</button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <h2>Sports Desk (Manual Input)</h2>
+    <label>Matchup Line (e.g. Eagles -3.5 at -110)</label>
+    <input type="text" id="sports-line" placeholder="Enter odds...">
+    <button id="btn-analyze-sports">Run Sports Research Pipeline</button>
+  </div>
+
+  <div class="panel-section" id="blackjack-lab">
+    <h2>Blackjack Training Lab</h2>
+    <p style="font-size:0.75rem; color:#4b5563; margin-top:0;">Offline simulation only. No live casino connections permitted.</p>
+    <button id="btn-start-bj-drill">Start Hi-Lo Drill</button>
+    <div id="bj-drill-area" class="hidden">
+      <p>Card: <strong id="bj-card-display" style="font-size:1.5rem;">--</strong></p>
+      <label>Current Running Count?</label>
+      <input type="text" id="bj-user-count" placeholder="e.g., -1, 0, 1">
+      <button id="btn-submit-bj-count">Submit Count</button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 7: Perpetual Memory Bridge</h2>
+    <button id="btn-create-memory">Propose Memory Card from Page</button>
+    <div id="memory-approval-area" class="hidden" style="background:#fef3c7; border:1px solid #d97706; padding:8px; border-radius:4px; margin-top:8px;">
+      <p style="font-size:0.75rem; margin-top:0;"><strong>Proposed Memory:</strong></p>
+      <p id="memory-proposal-text" style="font-size:0.75rem;"></p>
+      <button id="btn-approve-memory" style="background-color:#059669;">Approve & Save to SQLite</button>
+      <button id="btn-reject-memory" class="btn-stop">Reject</button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 8: News Companion</h2>
+    <button id="btn-analyze-news">Analyze Active Article</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 9: Shopping Companion</h2>
+    <button id="btn-analyze-shopping">Analyze Product Listing</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 10: Job Application Companion</h2>
+    <button id="btn-analyze-job">Analyze Job Description</button>
+    <button id="btn-prepare-job-form" class="btn-secondary hidden">Prepare Application Form Fill</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 12: Technical Support Companion</h2>
+    <button id="btn-analyze-tech">Analyze Page for Errors/Phishing</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 13: Travel & Itinerary Companion</h2>
+    <button id="btn-analyze-travel">Analyze Flight/Hotel Listing</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 14: Household Management</h2>
+    <button id="btn-analyze-household">Analyze Utility/Appliance Data</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 15: Education & Study Notes</h2>
+    <button id="btn-analyze-edu">Generate Study Notes & Citations</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 16: Email & Comms Companion</h2>
+    <button id="btn-analyze-email">Analyze Email Thread</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 17: Entertainment Companion</h2>
+    <button id="btn-analyze-entertainment">Analyze Media Content</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 18: Cross-Market Radar</h2>
+    <button id="btn-analyze-cross-market">Compare Kalshi vs Polymarket</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 19: Audit Logger</h2>
+    <button id="btn-view-audit-logs">View Action Audit Trail</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 20: Visual Grounding & OCR</h2>
+    <button id="btn-analyze-visual">Analyze Page Layout & Images</button>
+  </div>
+
+  <div class="panel-section">
+    <h2>Phase 21: Cross-Tab Synergy</h2>
+    <button id="btn-compare-tabs">Compare Active Tabs</button>
+  </div>
+
+  <button class="btn-stop" id="btn-stop">EMERGENCY STOP</button>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
