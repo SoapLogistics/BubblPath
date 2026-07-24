@@ -1,6 +1,10 @@
 // content.js
 
 function identifyContext(url) {
+    // 8. Live Casino DOM Block
+    if (url.includes('casino') || url.includes('blackjack') || url.includes('bovada.lv')) {
+        return 'blocked_casino';
+    }
     if (url.includes('github.com')) return 'github';
     if (url.includes('draftkings.com')) return 'draftkings';
     if (url.includes('kalshi.com')) return 'kalshi';
@@ -70,12 +74,29 @@ function extractGenericNews() {
     // Check for OpenGraph metadata for better context
     const ogTitle = document.querySelector('meta[property="og:title"]')?.content || document.title;
     const ogDesc = document.querySelector('meta[property="og:description"]')?.content || "";
+    // 12. Meta Keyword Extraction
+    const keywords = document.querySelector('meta[name="keywords"]')?.content || "";
 
     const article = document.querySelector('article');
     if (article) {
-        return `News Title: ${ogTitle}\nDesc: ${ogDesc}\nContent: ${article.innerText.substring(0, 1000)}`;
+        return `News Title: ${ogTitle}\nDesc: ${ogDesc}\nKeywords: ${keywords}\nContent: ${article.innerText.substring(0, 1000)}`;
+    }
+
+    // 13. Main Content Heuristic
+    const main = document.querySelector('main') || document.querySelector('[role="main"]');
+    if (main) {
+         return `Page: ${ogTitle}\nKeywords: ${keywords}\nMain Content: ${main.innerText.substring(0, 1000)}`;
     }
     return `Page: ${ogTitle}\nBody: ${document.body.innerText.substring(0, 800)}`;
+}
+
+// 9. Fast-Hash Diffing (DJB2)
+function hashString(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    }
+    return hash;
 }
 
 function extractTables() {
@@ -131,27 +152,31 @@ function extractPageContent() {
     const contextType = identifyContext(url);
     let extractedData = "";
 
-    switch (contextType) {
-        case 'github': extractedData = extractGitHub(); break;
-        case 'draftkings': extractedData = extractDraftKings(); break;
-        case 'kalshi': extractedData = extractKalshi(); break;
-        case 'amazon': extractedData = extractAmazon(); break;
-        case 'ebay': extractedData = extractEbay(); break;
-        case 'polymarket': extractedData = extractPolymarket(); break;
-        case 'fanduel': extractedData = extractFanDuel(); break;
-        default: extractedData = extractGenericNews(); break;
+    if (contextType === 'blocked_casino') {
+        extractedData = "Safety Boundary: Real-time casino DOM extraction is strictly prohibited. Please use the Offline Lab in the sidepanel for manual input strategy advice.";
+    } else {
+        switch (contextType) {
+            case 'github': extractedData = extractGitHub(); break;
+            case 'draftkings': extractedData = extractDraftKings(); break;
+            case 'kalshi': extractedData = extractKalshi(); break;
+            case 'amazon': extractedData = extractAmazon(); break;
+            case 'ebay': extractedData = extractEbay(); break;
+            case 'polymarket': extractedData = extractPolymarket(); break;
+            case 'fanduel': extractedData = extractFanDuel(); break;
+            default: extractedData = extractGenericNews(); break;
+        }
+        // Append extra modules
+        extractedData += extractTables();
+        extractedData += extractImages();
+        extractedData += extractForms();
     }
 
-    // Append extra modules
-    extractedData += extractTables();
-    extractedData += extractImages();
-    extractedData += extractForms();
-
-    // 11. Extraction Diffing Check
-    if (window._lastExtractedData === extractedData) {
+    // 11 & 9. Fast-Hash Extraction Diffing
+    const currentHash = hashString(extractedData);
+    if (window._lastExtractedHash === currentHash) {
         return; // Abort sending if nothing changed
     }
-    window._lastExtractedData = extractedData;
+    window._lastExtractedHash = currentHash;
 
     const payload = {
         type: contextType,
@@ -167,19 +192,21 @@ function extractPageContent() {
     });
 }
 
-// Debounce helper
-function debounce(func, timeout = 500){
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { func.apply(this, args); }, timeout);
-  };
+// 11. RAF Debouncing
+let rafTimer = null;
+function requestFrameDebounce(func) {
+    return (...args) => {
+        if (rafTimer) cancelAnimationFrame(rafTimer);
+        rafTimer = requestAnimationFrame(() => {
+            setTimeout(() => { func.apply(this, args); }, 300); // Wait for paint to settle
+        });
+    };
 }
 
-const debouncedExtract = debounce(extractPageContent, 500);
+const debouncedExtract = requestFrameDebounce(extractPageContent);
 
 // Extract content when the page loads
-extractPageContent();
+debouncedExtract();
 
 // Simple SPA listener (for sites like Kalshi/Polymarket)
 let lastUrl = location.href;

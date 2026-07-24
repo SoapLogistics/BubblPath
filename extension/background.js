@@ -11,12 +11,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log("Received DOM extraction data:", request.payload);
 
         const tabId = sender.tab ? sender.tab.id : 'unknown';
-        contextCache[tabId] = request.payload;
+
+        // 14. LRU Tab Cache Limits & 15. Context Stale TTL
+        contextCache[tabId] = {
+            payload: request.payload,
+            timestamp: Date.now()
+        };
+        const cacheKeys = Object.keys(contextCache);
+        if (cacheKeys.length > 20) {
+            delete contextCache[cacheKeys[0]]; // Simple LRU (delete oldest key)
+        }
+
         currentContext = request.payload;
 
-        // 19. Badge Text Status
+        // 19. Badge Text Status & 16. Dynamic Badge Colors
+        let badgeColor = '#4caf50'; // Green default
+        if (currentContext.type === 'blocked_casino') badgeColor = '#f44336'; // Red blocked
+        else if (currentContext.type === 'draftkings' || currentContext.type === 'kalshi') badgeColor = '#ff9800'; // Orange betting
+
         chrome.action.setBadgeText({text: "AI", tabId: tabId}).catch(()=>{});
-        chrome.action.setBadgeBackgroundColor({color: '#4caf50', tabId: tabId}).catch(()=>{});
+        chrome.action.setBadgeBackgroundColor({color: badgeColor, tabId: tabId}).catch(()=>{});
 
         // Notify side panel that new context is available
         chrome.runtime.sendMessage({
@@ -53,13 +67,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Update context when the user switches tabs
 chrome.tabs.onActivated.addListener((activeInfo) => {
-    // 15. Load from cache immediately if available
-    if (contextCache[activeInfo.tabId]) {
-        currentContext = contextCache[activeInfo.tabId];
-        chrome.runtime.sendMessage({
-            type: 'CONTEXT_UPDATED',
-            payload: currentContext
-        }).catch(()=>{});
+    // 15. Load from cache immediately if available (and not stale)
+    const cached = contextCache[activeInfo.tabId];
+    if (cached) {
+        if (Date.now() - cached.timestamp < 300000) { // 5 minutes TTL
+            currentContext = cached.payload;
+            chrome.runtime.sendMessage({
+                type: 'CONTEXT_UPDATED',
+                payload: currentContext
+            }).catch(()=>{});
+        } else {
+            delete contextCache[activeInfo.tabId]; // Expired
+        }
     }
 
     // 17. Timeout Safety for message sending

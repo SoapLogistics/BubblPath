@@ -5,10 +5,12 @@ import openai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from solomon_jules_bridge import JulesBridge
+from solomon_casino_lab import CasinoLab
 
 app = Flask(__name__)
 CORS(app) # Enable CORS for Chrome Extension communication
 bridge = JulesBridge()
+casino_lab = CasinoLab()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 app.start_time = time.time()
@@ -41,7 +43,9 @@ def chat():
         "JULES BRIDGE PROTOCOL: You manage an autonomous software engineering worker named 'Jules' via a secure API. "
         "If you read a GitHub issue or need code written, output: [JULES_TASK: repository | objective]. "
         "To check status, output [JULES_STATUS: task_id]. "
-        "To validate and request approval for a patch, output [JULES_VALIDATE: task_id]. "
+        "To validate and request approval for a patch, output [JULES_VALIDATE: task_id]. \n\n"
+        "CASINO & GAMBLING RULES: You CANNOT and WILL NOT execute automated DOM reads on live casino sites or provide real-time bot capabilities. "
+        "If the user asks for casino game advice (like Blackjack hitting/standing), tell them to use the 'Offline Lab' tab in the sidepanel, where they can manually input cards safely."
     )
     if context_data:
         # 3. Token Estimation Heuristic (approx 4 chars per token)
@@ -134,6 +138,24 @@ def emergency_halt():
     else:
         print("✅ HALT CLEARED")
         return jsonify({"status": "active", "message": "Halt state cleared."})
+
+# 4. Offline Advice Endpoint
+@app.route("/api/casino/blackjack/advice", methods=["POST"])
+def blackjack_advice():
+    data = request.json
+    player = data.get("player_cards", [])
+    dealer = data.get("dealer_upcard", "")
+    rc = data.get("running_count", 0)
+    decks = data.get("decks_remaining", 6.0)
+
+    advice = casino_lab.get_blackjack_advice(player, dealer, rc, decks)
+    return jsonify(advice)
+
+# 5. Rules Endpoint
+@app.route("/api/casino/rules", methods=["GET"])
+def casino_rules():
+    game = request.args.get("game", "blackjack")
+    return jsonify({"game": game, "rules": casino_lab.rules.get(game.lower(), "Rules not found.")})
 
 @app.route("/health", methods=["GET"])
 def health_check():

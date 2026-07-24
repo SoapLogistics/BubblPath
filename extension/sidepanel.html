@@ -35,6 +35,66 @@
     }
     .halt-btn:hover { background-color: #c62828; }
 
+    /* Tabbed UI */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    .tab {
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      color: #666;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      color: #1565c0;
+      border-bottom: 2px solid #1565c0;
+    }
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      flex-grow: 1;
+      height: 100%;
+    }
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Offline Lab Styles */
+    .lab-input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    #lab-result {
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    /* 25. Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
@@ -265,13 +325,20 @@
   <div class="header-bar">
     <h2>Solomon</h2>
     <div class="btn-group">
+      <button id="copy-context-btn" class="tool-btn">📋 Context</button>
       <button id="clear-btn" class="tool-btn">🗑️ Clear</button>
       <button id="halt-btn" class="tool-btn halt-btn">🛑 HALT</button>
     </div>
   </div>
 
-  <div id="context-banner">👀 Context: None</div>
-  <div id="chat-container"></div>
+  <div class="tabs">
+    <div class="tab active" data-target="tab-chat">Chat</div>
+    <div class="tab" data-target="tab-lab">Offline Lab</div>
+  </div>
+
+  <div id="tab-chat" class="tab-content active">
+    <div id="context-banner">👀 Context: None</div>
+    <div id="chat-container"></div>
 
   <div id="pending-action-container">
     <p>⚠️ Manual Approval Required for Action</p>
@@ -288,9 +355,28 @@
     <button id="jules-approve-btn">Approve Merge to SS1</button>
   </div>
 
-  <div id="input-container">
-    <textarea id="chat-input" placeholder="Ask Solomon... (Shift+Enter for newline)" rows="1"></textarea>
-    <button id="send-btn">Send</button>
+    <div id="input-container">
+      <textarea id="chat-input" placeholder="Ask Solomon... (Shift+Enter for newline)" rows="1"></textarea>
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <div id="tab-lab" class="tab-content">
+    <h3 style="margin-top:0; font-size: 14px;">Offline Blackjack Advisor</h3>
+    <p style="font-size: 11px; color: #666;">Manual input only. Real-time extraction blocked.</p>
+
+    <label style="font-size: 12px; font-weight: bold;">Player Cards (e.g. 10, A)</label>
+    <input type="text" id="lab-player" class="lab-input" placeholder="10, 8">
+
+    <label style="font-size: 12px; font-weight: bold;">Dealer Upcard (e.g. 6)</label>
+    <input type="text" id="lab-dealer" class="lab-input" placeholder="6">
+
+    <label style="font-size: 12px; font-weight: bold;">Running Count (Hi-Lo)</label>
+    <input type="number" id="lab-count" class="lab-input" value="0">
+
+    <button id="lab-advise-btn" style="width: 100%; margin-top: 5px;">Get Advice</button>
+
+    <div id="lab-result" style="display:none;"></div>
   </div>
   <script src="sidepanel.js"></script>
 </body>

@@ -19,6 +19,7 @@ const julesCloseBtn = document.getElementById('jules-close-btn');
 // Optimization UI Elements
 const clearBtn = document.getElementById('clear-btn');
 const haltBtn = document.getElementById('halt-btn');
+const copyContextBtn = document.getElementById('copy-context-btn');
 
 let activeContext = null;
 let currentPendingActionSelector = null;
@@ -38,6 +39,16 @@ chrome.runtime.sendMessage({ type: 'GET_CURRENT_CONTEXT' }, (response) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'CONTEXT_UPDATED') {
         updateContextBanner(request.payload);
+    }
+});
+
+// 24. Cross-Window Sync
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local' && changes.solomonChatHistory) {
+        if (chatContainer.innerHTML !== changes.solomonChatHistory.newValue) {
+            chatContainer.innerHTML = changes.solomonChatHistory.newValue;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     }
 });
 
@@ -71,6 +82,10 @@ julesCloseBtn.addEventListener('click', () => {
 });
 
 function saveChatToStorage() {
+    // 22. Chat Length Truncation (Keep last ~100 messages to prevent lag)
+    while (chatContainer.children.length > 100) {
+        chatContainer.removeChild(chatContainer.firstChild);
+    }
     chrome.storage.local.set({ solomonChatHistory: chatContainer.innerHTML });
 }
 
@@ -150,8 +165,11 @@ async function sendMessageToSolomon(message) {
     sendBtn.disabled = true;
     appendMessage('Solomon', 'Thinking...', true);
 
+    // 23. Message Input Sanitization (strip non-printable chars)
+    const cleanMessage = message.replace(/[^\x20-\x7E\n\r]/g, "");
+
     const payload = {
-        message: message,
+        message: cleanMessage,
         context: activeContext // Pass the current browser context to the backend
     };
 
@@ -276,6 +294,72 @@ haltBtn.addEventListener('click', () => {
     chatInput.disabled = false;
     sendBtn.disabled = false;
     appendMessage('System', '🛑 ALL OPERATIONS HALTED.');
+});
+
+copyContextBtn.addEventListener('click', () => {
+    if (activeContext && activeContext.data) {
+        navigator.clipboard.writeText(activeContext.data).then(() => {
+            copyContextBtn.textContent = "✅ Copied";
+            setTimeout(() => copyContextBtn.textContent = "📋 Context", 2000);
+        });
+    } else {
+        copyContextBtn.textContent = "❌ Empty";
+        setTimeout(() => copyContextBtn.textContent = "📋 Context", 2000);
+    }
+});
+
+// --- Tabbed UI Logic ---
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-target')).classList.add('active');
+    });
+});
+
+// --- Offline Lab Logic ---
+document.getElementById('lab-advise-btn').addEventListener('click', async () => {
+    const playerRaw = document.getElementById('lab-player').value;
+    const dealer = document.getElementById('lab-dealer').value.trim();
+    const count = parseInt(document.getElementById('lab-count').value) || 0;
+
+    if (!playerRaw || !dealer) return;
+
+    const player = playerRaw.split(',').map(s => s.trim());
+
+    const resultBox = document.getElementById('lab-result');
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<i>Calculating...</i>';
+
+    try {
+        const response = await fetch('http://localhost:10000/api/casino/blackjack/advice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                player_cards: player,
+                dealer_upcard: dealer,
+                running_count: count
+            })
+        });
+        const data = await response.json();
+
+        if (data.error) {
+            resultBox.innerHTML = `<span style="color:red">Error: ${data.error}</span>`;
+        } else {
+            let color = data.action.includes('STAND') ? '#f44336' : (data.action.includes('DOUBLE') ? '#4caf50' : '#2196f3');
+            resultBox.innerHTML = `
+                <strong>Action:</strong> <span style="color:${color}; font-size:16px;">${data.action}</span><br>
+                <strong>Reason:</strong> ${data.reason}<br>
+                <strong>Hand Total:</strong> ${data.total} ${data.is_soft ? '(Soft)' : ''}<br>
+                <hr style="margin:5px 0;">
+                <span style="font-size:11px; color:#555;">${data.true_count_advice}</span>
+            `;
+        }
+    } catch (e) {
+        resultBox.innerHTML = `<span style="color:red">Connection error to Solomon backend.</span>`;
+    }
 });
 
 // Action Handlers

@@ -32,9 +32,9 @@ class JulesBridge:
         return {}
 
     def _prune_old_tasks(self, data: Dict[str, Dict]) -> Dict[str, Dict]:
-        # 1. Task Pruning: Remove tasks older than 24 hours (86400 seconds)
+        # 7. Jules Task TTL: Remove tasks older than 12 hours (43200 seconds)
         current_time = time.time()
-        pruned = {k: v for k, v in data.items() if (current_time - v.get("created_at", current_time)) < 86400}
+        pruned = {k: v for k, v in data.items() if (current_time - v.get("created_at", current_time)) < 43200}
         return pruned
 
     def _save_db(self):
