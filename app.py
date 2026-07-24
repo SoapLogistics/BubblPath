@@ -1,4 +1,7 @@
 import os
+import logging
+logger = logging.getLogger('solomon_gateway')
+
 import openai
 from flask import Flask, request, jsonify, render_template
 from solomon_quantization_engine import (
@@ -31,6 +34,9 @@ from solomon_context_budgeter import DynamicContextBudgeter
 from solomon_vector_compressor import RAGVectorCompressor
 from solomon_model_fusion import MultiModelFusionRouter
 from solomon_performance_predictor import PerformancePredictor
+from solomon_50_step_optimizers import FiftyStepOptimizers
+
+
 from solomon_knowledge_cards.models import DatabaseManager
 from solomon_knowledge_cards.loki_engine import LokiEngine
 
@@ -40,6 +46,8 @@ class MockRuntime:
 
 loki_runtime = MockRuntime()
 loki_engine = LokiEngine(loki_runtime)
+fifty_step_optimizers = FiftyStepOptimizers(loki_runtime.db)
+
 
 
 app = Flask(__name__)
@@ -1085,6 +1093,16 @@ def loki_learn():
 def loki_picks():
     return jsonify({"picks": loki_engine.get_active_value_picks()})
 
+
+
+@app.route("/api/command-center/optimization/50-step-pipeline", methods=["POST"])
+def optimize_50_step_pipeline():
+    try:
+        report = fifty_step_optimizers.execute_pipeline()
+        return jsonify(report), 200
+    except Exception as e:
+        logger.error(f"Failed to execute 50-step optimization pipeline: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
