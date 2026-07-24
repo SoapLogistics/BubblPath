@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
 from collections import defaultdict
+from solomon_algorithm_factory import AlgorithmFactory
 import json
 
 logger = logging.getLogger("solomon_loki_engine")
@@ -98,6 +99,7 @@ class LokiEngine:
     """Project Loki sports betting intelligence and predictive arbitrage engine."""
     def __init__(self, runtime):
         self.runtime = runtime
+        self.algo_factory = AlgorithmFactory(runtime.db)
 
     def get_bankroll(self, conn=None) -> float:
         """Retrieves current virtual bankroll balance."""
@@ -456,33 +458,43 @@ class LokiEngine:
                 else:
                     z, true_probs = solve_shin_probabilities(pinnacle_implied)
 
+
+            # Roadmap #18: Ensemble Weighting Auto-Tuner & Dynamic Adaptation
+                best_algo = self.algo_factory.get_best_live_algorithm(sport)
+                weights = best_algo.get("weights", {}) if best_algo else {}
+
                 for idx, outcome in enumerate(f["outcomes"]):
                     true_p = true_probs[idx]
                     if true_p <= 0.0: continue
                     soft_o = f["soft_odds"][idx]
 
                     modifier = self.get_confidence_modifier(sport, market, soft_o, conn=conn)
-                    expected_value = true_p * soft_o * modifier
+
+                    # Apply generated dynamic weights
+                    prob_weight = weights.get("implied_prob_weight", 1.0)
+                    expected_value = (true_p * prob_weight) * soft_o * modifier
 
                     # Apply Weather Impact (e.g., Under performs better in bad weather)
                     w_impact = 0.0
+                    w_weight = weights.get("weather_impact_weight", 1.0)
                     if f["fixture_id"] in weather_data:
                         w = weather_data[f["fixture_id"]]
                         if market == "Prop_Bet" and "Under" in outcome:
-                            modifier *= (1.0 + w["impact_score"] * 0.2) # Boost under
-                            expected_value *= (1.0 + w["impact_score"] * 0.2)
+                            modifier *= (1.0 + w["impact_score"] * 0.2 * w_weight) # Boost under
+                            expected_value *= (1.0 + w["impact_score"] * 0.2 * w_weight)
                         elif market == "Prop_Bet" and "Over" in outcome:
-                            modifier *= (1.0 - w["impact_score"] * 0.2) # Penalize over
-                            expected_value *= (1.0 - w["impact_score"] * 0.2)
+                            modifier *= (1.0 - w["impact_score"] * 0.2 * w_weight) # Penalize over
+                            expected_value *= (1.0 - w["impact_score"] * 0.2 * w_weight)
                         w_impact = w["impact_score"]
 
                     # Apply Injury Impact (e.g., if a star is out, penalize that team)
                     i_impact = 0.0
+                    i_weight = weights.get("injury_impact_weight", 1.0)
                     for t in [home, away]:
                         if t in outcome: # E.g., "Arsenal Win"
                             for inj in injury_data.get(t, []):
-                                modifier *= (1.0 - inj["impact_score"] * 0.1)
-                                expected_value *= (1.0 - inj["impact_score"] * 0.1)
+                                modifier *= (1.0 - inj["impact_score"] * 0.1 * i_weight)
+                                expected_value *= (1.0 - inj["impact_score"] * 0.1 * i_weight)
                                 i_impact = max(i_impact, inj["impact_score"])
 
                     # Line movement sentiment
@@ -502,23 +514,23 @@ class LokiEngine:
                         adjusted_kelly = kelly_frac * modifier
                         if adjusted_kelly > 0:
                             picks.append({
-                                "fixture_id": f["fixture_id"],
-                                "sport": sport,
-                                "fixture": f["fixture"],
-                                "market": market,
-                                "outcome": outcome,
-                                "outcome_index": idx,
-                                "odds": round(soft_o, 2),
-                                "pinnacle_odds": round(f["pinnacle_odds"][idx], 2),
-                                "shin_true_prob": round(true_p, 4),
-                                "expected_value": round(expected_value, 4),
-                                "kelly_fraction": round(adjusted_kelly, 4),
-                                "base_probabilities": f["base_probabilities"],
-                                "confidence_modifier": round(modifier, 4),
-                                "weather_impact": w_impact,
-                                "injury_impact": i_impact,
-                                "line_sentiment": l_sentiment
-                            })
+                                    "fixture_id": f["fixture_id"],
+                                    "sport": sport,
+                                    "fixture": f["fixture"],
+                                    "market": market,
+                                    "outcome": outcome,
+                                    "outcome_index": idx,
+                                    "odds": round(soft_o, 2),
+                                    "pinnacle_odds": round(f["pinnacle_odds"][idx], 2),
+                                    "shin_true_prob": round(true_p, 4),
+                                    "expected_value": round(expected_value, 4),
+                                    "kelly_fraction": round(adjusted_kelly, 4),
+                                    "base_probabilities": f["base_probabilities"],
+                                    "confidence_modifier": round(modifier, 4),
+                                    "weather_impact": w_impact,
+                                    "injury_impact": i_impact,
+                                    "line_sentiment": l_sentiment
+                                })
 
             picks.sort(key=lambda x: x["expected_value"], reverse=True)
             return picks
