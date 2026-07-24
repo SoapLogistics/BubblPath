@@ -33,6 +33,7 @@ from solomon_model_fusion import MultiModelFusionRouter
 from solomon_performance_predictor import PerformancePredictor
 from solomon_knowledge_graph import KnowledgeGraph
 from solomon_25_step_optimizers import TwentyFiveStepOptimizers
+from solomon_50_step_optimizers import FiftyStepOptimizers
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -1153,6 +1154,19 @@ def run_25_step_optimization_pipeline():
         "recommended_next_step": "RECOMMENDED NEXT STEP: Verify KV Cache footprints and graph sizes in the telemetry monitor."
     })
 
+@app.route("/api/command-center/optimization/deep-pipeline", methods=["POST"])
+def run_50_step_optimization_pipeline():
+    """
+    Executes the 50-step ultra-deep optimization pipeline for runtime and matrix scaling.
+    """
+    results = FiftyStepOptimizers.execute_all()
+    return jsonify({
+        "status": "success",
+        "deep_optimization_pipeline_report": results,
+        "recommended_next_step": "RECOMMENDED NEXT STEP: Calibrate routing thresholds based on LLM quantizations."
+    })
+
 if __name__ == "__main__":
+
 
     app.run(host="0.0.0.0", port=10000)
