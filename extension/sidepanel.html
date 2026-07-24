@@ -102,6 +102,55 @@
       color: white;
     }
     #cancel-btn:hover { background-color: #d32f2f; }
+
+    /* Project Nexus Jules Dashboard */
+    #nexus-container {
+      display: none;
+      background-color: #1a1a2e;
+      border: 1px solid #4a4e69;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      color: #e9ecef;
+      font-family: monospace;
+    }
+    .nexus-header {
+      font-size: 14px;
+      color: #00f2fe;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 10px;
+      text-shadow: 0 0 5px rgba(0, 242, 254, 0.5);
+    }
+    .nexus-steps {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+    .nexus-step {
+      opacity: 0.4;
+      text-align: center;
+      flex: 1;
+    }
+    .nexus-step.active {
+      opacity: 1;
+      color: #4facfe;
+    }
+    .nexus-step.pulsing {
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { text-shadow: 0 0 2px #4facfe; }
+      50% { text-shadow: 0 0 10px #4facfe, 0 0 20px #00f2fe; color: #fff; }
+      100% { text-shadow: 0 0 2px #4facfe; }
+    }
+    #nexus-log {
+      margin-top: 10px;
+      font-size: 10px;
+      color: #a9a9a9;
+      border-top: 1px dashed #4a4e69;
+      padding-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -114,6 +163,16 @@
     <div id="pending-action-details" style="font-size: 11px; margin-bottom: 8px; color: #555;"></div>
     <button id="approve-btn" class="action-btn">Approve</button>
     <button id="cancel-btn" class="action-btn">Cancel</button>
+  </div>
+
+  <div id="nexus-container">
+    <div class="nexus-header">🚀 NEXUS UPLINK (JULES)</div>
+    <div class="nexus-steps">
+      <div id="nexus-step-write" class="nexus-step">✍️ WRITING</div>
+      <div id="nexus-step-approve" class="nexus-step">✅ APPROVING</div>
+      <div id="nexus-step-deploy" class="nexus-step">🚀 DEPLOYING</div>
+    </div>
+    <div id="nexus-log">Standing by...</div>
   </div>
 
   <div id="input-container">

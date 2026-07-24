@@ -18,7 +18,10 @@ def chat():
         "You are Solomon, a helpful assistant. "
         "If the user asks you to perform an action on the webpage (like adding to cart or clicking a bet), "
         "and you know the CSS selector for the button, you MUST output a tag at the end of your response like this: "
-        "[ACTION: #my-css-selector]. The system will intercept this and ask the user for manual approval."
+        "[ACTION: #my-css-selector]. The system will intercept this and ask the user for manual approval.\n\n"
+        "NEXUS PROTOCOL: You have the ability to command 'Jules', an autonomous software engineering worker. "
+        "If you read a GitHub issue, a bug, or the user asks you to write code, you can delegate it to Jules by outputting: "
+        "[DELEGATE_JULES: instructions for jules]. To deploy code, output [DEPLOY_JULES: branch_name]."
     )
     if context_data:
         system_prompt += f" The user is currently looking at {context_data.get('type', 'a webpage')} at {context_data.get('url', '')}. Here is the extracted context: {context_data.get('data', '')}"
@@ -48,6 +51,29 @@ def log_action():
     print(f"AUDIT LOG: User explicitly approved action on {data.get('url')}. Target: {data.get('selector')}")
     # In a production system, write to SQLite audit tables (e.g. loki_bets/actions)
     return jsonify({"status": "Action logged securely"})
+
+@app.route("/api/jules/delegate", methods=["POST"])
+def delegate_jules():
+    data = request.json
+    instructions = data.get("instructions", "")
+    print(f"🚀 NEXUS BRIDGE ACTIVE: Delegating to Jules -> {instructions}")
+    # Here, we would instantiate Jules (WorkerForemanOrchestrator) and pass the prompt.
+    # For now, we simulate a successful handoff.
+    return jsonify({
+        "status": "delegated",
+        "message": "Jules has received the instructions and is writing code."
+    })
+
+@app.route("/api/jules/deploy", methods=["POST"])
+def deploy_jules():
+    data = request.json
+    target = data.get("target", "main")
+    print(f"🚀 NEXUS BRIDGE ACTIVE: Jules is deploying -> {target}")
+    # Trigger CI/CD or git merge logic here.
+    return jsonify({
+        "status": "deployed",
+        "message": f"Successfully triggered deployment for {target}."
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

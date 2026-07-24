@@ -1,6 +1,7 @@
 // content.js
 
 function identifyContext(url) {
+    if (url.includes('github.com')) return 'github';
     if (url.includes('draftkings.com')) return 'draftkings';
     if (url.includes('kalshi.com')) return 'kalshi';
     if (url.includes('amazon.com')) return 'amazon';
@@ -54,6 +55,17 @@ function extractFanDuel() {
     return data || "Could not find specific FanDuel odds elements.";
 }
 
+function extractGitHub() {
+    const prTitle = document.querySelector('.gh-header-title')?.innerText || "";
+    const issueBody = document.querySelector('.comment-body')?.innerText || "";
+    const codeDiffs = document.querySelectorAll('.diff-table');
+    let diffSummary = "";
+    if (codeDiffs.length > 0) {
+        diffSummary = `[Contains ${codeDiffs.length} file diffs]`;
+    }
+    return `GitHub Context:\nTitle: ${prTitle}\nBody: ${issueBody.substring(0, 1000)}\nDiffs: ${diffSummary}`;
+}
+
 function extractGenericNews() {
     const article = document.querySelector('article');
     if (article) {
@@ -68,6 +80,7 @@ function extractPageContent() {
     let extractedData = "";
 
     switch (contextType) {
+        case 'github': extractedData = extractGitHub(); break;
         case 'draftkings': extractedData = extractDraftKings(); break;
         case 'kalshi': extractedData = extractKalshi(); break;
         case 'amazon': extractedData = extractAmazon(); break;

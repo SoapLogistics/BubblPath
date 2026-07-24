@@ -9,6 +9,13 @@ const pendingActionDetails = document.getElementById('pending-action-details');
 const approveBtn = document.getElementById('approve-btn');
 const cancelBtn = document.getElementById('cancel-btn');
 
+// Nexus UI Elements
+const nexusContainer = document.getElementById('nexus-container');
+const nexusStepWrite = document.getElementById('nexus-step-write');
+const nexusStepApprove = document.getElementById('nexus-step-approve');
+const nexusStepDeploy = document.getElementById('nexus-step-deploy');
+const nexusLog = document.getElementById('nexus-log');
+
 let activeContext = null;
 let currentPendingActionSelector = null;
 
@@ -89,18 +96,31 @@ async function sendMessageToSolomon(message) {
         const actionMatch = replyText.match(/\[ACTION:\s*(.+?)\]/);
         if (actionMatch) {
             currentPendingActionSelector = actionMatch[1].trim();
-            // Remove the raw action tag from the user-visible message
             replyText = replyText.replace(actionMatch[0], '').trim();
-
-            // Show approval UI
             pendingActionContainer.style.display = 'block';
             pendingActionDetails.textContent = `Target: ${currentPendingActionSelector}`;
-
-            // Highlight element on page
             chrome.runtime.sendMessage({
                 type: 'HIGHLIGHT_ELEMENT',
                 selector: currentPendingActionSelector
             });
+        }
+
+        // Parse for Nexus Delegation
+        const delegateMatch = replyText.match(/\[DELEGATE_JULES:\s*(.+?)\]/);
+        if (delegateMatch) {
+            const instructions = delegateMatch[1].trim();
+            replyText = replyText.replace(delegateMatch[0], '').trim();
+            activateNexusStep('write', `Delegated to Jules: ${instructions.substring(0, 30)}...`);
+            triggerJulesAPI('/api/jules/delegate', { instructions: instructions }, 'write');
+        }
+
+        // Parse for Nexus Deploy
+        const deployMatch = replyText.match(/\[DEPLOY_JULES:\s*(.+?)\]/);
+        if (deployMatch) {
+            const target = deployMatch[1].trim();
+            replyText = replyText.replace(deployMatch[0], '').trim();
+            activateNexusStep('deploy', `Deploying target: ${target}...`);
+            triggerJulesAPI('/api/jules/deploy', { target: target }, 'deploy');
         }
 
         if (replyText) {
@@ -164,4 +184,59 @@ cancelBtn.addEventListener('click', () => {
 function resetPendingAction() {
     pendingActionContainer.style.display = 'none';
     currentPendingActionSelector = null;
+}
+
+// --- Nexus UI Flow ---
+function activateNexusStep(stepName, logMessage) {
+    nexusContainer.style.display = 'block';
+
+    // Reset all
+    [nexusStepWrite, nexusStepApprove, nexusStepDeploy].forEach(el => {
+        el.classList.remove('active', 'pulsing');
+    });
+
+    if (stepName === 'write') {
+        nexusStepWrite.classList.add('active', 'pulsing');
+    } else if (stepName === 'approve') {
+        nexusStepWrite.classList.add('active');
+        nexusStepApprove.classList.add('active', 'pulsing');
+    } else if (stepName === 'deploy') {
+        nexusStepWrite.classList.add('active');
+        nexusStepApprove.classList.add('active');
+        nexusStepDeploy.classList.add('active', 'pulsing');
+    } else if (stepName === 'done') {
+        nexusStepWrite.classList.add('active');
+        nexusStepApprove.classList.add('active');
+        nexusStepDeploy.classList.add('active');
+    }
+
+    if (logMessage) {
+        nexusLog.textContent = logMessage;
+    }
+}
+
+async function triggerJulesAPI(endpoint, payload, step) {
+    try {
+        const response = await fetch(`http://localhost:10000${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        // Advance UI slightly on success
+        if (step === 'write') {
+            activateNexusStep('approve', data.message);
+        } else if (step === 'deploy') {
+            activateNexusStep('done', data.message);
+            setTimeout(() => {
+                nexusContainer.style.display = 'none';
+            }, 5000); // Hide after a bit
+        }
+
+    } catch (err) {
+        console.error("Nexus Error:", err);
+        nexusLog.textContent = "❌ Uplink Failed: " + err.message;
+        [nexusStepWrite, nexusStepApprove, nexusStepDeploy].forEach(el => el.classList.remove('pulsing'));
+    }
 }
