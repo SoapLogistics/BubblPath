@@ -32,6 +32,12 @@ from solomon_autonomous_research import AutonomousResearcher, ResearchCandidate
 from solomon_autonomous_tool_creator import AutonomousToolCreator
 from solomon_self_repair import SelfRepairEngine
 
+# From Ledger, Wisdom, Meta-Learning & Orchestrator (Phases 10, 11, 12 & 13):
+from solomon_distributed_ledger import DistributedNodeLedger, LedgerBlock
+from solomon_wisdom_layer import SOSS_WisdomLayer
+from solomon_meta_learning import MetaLearningEngine
+from solomon_orchestrator import WorkerForemanOrchestrator
+
 app = Flask(__name__, template_folder="templates")
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -57,6 +63,12 @@ autonomous_researcher = AutonomousResearcher()
 # Instantiate Tool Creator and Self-Repair Engines (Phases 8 and 9)
 autonomous_tool_creator = AutonomousToolCreator(skill_factory)
 self_repair_engine = SelfRepairEngine(db)
+
+# Instantiate Ledger, Wisdom, Meta-Learning & Orchestrator (Phases 10, 11, 12 & 13)
+distributed_ledger = DistributedNodeLedger(db)
+wisdom_layer = SOSS_WisdomLayer()
+meta_learning_engine = MetaLearningEngine(curiosity_engine, experiment_engine)
+worker_orchestrator = WorkerForemanOrchestrator(db, router, curiosity_engine, skill_factory)
 
 # State caches for dynamically running Codex & Jules power objects
 codex_worktree_instance = None
@@ -1586,6 +1598,96 @@ def execute_self_repair():
             "status": "error",
             "message": f"Self repair execution failed: {str(e)}"
         }), 500
+
+
+# ==========================================
+# LEDGER, WISDOM, META-LEARNING & ORCHESTRATOR (PHASES 10, 11, 12 & 13)
+# ==========================================
+
+@app.route("/api/mnemosyne/ledger/sync", methods=["POST"])
+def sync_ledger_block():
+    """
+    Receives card updates, sequence checks block hashes, and synchronizes to central SQLite with conflict resolution.
+    """
+    data = request.json or {}
+    index = data.get("index")
+    prev_hash = data.get("previous_hash")
+    updates = data.get("updates", [])
+
+    if index is None or prev_hash is None or not updates:
+        return jsonify({"status": "error", "message": "Parameters 'index', 'previous_hash', and 'updates' list are required."}), 400
+
+    try:
+        block = LedgerBlock(int(index), prev_hash, updates, data.get("timestamp"))
+        success, synced_count, sync_logs = distributed_ledger.sync_block_to_sqlite(block)
+        return jsonify({
+            "status": "success" if success else "failed",
+            "synced_count": synced_count,
+            "sync_logs": sync_logs,
+            "ledger_chain_valid": distributed_ledger.is_chain_valid()
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Ledger sync failed: {str(e)}"}), 500
+
+
+@app.route("/api/mnemosyne/wisdom/evaluate", methods=["POST"])
+def evaluate_wisdom_action():
+    """
+    Validates action proposals against SOSS multi-dimensional Wisdom Vector boundaries.
+    """
+    data = request.json or {}
+    action_name = data.get("action_name")
+
+    if not action_name:
+        return jsonify({"status": "error", "message": "Parameter 'action_name' is required."}), 400
+
+    try:
+        confidence = float(data.get("confidence", 1.0))
+        risk_level = float(data.get("risk_level", 1.0))
+        override = bool(data.get("has_human_override", False))
+        flagged = bool(data.get("ethics_flagged", False))
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "Numerical confidence and risk parameters must be valid."}), 400
+
+    approved, msg = wisdom_layer.evaluate_wisdom_vector(action_name, confidence, risk_level, override, flagged)
+    return jsonify({
+        "approved": approved,
+        "wisdom_advisory": msg
+    })
+
+
+@app.route("/api/mnemosyne/meta-learning/tune", methods=["POST"])
+def execute_meta_learning_tune():
+    """
+    Tracks new reusable card gain momentum across consecutive epochs and dynamically adjusts curiosity parameters.
+    """
+    data = request.json or {}
+    new_reusable_cards = data.get("new_reusable_cards")
+
+    if new_reusable_cards is None:
+        return jsonify({"status": "error", "message": "Parameter 'new_reusable_cards' must be specified."}), 400
+
+    try:
+        meta_learning_engine.record_epoch_progress(int(new_reusable_cards))
+        report = meta_learning_engine.optimize_learning_how_to_learn()
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Meta-learning tuning crashed: {str(e)}"}), 500
+
+
+@app.route("/api/command-center/orchestrate", methods=["POST"])
+def orchestrate_worker_routing():
+    """
+    Leverages SOSS Worker Foreman Orchestrator pattern to parse prefix-based worker routing instructions.
+    """
+    data = request.json or {}
+    message = data.get("message", "")
+
+    if not message:
+        return jsonify({"status": "error", "message": "Missing 'message' payload parameter."}), 400
+
+    result = worker_orchestrator.orchestrate_query(message)
+    return jsonify(result)
 
 
 if __name__ == "__main__":
