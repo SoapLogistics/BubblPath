@@ -1,2 +1,6 @@
 flask
 openai
+requests
+numpy
+flask-cors
+gunicorn

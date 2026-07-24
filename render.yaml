@@ -1,10 +1,14 @@
 services:
   - type: web
-    name: chatgpt-flask-app
+    name: solomon-intelligence-engine
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    buildCommand: pip install -r requirements.txt && ./deploy.sh
+    startCommand: gunicorn app:app -b 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
     envVars:
       - key: OPENAI_API_KEY
         sync: false
+      - key: SOLOMON_ACTIONS_API_KEY
+        sync: false
+      - key: SOLOMON_DB_PATH
+        value: "solomon_mnemosyne.db"
