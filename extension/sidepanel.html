@@ -98,6 +98,7 @@
     }
     #input-container {
       display: flex;
+      align-items: flex-end;
     }
     #chat-input {
       flex-grow: 1;
@@ -105,6 +106,10 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       margin-right: 5px;
+      resize: none;
+      min-height: 20px;
+      max-height: 120px;
+      font-family: inherit;
     }
     button {
       padding: 8px 12px;
@@ -161,6 +166,17 @@
       border-radius: 6px;
       color: #33691e;
       font-family: monospace;
+      position: relative;
+    }
+    #jules-close-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #7cb342;
+      border: none;
+      background: none;
     }
     .jules-header {
       font-size: 13px;
@@ -265,6 +281,7 @@
   </div>
 
   <div id="jules-bridge-container">
+    <button id="jules-close-btn">✖</button>
     <div class="jules-header">🤖 Jules API Observer</div>
     <div class="jules-task-id" id="jules-active-task">No Active Task</div>
     <div class="jules-status" id="jules-active-status">Waiting for telemetry...</div>
@@ -272,7 +289,7 @@
   </div>
 
   <div id="input-container">
-    <input type="text" id="chat-input" placeholder="Ask Solomon..." />
+    <textarea id="chat-input" placeholder="Ask Solomon... (Shift+Enter for newline)" rows="1"></textarea>
     <button id="send-btn">Send</button>
   </div>
   <script src="sidepanel.js"></script>

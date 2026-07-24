@@ -14,6 +14,7 @@ const julesBridgeContainer = document.getElementById('jules-bridge-container');
 const julesActiveTask = document.getElementById('jules-active-task');
 const julesActiveStatus = document.getElementById('jules-active-status');
 const julesApproveBtn = document.getElementById('jules-approve-btn');
+const julesCloseBtn = document.getElementById('jules-close-btn');
 
 // Optimization UI Elements
 const clearBtn = document.getElementById('clear-btn');
@@ -45,6 +46,27 @@ chrome.storage.local.get(['solomonChatHistory'], (result) => {
     if (result.solomonChatHistory) {
         chatContainer.innerHTML = result.solomonChatHistory;
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    } else {
+        // 22. Initial Welcome Message
+        appendMessage('Solomon', 'Online and ready. How can I help you?');
+    }
+});
+
+// 25. Auto-focus
+chatInput.focus();
+
+// 20. Multi-line auto-resize
+chatInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+// 23. Jules UI Dismiss
+julesCloseBtn.addEventListener('click', () => {
+    julesBridgeContainer.style.display = 'none';
+    if (julesPollInterval) {
+        clearTimeout(julesPollInterval);
+        julesPollInterval = null;
     }
 });
 
@@ -66,8 +88,11 @@ function updateContextBanner(contextPayload) {
 }
 
 function formatMarkdown(text) {
-    let html = text.replace(/`([^`]+)`/g, '<code style="background:#eee;padding:2px 4px;border-radius:3px;">$1</code>');
+    // 24. Markdown Block Padding
+    let html = text.replace(/```([\s\S]*?)```/g, '<pre style="background:#f4f4f4;padding:8px;border-radius:4px;overflow-x:auto;"><code>$1</code></pre>');
+    html = html.replace(/`([^`]+)`/g, '<code style="background:#eee;padding:2px 4px;border-radius:3px;">$1</code>');
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\n/g, '<br/>');
     return html;
 }
 
@@ -216,7 +241,9 @@ sendBtn.addEventListener('click', () => {
 });
 
 chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+    // 21. Shift+Enter Logic
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault(); // Prevent new line
         const message = chatInput.value.trim();
         if (message) {
             sendMessageToSolomon(message);

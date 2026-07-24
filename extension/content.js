@@ -78,6 +78,35 @@ function extractGenericNews() {
     return `Page: ${ogTitle}\nBody: ${document.body.innerText.substring(0, 800)}`;
 }
 
+function extractTables() {
+    // 8. Table Extraction
+    const tables = document.querySelectorAll('table');
+    let tableData = "";
+    tables.forEach((t, i) => {
+        if (i > 1) return; // Only top 2 tables
+        const rows = Array.from(t.querySelectorAll('tr')).slice(0, 4); // Header + top 3 rows
+        if (rows.length > 0) {
+            tableData += `\nTable ${i+1}:\n`;
+            rows.forEach(r => tableData += r.innerText.replace(/\n/g, ' | ') + "\n");
+        }
+    });
+    return tableData;
+}
+
+function extractImages() {
+    // 9. Image Alt Text Awareness
+    const imgs = document.querySelectorAll('img[alt]');
+    let imgData = "\nImages Context:\n";
+    let count = 0;
+    imgs.forEach(i => {
+        if (i.alt.length > 5 && count < 5 && i.getBoundingClientRect().height > 10) {
+            imgData += `- [IMG]: ${i.alt}\n`;
+            count++;
+        }
+    });
+    return count > 0 ? imgData : "";
+}
+
 function extractForms() {
     // Look for visible input fields that might need filling
     const inputs = document.querySelectorAll('input:not([type="hidden"]), textarea');
@@ -85,6 +114,10 @@ function extractForms() {
     let extractedCount = 0;
     for (let input of inputs) {
         if (input.type === 'password') continue; // Skip passwords for security
+        // 10. Hidden Element Filtering via Computed Style
+        const style = window.getComputedStyle(input);
+        if (style.display === 'none' || style.visibility === 'hidden') continue;
+
         if (input.getBoundingClientRect().height > 0 && extractedCount < 10) {
             formHints += `- ID: #${input.id || 'none'} | Name: ${input.name || 'none'} | Type: ${input.type}\n`;
             extractedCount++;
@@ -109,8 +142,16 @@ function extractPageContent() {
         default: extractedData = extractGenericNews(); break;
     }
 
-    // Append form data to all contexts
+    // Append extra modules
+    extractedData += extractTables();
+    extractedData += extractImages();
     extractedData += extractForms();
+
+    // 11. Extraction Diffing Check
+    if (window._lastExtractedData === extractedData) {
+        return; // Abort sending if nothing changed
+    }
+    window._lastExtractedData = extractedData;
 
     const payload = {
         type: contextType,
@@ -170,7 +211,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 currentHighlight.style.position = 'absolute';
                 currentHighlight.style.border = '4px solid #ff9800';
                 currentHighlight.style.backgroundColor = 'rgba(255, 152, 0, 0.2)';
-                currentHighlight.style.zIndex = '999999';
+                // 12. Highlight Z-Index Guarantee
+                currentHighlight.style.zIndex = '2147483647';
                 currentHighlight.style.pointerEvents = 'none'; // Don't block clicks
                 currentHighlight.style.boxShadow = '0 0 10px #ff9800';
                 currentHighlight.style.transition = 'all 0.3s ease'; // Smooth visual transitions
@@ -202,10 +244,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (el) {
                 if (request.actionType === 'FILL' && request.fillValue) {
                     console.log(`Solomon filling ${request.selector} with ${request.fillValue}`);
+                    // 13. Scroll-to-fill
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // 14. Focus & Blur Simulation
+                    el.focus();
                     el.value = request.fillValue;
-                    // Dispatch events to trigger React/Vue state updates
                     el.dispatchEvent(new Event('input', { bubbles: true }));
                     el.dispatchEvent(new Event('change', { bubbles: true }));
+                    el.blur();
                 } else {
                     console.log("Solomon executes manual approved click on:", request.selector);
                     el.click();

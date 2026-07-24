@@ -1,4 +1,6 @@
 import os
+import time
+import re
 import openai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -9,8 +11,22 @@ CORS(app) # Enable CORS for Chrome Extension communication
 bridge = JulesBridge()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
+app.start_time = time.time()
+# 4. Rate Limiter Stub
+request_log = {}
+
 @app.route("/chat", methods=["POST"])
 def chat():
+    # 4. Rate Limiting Check
+    ip = request.remote_addr
+    now = time.time()
+    if ip not in request_log:
+        request_log[ip] = []
+    request_log[ip] = [t for t in request_log[ip] if now - t < 60] # Keep last 60s
+    if len(request_log[ip]) >= 10:
+        return jsonify({"reply": "Rate limit exceeded. Please wait a minute."}), 429
+    request_log[ip].append(now)
+
     data = request.json
     user_message = data.get("message", "")
     context_data = data.get("context", None)
@@ -28,28 +44,35 @@ def chat():
         "To validate and request approval for a patch, output [JULES_VALIDATE: task_id]. "
     )
     if context_data:
-        # Context Compression
+        # 3. Token Estimation Heuristic (approx 4 chars per token)
         raw_data = context_data.get('data', '')
-        compressed_data = raw_data[:2000] + ("..." if len(raw_data) > 2000 else "")
+        max_chars = 1500 * 4
+        compressed_data = raw_data[:max_chars] + ("..." if len(raw_data) > max_chars else "")
         system_prompt += f" The user is currently looking at {context_data.get('type', 'a webpage')} at {context_data.get('url', '')}. Here is the extracted context: {compressed_data}"
 
     # Global Halt Check
     if getattr(app, 'halt_active', False):
         return jsonify({"reply": "🛑 HALT ACTIVE: Backend operations are currently suspended. Clear the halt state to resume."})
 
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-        )
-        return jsonify({"reply": response.choices[0].message["content"]})
-    except openai.error.Timeout:
-        return jsonify({"reply": "Error: OpenAI API request timed out. Please try again."}), 504
-    except Exception as e:
-        return jsonify({"reply": f"Error communicating with AI: {str(e)}"}), 500
+    # 2. AI Retry Loop
+    retries = 3
+    for attempt in range(retries):
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                timeout=10 # ensure we don't hang forever
+            )
+            return jsonify({"reply": response.choices[0].message["content"]})
+        except openai.error.Timeout:
+            if attempt == retries - 1:
+                return jsonify({"reply": "Error: OpenAI API request timed out. Please try again."}), 504
+            time.sleep(2 ** attempt) # Exponential backoff
+        except Exception as e:
+            return jsonify({"reply": f"Error communicating with AI: {str(e)}"}), 500
 
 @app.route("/api/browser/context", methods=["POST"])
 def receive_context():
@@ -75,6 +98,10 @@ def create_task():
 
 @app.route("/api/jules/status/<task_id>", methods=["GET"])
 def get_status(task_id):
+    # 6. Task ID Sanitization
+    if not re.match(r'^[A-Za-z0-9-]+$', task_id):
+        return jsonify({"error": "invalid format"}), 400
+
     record = bridge.read_jules_session(task_id)
     if not record:
         return jsonify({"error": "not found"}), 404
@@ -114,11 +141,15 @@ def health_check():
     process = psutil.Process(os.getpid())
     mem = process.memory_info().rss / (1024 * 1024)
     tasks = len(bridge.list_jules_tasks())
+    # 7. Uptime Telemetry
+    uptime = time.time() - getattr(app, 'start_time', time.time())
+
     return jsonify({
         "status": "healthy",
         "memory_mb": round(mem, 2),
         "active_jules_tasks": tasks,
-        "halt_active": getattr(app, 'halt_active', False)
+        "halt_active": getattr(app, 'halt_active', False),
+        "uptime_seconds": round(uptime, 2)
     })
 
 if __name__ == "__main__":

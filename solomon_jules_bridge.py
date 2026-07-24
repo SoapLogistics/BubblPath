@@ -25,14 +25,32 @@ class JulesBridge:
         if os.path.exists(self.db_file):
             try:
                 with open(self.db_file, "r") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    return self._prune_old_tasks(data)
             except Exception:
                 return {}
         return {}
 
+    def _prune_old_tasks(self, data: Dict[str, Dict]) -> Dict[str, Dict]:
+        # 1. Task Pruning: Remove tasks older than 24 hours (86400 seconds)
+        current_time = time.time()
+        pruned = {k: v for k, v in data.items() if (current_time - v.get("created_at", current_time)) < 86400}
+        return pruned
+
     def _save_db(self):
         with open(self.db_file, "w") as f:
             json.dump(self.mock_db, f, indent=2)
+
+    def _simulate_progression(self):
+        # 5. Simulated Progression: Slowly advance tasks that are 'processing_update'
+        changed = False
+        for task_id, task in self.mock_db.items():
+            if task.get("status") == "processing_update":
+                # If it's been more than 5 seconds since created/updated
+                task["status"] = "validated_ss3"
+                changed = True
+        if changed:
+            self._save_db()
 
     def _generate_task_id(self) -> str:
         return f"SJ-{int(time.time())}-{str(uuid.uuid4())[:4]}"
@@ -64,11 +82,13 @@ class JulesBridge:
 
     def list_jules_tasks(self) -> List[Dict]:
         """Lists active Jules sessions."""
+        self._simulate_progression()
         # Mocking HTTP GET
         return list(self.mock_db.values())
 
     def read_jules_session(self, task_id: str) -> Optional[Dict]:
         """Inspect session status."""
+        self._simulate_progression()
         return self.mock_db.get(task_id)
 
     def send_jules_message(self, task_id: str, message: str) -> Dict:
