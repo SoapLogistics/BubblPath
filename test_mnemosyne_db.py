@@ -552,7 +552,7 @@ class TestMnemosyneAPIIntegration:
         response = client.get("/workspace")
         assert response.status_code == 200
         html = response.get_data(as_text=True)
-        assert "<title>Solomon SOSS - Quantization &amp; Memory Telemetry Workspace</title>" in html or "Solomon Master Dashboard" in html
+        assert "<title>Solomon SOSS - Quantization &amp; Memory Telemetry Workspace</title>" in html or "Quantization & Memory Telemetry Workspace" in html
         assert "System Telemetry Monitor" in html
         assert "Dynamic Model Router Simulator" in html
         assert "Review Gate Capability Promotion" in html
