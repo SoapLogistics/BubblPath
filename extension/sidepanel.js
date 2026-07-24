@@ -9,15 +9,16 @@ const pendingActionDetails = document.getElementById('pending-action-details');
 const approveBtn = document.getElementById('approve-btn');
 const cancelBtn = document.getElementById('cancel-btn');
 
-// Nexus UI Elements
-const nexusContainer = document.getElementById('nexus-container');
-const nexusStepWrite = document.getElementById('nexus-step-write');
-const nexusStepApprove = document.getElementById('nexus-step-approve');
-const nexusStepDeploy = document.getElementById('nexus-step-deploy');
-const nexusLog = document.getElementById('nexus-log');
+// Jules Bridge UI Elements
+const julesBridgeContainer = document.getElementById('jules-bridge-container');
+const julesActiveTask = document.getElementById('jules-active-task');
+const julesActiveStatus = document.getElementById('jules-active-status');
+const julesApproveBtn = document.getElementById('jules-approve-btn');
 
 let activeContext = null;
 let currentPendingActionSelector = null;
+let activeJulesTaskId = null;
+let julesPollInterval = null;
 
 // Initialize context on load
 chrome.runtime.sendMessage({ type: 'GET_CURRENT_CONTEXT' }, (response) => {
@@ -105,22 +106,21 @@ async function sendMessageToSolomon(message) {
             });
         }
 
-        // Parse for Nexus Delegation
-        const delegateMatch = replyText.match(/\[DELEGATE_JULES:\s*(.+?)\]/);
-        if (delegateMatch) {
-            const instructions = delegateMatch[1].trim();
-            replyText = replyText.replace(delegateMatch[0], '').trim();
-            activateNexusStep('write', `Delegated to Jules: ${instructions.substring(0, 30)}...`);
-            triggerJulesAPI('/api/jules/delegate', { instructions: instructions }, 'write');
+        // Parse for Jules Task Creation
+        const julesTaskMatch = replyText.match(/\[JULES_TASK:\s*(.+?)\s*\|\s*(.+?)\]/);
+        if (julesTaskMatch) {
+            const repo = julesTaskMatch[1].trim();
+            const obj = julesTaskMatch[2].trim();
+            replyText = replyText.replace(julesTaskMatch[0], '').trim();
+            triggerJulesAPI('/api/jules/task', { repository: repo, objective: obj });
         }
 
-        // Parse for Nexus Deploy
-        const deployMatch = replyText.match(/\[DEPLOY_JULES:\s*(.+?)\]/);
-        if (deployMatch) {
-            const target = deployMatch[1].trim();
-            replyText = replyText.replace(deployMatch[0], '').trim();
-            activateNexusStep('deploy', `Deploying target: ${target}...`);
-            triggerJulesAPI('/api/jules/deploy', { target: target }, 'deploy');
+        // Parse for Jules Validation Request
+        const julesValMatch = replyText.match(/\[JULES_VALIDATE:\s*(.+?)\]/);
+        if (julesValMatch) {
+            const tId = julesValMatch[1].trim();
+            replyText = replyText.replace(julesValMatch[0], '').trim();
+            triggerJulesAPI('/api/jules/validate', { task_id: tId });
         }
 
         if (replyText) {
@@ -186,36 +186,11 @@ function resetPendingAction() {
     currentPendingActionSelector = null;
 }
 
-// --- Nexus UI Flow ---
-function activateNexusStep(stepName, logMessage) {
-    nexusContainer.style.display = 'block';
+// --- Jules Bridge UI Flow ---
+async function triggerJulesAPI(endpoint, payload) {
+    julesBridgeContainer.style.display = 'block';
+    julesActiveStatus.textContent = "Contacting API...";
 
-    // Reset all
-    [nexusStepWrite, nexusStepApprove, nexusStepDeploy].forEach(el => {
-        el.classList.remove('active', 'pulsing');
-    });
-
-    if (stepName === 'write') {
-        nexusStepWrite.classList.add('active', 'pulsing');
-    } else if (stepName === 'approve') {
-        nexusStepWrite.classList.add('active');
-        nexusStepApprove.classList.add('active', 'pulsing');
-    } else if (stepName === 'deploy') {
-        nexusStepWrite.classList.add('active');
-        nexusStepApprove.classList.add('active');
-        nexusStepDeploy.classList.add('active', 'pulsing');
-    } else if (stepName === 'done') {
-        nexusStepWrite.classList.add('active');
-        nexusStepApprove.classList.add('active');
-        nexusStepDeploy.classList.add('active');
-    }
-
-    if (logMessage) {
-        nexusLog.textContent = logMessage;
-    }
-}
-
-async function triggerJulesAPI(endpoint, payload, step) {
     try {
         const response = await fetch(`http://localhost:10000${endpoint}`, {
             method: 'POST',
@@ -224,19 +199,26 @@ async function triggerJulesAPI(endpoint, payload, step) {
         });
         const data = await response.json();
 
-        // Advance UI slightly on success
-        if (step === 'write') {
-            activateNexusStep('approve', data.message);
-        } else if (step === 'deploy') {
-            activateNexusStep('done', data.message);
-            setTimeout(() => {
-                nexusContainer.style.display = 'none';
-            }, 5000); // Hide after a bit
-        }
+        if (data.task_id) {
+            activeJulesTaskId = data.task_id;
+            julesActiveTask.textContent = `Task: ${data.task_id}`;
+            julesActiveStatus.textContent = `Status: ${data.status}`;
 
+            if (data.status === 'awaiting_human_approval') {
+                julesApproveBtn.style.display = 'block';
+            } else {
+                julesApproveBtn.style.display = 'none';
+            }
+        }
     } catch (err) {
-        console.error("Nexus Error:", err);
-        nexusLog.textContent = "❌ Uplink Failed: " + err.message;
-        [nexusStepWrite, nexusStepApprove, nexusStepDeploy].forEach(el => el.classList.remove('pulsing'));
+        console.error("Jules API Error:", err);
+        julesActiveStatus.textContent = "API Error: " + err.message;
     }
 }
+
+julesApproveBtn.addEventListener('click', () => {
+    if (activeJulesTaskId) {
+        triggerJulesAPI('/api/jules/approve', { task_id: activeJulesTaskId });
+        julesApproveBtn.style.display = 'none';
+    }
+});

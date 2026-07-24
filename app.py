@@ -2,9 +2,11 @@ import os
 import openai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from solomon_jules_bridge import JulesBridge
 
 app = Flask(__name__)
 CORS(app) # Enable CORS for Chrome Extension communication
+bridge = JulesBridge()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 @app.route("/chat", methods=["POST"])
@@ -18,10 +20,12 @@ def chat():
         "You are Solomon, a helpful assistant. "
         "If the user asks you to perform an action on the webpage (like adding to cart or clicking a bet), "
         "and you know the CSS selector for the button, you MUST output a tag at the end of your response like this: "
-        "[ACTION: #my-css-selector]. The system will intercept this and ask the user for manual approval.\n\n"
-        "NEXUS PROTOCOL: You have the ability to command 'Jules', an autonomous software engineering worker. "
-        "If you read a GitHub issue, a bug, or the user asks you to write code, you can delegate it to Jules by outputting: "
-        "[DELEGATE_JULES: instructions for jules]. To deploy code, output [DEPLOY_JULES: branch_name]."
+        "[ACTION: #my-css-selector]. The system will intercept this and ask the user for manual approval.\n"
+        "If you need to fill out a form input, use [FILL: #selector | value_to_type].\n\n"
+        "JULES BRIDGE PROTOCOL: You manage an autonomous software engineering worker named 'Jules' via a secure API. "
+        "If you read a GitHub issue or need code written, output: [JULES_TASK: repository | objective]. "
+        "To check status, output [JULES_STATUS: task_id]. "
+        "To validate and request approval for a patch, output [JULES_VALIDATE: task_id]. "
     )
     if context_data:
         system_prompt += f" The user is currently looking at {context_data.get('type', 'a webpage')} at {context_data.get('url', '')}. Here is the extracted context: {context_data.get('data', '')}"
@@ -52,28 +56,43 @@ def log_action():
     # In a production system, write to SQLite audit tables (e.g. loki_bets/actions)
     return jsonify({"status": "Action logged securely"})
 
-@app.route("/api/jules/delegate", methods=["POST"])
-def delegate_jules():
+@app.route("/api/jules/task", methods=["POST"])
+def create_task():
     data = request.json
-    instructions = data.get("instructions", "")
-    print(f"🚀 NEXUS BRIDGE ACTIVE: Delegating to Jules -> {instructions}")
-    # Here, we would instantiate Jules (WorkerForemanOrchestrator) and pass the prompt.
-    # For now, we simulate a successful handoff.
-    return jsonify({
-        "status": "delegated",
-        "message": "Jules has received the instructions and is writing code."
-    })
+    repo = data.get("repository", "unknown-repo")
+    objective = data.get("objective", "No objective provided")
+    record = bridge.create_jules_task(repository=repo, objective=objective)
+    return jsonify(record)
 
-@app.route("/api/jules/deploy", methods=["POST"])
-def deploy_jules():
+@app.route("/api/jules/status/<task_id>", methods=["GET"])
+def get_status(task_id):
+    record = bridge.read_jules_session(task_id)
+    if not record:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(record)
+
+@app.route("/api/jules/validate", methods=["POST"])
+def validate_task():
     data = request.json
-    target = data.get("target", "main")
-    print(f"🚀 NEXUS BRIDGE ACTIVE: Jules is deploying -> {target}")
-    # Trigger CI/CD or git merge logic here.
-    return jsonify({
-        "status": "deployed",
-        "message": f"Successfully triggered deployment for {target}."
-    })
+    task_id = data.get("task_id")
+    # Simulate the pipeline: Retrieve -> Validate (SS3) -> Await Human
+    bridge.retrieve_jules_patch(task_id)
+    bridge.validate_jules_output(task_id)
+    record = bridge.request_human_approval(task_id)
+    return jsonify(record)
+
+@app.route("/api/jules/approve", methods=["POST"])
+def approve_task():
+    data = request.json
+    task_id = data.get("task_id")
+    record = bridge.execute_human_approval(task_id)
+    return jsonify(record)
+
+@app.route("/api/browser/halt", methods=["POST"])
+def emergency_halt():
+    # Kill switch for pending backend operations.
+    print("🛑 EMERGENCY HALT TRIGGERED BY USER")
+    return jsonify({"status": "halted", "message": "All operations aborted safely."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

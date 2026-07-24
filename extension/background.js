@@ -41,3 +41,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // We don't need to return sendResponse asynchronously here
     }
 });
+
+// Update context when the user switches tabs
+chrome.tabs.onActivated.addListener((activeInfo) => {
+    chrome.tabs.sendMessage(activeInfo.tabId, { type: 'REQUEST_DOM_EXTRACTION' }).catch(() => {
+        // Ignore errors for internal chrome:// pages or un-injected tabs
+        console.log("Could not request extraction on new tab.");
+    });
+});
+
+// Update context when the tab finishes loading a new URL
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete' && tab.active) {
+        chrome.tabs.sendMessage(tabId, { type: 'REQUEST_DOM_EXTRACTION' }).catch(() => {});
+    }
+});

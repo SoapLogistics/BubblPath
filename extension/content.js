@@ -67,11 +67,27 @@ function extractGitHub() {
 }
 
 function extractGenericNews() {
+    // Check for OpenGraph metadata for better context
+    const ogTitle = document.querySelector('meta[property="og:title"]')?.content || document.title;
+    const ogDesc = document.querySelector('meta[property="og:description"]')?.content || "";
+
     const article = document.querySelector('article');
     if (article) {
-        return `Article Content: ${article.innerText.substring(0, 1500)}`;
+        return `News Title: ${ogTitle}\nDesc: ${ogDesc}\nContent: ${article.innerText.substring(0, 1500)}`;
     }
-    return `Page Body: ${document.body.innerText.substring(0, 1000)}`;
+    return `Page: ${ogTitle}\nBody: ${document.body.innerText.substring(0, 1000)}`;
+}
+
+function extractForms() {
+    // Look for visible input fields that might need filling
+    const inputs = document.querySelectorAll('input:not([type="hidden"]), textarea');
+    let formHints = "\nVisible Inputs:\n";
+    inputs.forEach((input, index) => {
+        if (index < 5 && input.getBoundingClientRect().height > 0) {
+            formHints += `- ID: #${input.id || 'none'} | Name: ${input.name || 'none'} | Type: ${input.type}\n`;
+        }
+    });
+    return formHints;
 }
 
 function extractPageContent() {
@@ -89,6 +105,9 @@ function extractPageContent() {
         case 'fanduel': extractedData = extractFanDuel(); break;
         default: extractedData = extractGenericNews(); break;
     }
+
+    // Append form data to all contexts
+    extractedData += extractForms();
 
     const payload = {
         type: contextType,
@@ -121,6 +140,11 @@ new MutationObserver(() => {
 let currentHighlight = null;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'REQUEST_DOM_EXTRACTION') {
+        extractPageContent();
+        sendResponse({status: "ok"});
+    }
+
     if (request.type === 'HIGHLIGHT_ELEMENT') {
         clearHighlight();
         try {
@@ -161,8 +185,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         try {
             const el = document.querySelector(request.selector);
             if (el) {
-                console.log("Solomon executes manual approved click on:", request.selector);
-                el.click();
+                if (request.actionType === 'FILL' && request.fillValue) {
+                    console.log(`Solomon filling ${request.selector} with ${request.fillValue}`);
+                    el.value = request.fillValue;
+                    // Dispatch events to trigger React/Vue state updates
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    console.log("Solomon executes manual approved click on:", request.selector);
+                    el.click();
+                }
             }
         } catch (e) {
             console.error("Failed to execute action on:", request.selector);
