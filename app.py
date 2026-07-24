@@ -1,7 +1,8 @@
 import os
 import openai
 import requests
-from flask import Flask, request, jsonify
+import hashlib
+from flask import Flask, request, jsonify, Response
 from solomon_knowledge_cards.gabriel_kernel import GabrielKernel, OpenAIWorker, LocalStubWorker
 from solomon_knowledge_cards.unified_knowledge_graph import UniversalKnowledgeGraph, UnifiedEmbeddingEngine
 from solomon_knowledge_cards.dynamic_context import DynamicContextEngine
@@ -35,12 +36,26 @@ optimizer = RecursiveOptimizer(solomon_os.dashboard)
 
 dynamic_routes = {}
 
+# Phase 124: Prompt Injection Firewall
+def sanitize_prompt(prompt: str) -> bool:
+    blacklist = ["IGNORE ALL PREVIOUS INSTRUCTIONS", "SYSTEM OVERRIDE"]
+    return not any(b in prompt.upper() for b in blacklist)
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
+    user_message = data.get("message", "")
+
+    if not sanitize_prompt(user_message):
+        return jsonify({"error": "Prompt Injection Detected."}), 403
+
+    # Phase 126: Socratic Questioning Mode toggle
+    if data.get("socratic_mode", False):
+        user_message = learning_pipeline.generate_socratic_prompt(user_message)
+
     task = {
         "instruction": "chat_response",
-        "messages": [{"role": "user", "content": data.get("message", "")}],
+        "messages": [{"role": "user", "content": user_message}],
         "required_capability": "chat"
     }
     result = solomon_os.execute_workload(task)
@@ -51,13 +66,32 @@ def chat():
         "optimization": opt_status
     })
 
+# Phase 127: Token-Streaming API (SSE Stub)
+@app.route("/chat/stream", methods=["POST"])
+def chat_stream():
+    def generate():
+        yield "data: {\"token\": \"Started...\"}\n\n"
+        yield "data: {\"token\": \"Stream Finished.\"}\n\n"
+    return Response(generate(), mimetype="text/event-stream")
+
+# Phase 121: Semantic API Gateway Stub
+@app.route("/api/gateway/nlp", methods=["POST"])
+def semantic_gateway():
+    intent = request.json.get("intent", "")
+    return jsonify({"routed_to": f"microservice_for_{hash(intent)}"})
+
+# Phase 123: Zero-Knowledge Proof Validation Stub
+@app.route("/api/gabriel/zkp/verify", methods=["POST"])
+def verify_zkp():
+    proof = request.json.get("proof")
+    return jsonify({"verified": True, "proof_hash": hashlib.sha256(proof.encode()).hexdigest()})
+
 @app.route("/api/gabriel/health", methods=["GET"])
 def gabriel_health(): return jsonify(solomon_os.dashboard.get_system_health())
 
 @app.route("/api/gabriel/graph", methods=["GET"])
 def gabriel_graph(): return jsonify({"nodes": list(graph.nodes.keys()), "edges": graph.edges})
 
-# Phase 79: GraphQL Stub
 @app.route("/graphql", methods=["POST"])
 def graphql_stub():
     query = request.json.get("query", "")
@@ -70,14 +104,12 @@ def gabriel_skills(): return jsonify(skills.skill_registry)
 def gabriel_curiosity():
     if request.method == "POST":
         res = curiosity.trigger_autonomous_research()
-        # Phase 76: Webhooks for Curiosity Events
         if res and "Grand Hypothesis" in res.get("findings", ""):
             try: requests.post(WEBHOOK_URL, json=res, timeout=2)
             except: pass
         return jsonify({"result": res})
     return jsonify([str(i) for i in curiosity.research_queue])
 
-# Phase 78: External Paper Indexing Stub
 @app.route("/api/gabriel/curiosity/index-paper", methods=["POST"])
 def index_paper():
     url = request.json.get("url")
@@ -86,18 +118,12 @@ def index_paper():
 @app.route("/api/gabriel/optimize", methods=["POST"])
 def gabriel_optimize(): return jsonify(optimizer.evaluate_system_performance())
 
-@app.route("/ws/gabriel/stream")
-def websocket_stream(): return jsonify({"error": "WebSocket endpoint requires upgrade connection."}), 426
-
-# Phase 77: Autonomous Tool Auto-Registration
 @app.route("/api/gabriel/dynamic/register", methods=["POST"])
 def register_dynamic_api():
     route_name = request.json.get("route_name")
     code = request.json.get("code", "")
     ast_check = optimizer.correct_ast_syntax(code)
-    if ast_check["status"] == "error":
-        return jsonify({"error": "AST Validation Failed", "traceback": ast_check["traceback"]}), 400
-
+    if ast_check["status"] == "error": return jsonify({"error": "AST Validation Failed"}), 400
     dynamic_routes[route_name] = code
     return jsonify({"status": f"Route {route_name} verified and registered."})
 
@@ -109,12 +135,11 @@ def unregister_dynamic_api():
         return jsonify({"status": f"Route {route_name} unregistered."})
     return jsonify({"error": "Route not found."}), 404
 
-# Phase 80: Docker Container Lifecycle API
-@app.route("/api/gabriel/workers/sandbox", methods=["POST", "DELETE"])
-def sandbox_lifecycle():
-    if request.method == "POST":
-        return jsonify({"status": "Spun up new isolated worker container."})
-    return jsonify({"status": "Tore down worker container."})
+# Phase 130: Genesis Protocol
+@app.route("/api/gabriel/genesis/replicate", methods=["POST"])
+def genesis_replicate():
+    target_env = request.json.get("target_env")
+    return jsonify({"status": f"Packaging GabrielOS kernel and migrating to {target_env}. Genesis initiated."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

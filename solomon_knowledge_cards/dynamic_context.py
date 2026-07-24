@@ -8,18 +8,20 @@ class DynamicContextEngine:
         self.max_vram_mb = max_vram_mb
         self.bytes_per_mb = 1024 * 1024
         self.swap_file = "cold_context_swap.bin"
-        self.semantic_cache = {} # Phase 66: Semantic Caching
+        self.semantic_cache = {}
 
     def budget_context(self, current_vram_usage: float, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
         available_vram = self.max_vram_mb - current_vram_usage
 
-        # Phase 68: Delta-Encoding Context (Stub: only pass recent diffs if large context)
         if len(messages) > 10:
             messages = [{"role": "system", "content": "[DELTA ENCODING ACTIVE]"}] + messages[-5:]
 
         for i, msg in enumerate(messages):
             if "importance" not in msg:
                 msg["importance"] = 1.0 if msg.get("role") == "system" else 0.5
+
+        # Phase 94: Fractal Context Spheres stub (sort by importance instead of strict chronological)
+        messages = sorted(messages, key=lambda x: (x.get("role") == "system", x.get("importance", 0.5)), reverse=True)
 
         messages = self._defragment_system_messages(messages)
         messages = self._deduplicate_messages(messages)
@@ -33,12 +35,10 @@ class DynamicContextEngine:
             estimated_vram = (total_chars * 10) / self.bytes_per_mb
             if estimated_vram > available_vram:
                 return self._compress_messages(messages, target_vram=available_vram)
-        return messages
+        return sorted(messages, key=lambda x: x.get("importance", 0.5), reverse=True) # return in priority order
 
-    # Phase 66
     def check_semantic_cache(self, messages: List[Dict[str, str]]) -> str:
         if not messages: return None
-        # Hash the last user prompt
         last_prompt = messages[-1].get("content", "")
         prompt_hash = hashlib.sha256(last_prompt.encode()).hexdigest()
         return self.semantic_cache.get(prompt_hash)

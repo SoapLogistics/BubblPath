@@ -1,6 +1,7 @@
 from typing import Dict, Any, List
 import time
 import gc
+import random
 
 class UnifiedDashboard:
     def __init__(self):
@@ -23,7 +24,6 @@ class UnifiedDashboard:
             if key in costs:
                 self.metrics[key] += costs[key]
 
-        # Phase 72: VRAM Memory Leak Detection
         if "ram_cost_mb" in costs:
             if self.metrics["ram_cost_mb"] - self.last_ram_baseline > 500.0:
                 self.alerts.append("CRITICAL: VRAM Leak Detected, Restarting Stack")
@@ -42,10 +42,9 @@ class UnifiedDashboard:
             "metrics": self.metrics,
             "alerts": self.alerts[-10:],
             "forecast_usd_24h": self._forecast_cost(),
-            "budget_status": "OK" if self._forecast_cost() < 50.0 else "SCALING_DOWN" # Phase 73
+            "budget_status": "OK" if self._forecast_cost() < 50.0 else "SCALING_DOWN"
         }
 
-    # Phase 73: Cost-Curve Extrapolation
     def _forecast_cost(self) -> float:
         if not self.cost_history_24h: return 0.0
         avg_cost = sum(self.cost_history_24h) / len(self.cost_history_24h)
@@ -60,8 +59,11 @@ class SolomonOSKernel:
         self.learning = learning
         self.dashboard = UnifiedDashboard()
         self.gabriel_kernel.set_dashboard(self.dashboard)
-        self.circuit_breaker_failures = 0 # Phase 74
+        self.circuit_breaker_failures = 0
         self.circuit_breaker_open_until = 0
+
+        # Phase 112: Chaos Engineering Daemon flag
+        self.chaos_mode_enabled = False
 
     def _predict_complexity(self, messages: List[Dict[str, str]]) -> float:
         total_len = sum(len(m.get("content", "")) for m in messages)
@@ -69,38 +71,40 @@ class SolomonOSKernel:
 
     def execute_workload(self, task: Dict[str, Any]):
         t_start = time.time()
-        messages = task.get("messages", [])
 
-        # Phase 66 Integration: Semantic Cache
+        # Phase 112: Chaos Engineering Daemon (Randomly fail routing to test fallback)
+        if self.chaos_mode_enabled and random.random() < 0.05:
+            self.dashboard.report_telemetry("GabrielEngine", {"chaos_event": 1})
+            return {"status": "error", "error_message": "CHAOS_DAEMON_INJECTED_FAILURE", "result": "Failed."}
+
+        messages = task.get("messages", [])
         cached = self.context_engine.check_semantic_cache(messages)
-        if cached:
-            return {"status": "success", "result": cached, "cached": True}
+        if cached: return {"status": "success", "result": cached, "cached": True}
 
         task["complexity_score"] = self._predict_complexity(messages)
         t_budget_start = time.time()
         budgeted = self.context_engine.budget_context(current_vram_usage=500.0, messages=messages)
 
-        if len(budgeted) < len(messages) / 2: gc.collect()
+        # Phase 116: OOM Killer (Aggressive GC)
+        if self.dashboard.metrics["ram_cost_mb"] > 1800.0 or len(budgeted) < len(messages) / 2:
+            gc.collect()
 
         task["messages"] = budgeted
         t_budget_ms = (time.time() - t_budget_start) * 1000
 
-        # Phase 73: Cost-Curve Downscale logic
         if self.dashboard.get_system_health()["budget_status"] == "SCALING_DOWN":
             task["required_capability"] = "local_stub"
 
-        # Phase 74: Circuit Breaker
         t_route_start = time.time()
         if time.time() < self.circuit_breaker_open_until:
-            task["required_capability"] = "fallback" # force local
+            task["required_capability"] = "fallback"
 
         result = self.gabriel_kernel.route_task(task)
 
-        # Phase 74 logic update
         if result.get("status") == "error" and "API Error" in result.get("result", ""):
             self.circuit_breaker_failures += 1
             if self.circuit_breaker_failures >= 3:
-                self.circuit_breaker_open_until = time.time() + 300 # open 5 mins
+                self.circuit_breaker_open_until = time.time() + 300
         else:
             self.circuit_breaker_failures = 0
 
@@ -111,7 +115,6 @@ class SolomonOSKernel:
 
         total_time = time.time() - t_start
         token_cost = sum(len(m.get("content", "")) for m in budgeted) / 4.0
-
         simulated_temp = min(self.dashboard.metrics["gpu_temp_c"] + (task["complexity_score"] * 2.0), 90.0)
 
         self.dashboard.report_telemetry("GabrielEngine", {
@@ -126,3 +129,9 @@ class SolomonOSKernel:
         })
 
         return result
+
+    # Phase 111: Zero-Downtime Hot Swapping stub
+    def hot_swap_component(self, component_name: str, new_instance: Any):
+        if component_name == "gabriel_kernel":
+            self.gabriel_kernel = new_instance
+            self.gabriel_kernel.set_dashboard(self.dashboard)

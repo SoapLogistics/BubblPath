@@ -14,7 +14,6 @@ class CuriosityEngine:
         item = {"type": "hypothesis_generation", "task": task, "hypothesis": hypothesis}
         heapq.heappush(self.research_queue, (severity, self.counter, item))
         self.counter += 1
-        # Phase 48: Curiosity Cross-Pollination
         self._cross_pollinate_queue()
 
     def trigger_autonomous_research(self) -> Optional[Dict[str, Any]]:
@@ -22,13 +21,10 @@ class CuriosityEngine:
         _, _, item = heapq.heappop(self.research_queue)
         return {"status": "researched", "findings": item["hypothesis"]}
 
-    # Phase 48
     def _cross_pollinate_queue(self):
-        # Merges similar hypotheses. Simplified stub: if queue > 10, collapse.
         if len(self.research_queue) > 10:
-            merged_task = "Merged hypotheses for multiple failures."
             self.research_queue = []
-            heapq.heappush(self.research_queue, (1, self.counter, {"type": "merged_hypothesis", "task": merged_task, "hypothesis": "Grand Hypothesis"}))
+            heapq.heappush(self.research_queue, (1, self.counter, {"type": "merged_hypothesis", "task": "Merged", "hypothesis": "Grand Hypothesis"}))
             self.counter += 1
 
 class SkillAssimilation:
@@ -36,7 +32,6 @@ class SkillAssimilation:
         self.skill_registry = {}
         self.skill_dependencies: Dict[str, List[str]] = {}
 
-    # Phase 49: AST Verification Hook
     def _verify_ast(self, code: str) -> bool:
         try:
             ast.parse(code)
@@ -45,16 +40,8 @@ class SkillAssimilation:
             return False
 
     def extract_and_index_skill(self, problem_description: str, solution_code: str, deps: List[str] = None):
-        if not self._verify_ast(solution_code):
-            return None # Phase 49: Reject invalid code
-
+        if not self._verify_ast(solution_code): return None
         skill_hash = hashlib.sha256(solution_code.encode()).hexdigest()
-
-        # Phase 46: A/B Skill Testing
-        if skill_hash in self.skill_registry:
-            # If variant exists, we could run them side by side
-            pass
-
         self.skill_registry[skill_hash] = {
             "problem": problem_description,
             "skill": solution_code,
@@ -66,20 +53,14 @@ class SkillAssimilation:
         return skill_hash
 
     def benchmark_skills(self):
-        # Phase 47: Skill Forgetting Curve
         current_time = time.time()
         to_forget = []
-
         for sk_hash, data in self.skill_registry.items():
-            # If unused for 7 days (604800s), forget it
-            if current_time - data.get("last_used", current_time) > 604800:
-                to_forget.append(sk_hash)
+            if current_time - data.get("last_used", current_time) > 604800: to_forget.append(sk_hash)
             else:
                 data["benchmark_score"] = min(data["benchmark_score"] + 0.1, 1.0)
                 data["last_benchmarked"] = current_time
-
-        for sf in to_forget:
-            del self.skill_registry[sf]
+        for sf in to_forget: del self.skill_registry[sf]
 
 class ContinuousLearningPipeline:
     def __init__(self, curiosity: CuriosityEngine, skills: SkillAssimilation):
@@ -95,10 +76,13 @@ class ContinuousLearningPipeline:
             self.skills.extract_and_index_skill(result.get("problem", ""), result.get("solution_code"), result.get("dependencies"))
 
         self.task_count += 1
-        # Phase 50: Adversarial Self-Prompting
-        if self.task_count % 100 == 0:
-            self._generate_adversarial_task()
+        if self.task_count % 100 == 0: self._generate_adversarial_task()
+        # Phase 125: Self-Play RL Loops
+        if self.task_count % 1000 == 0: self._trigger_self_play_debate()
 
-    def _generate_adversarial_task(self):
-        # Enqueues a deliberately hard task to stress-test the system
-        pass
+    def _generate_adversarial_task(self): pass
+    def _trigger_self_play_debate(self): pass
+
+    # Phase 126: Socratic Questioning Mode
+    def generate_socratic_prompt(self, user_prompt: str) -> str:
+        return f"Instead of answering directly, ask the user a guiding question about: {user_prompt}"
