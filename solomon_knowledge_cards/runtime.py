@@ -25,6 +25,34 @@ def get_allowed_clearances(clearance: str) -> List[str]:
     idx = CLEARANCE_ORDER.index(c)
     return CLEARANCE_ORDER[:idx + 1]
 
+def get_dynamic_context_budget() -> int:
+    """
+    Dynamically calculates character-based context budget based on active SOLOMON_MODEL
+    and available system RAM capacity headroom.
+    """
+    model = os.environ.get("SOLOMON_MODEL", "gpt-3.5-turbo").lower()
+    # Default base budget
+    budget = 4000
+
+    if "gpt-4o" in model:
+        budget = 64000
+    elif "gpt-3.5" in model:
+        budget = 16000
+    elif "llama" in model or "local" in model:
+        budget = 12000
+
+    # Enforce memory headroom limits (scale down budget if RAM is tight)
+    try:
+        from .resource_monitor import get_memory_footprint_mb
+        mem_mb = get_memory_footprint_mb()
+        if mem_mb > 1200.0: # If process memory is near 1.5GB cap, compress budget to prevent OOM
+            budget = min(budget, 6000)
+    except Exception:
+        pass
+
+    return budget
+
+
 class MnemosyneRuntime:
     """Project Mnemosyne high-priority long-term memory runtime engine."""
     def __init__(self, db_path: Optional[str] = None):
@@ -124,6 +152,9 @@ class MnemosyneRuntime:
         Retrieves approved/active valid knowledge cards matching search query and clearance level.
         Enforces a maximum characters context budget to prevent prompt paralysis.
         """
+        if context_budget_chars == 4000:
+            context_budget_chars = get_dynamic_context_budget()
+
         allowed = get_allowed_clearances(clearance)
         placeholders = ",".join("?" for _ in allowed)
 

@@ -1,3 +1,4 @@
+import os
 import math
 import random
 import uuid
@@ -153,6 +154,52 @@ class LokiEngine:
 
     def generate_fixtures(self) -> List[Dict[str, Any]]:
         """Generates a list of live fixtures with soft bookmaker odds and Pinnacle benchmarks."""
+        api_key = os.environ.get("SOLOMON_THE_ODDS_API_KEY")
+        if api_key:
+            try:
+                import urllib.request
+                import json
+                url = f"https://api.the-odds-api.com/v4/sports/soccer_uefa_champs_league/odds/?regions=us&markets=h2h&oddsFormat=decimal&apiKey={api_key}"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+
+                fixtures = []
+                for game in data[:8]:
+                    fixture_id = game["id"][:8]
+                    home = game["home_team"]
+                    away = game["away_team"]
+
+                    pinnacle_odds = [2.0, 3.2, 3.0]
+                    soft_odds = [2.1, 3.1, 3.1]
+                    outcomes = [f"{home} Win", "Draw", f"{away} Win"]
+
+                    for bookmaker in game.get("bookmakers", []):
+                        if bookmaker["key"] in ("pinnacle", "lowvig"):
+                            market = bookmaker["markets"][0]
+                            pinnacle_odds = [outcome["price"] for outcome in market["outcomes"]]
+                        elif bookmaker["key"] in ("draftkings", "fanduel"):
+                            market = bookmaker["markets"][0]
+                            soft_odds = [outcome["price"] for outcome in market["outcomes"]]
+                            outcomes = [f"{outcome['name']} Win" if outcome['name'] != 'Draw' else 'Draw' for outcome in market['outcomes']]
+
+                    fixtures.append({
+                        "fixture_id": fixture_id,
+                        "sport": "Champions League",
+                        "fixture": f"{home} vs {away}",
+                        "outcomes": outcomes,
+                        "base_probabilities": [1.0/o for o in pinnacle_odds],
+                        "pinnacle_odds": pinnacle_odds,
+                        "soft_odds": soft_odds,
+                        "is_soft_line": True,
+                        "soft_outcome_index": 0
+                    })
+                if fixtures:
+                    logger.info(f"Successfully fetched {len(fixtures)} live games from The Odds API.")
+                    return fixtures
+            except Exception as e:
+                logger.error(f"Failed to fetch live odds from The Odds API: {str(e)}. Falling back to mock generator.")
+
         fixtures = []
         for sport, matchups in MOCK_TEAMS.items():
             for home, away in matchups:

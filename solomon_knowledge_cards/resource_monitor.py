@@ -40,12 +40,39 @@ def get_memory_footprint_mb() -> float:
         # Static mock return if platform doesn't support proc lookup or resource
         return 42.0
 
+def get_scaled_memory_cap() -> float:
+    """
+    Dynamically scales the memory cap based on Project Loki's net betting profit.
+    'More cash equals more RAM' auto-financing rule!
+    Starts at 1.5GB (1536MB) and scales up to 3.0GB (3072MB) as bankroll profit grows.
+    """
+    base_cap = 1536.0 # 1.5GB
+    try:
+        # Import LokiEngine dynamically to prevent circular dependencies
+        from .loki_engine import LokiEngine
+        from .runtime import MnemosyneRuntime
+        runtime = MnemosyneRuntime()
+        loki = LokiEngine(runtime)
+        stats = loki.get_betting_stats()
+        net_profit = stats.get("net_profit", 0.0)
+
+        if net_profit > 0.0:
+            # Scale: add 1.0MB of allowed RAM for every $1.00 of net profit, capped at 3GB
+            scaled_cap = base_cap + (net_profit * 1.0)
+            return min(scaled_cap, 3072.0) # Cap at 3.0GB (3072MB)
+    except Exception:
+        pass
+    return base_cap
+
 def enforce_resource_caps(max_memory_mb: float = 1536.0) -> bool:
     """
-    Enforces a strict 1.5GB (1536MB) memory cap.
+    Enforces a dynamic or static memory cap.
     Logs plain-text warnings to the telemetry sink.
     Returns True if resource utilization is safely within boundaries, False if cap is exceeded.
     """
+    if max_memory_mb == 1536.0:
+        max_memory_mb = get_scaled_memory_cap()
+
     mem_used = get_memory_footprint_mb()
     timestamp = datetime.utcnow().isoformat()
 
@@ -57,5 +84,5 @@ def enforce_resource_caps(max_memory_mb: float = 1536.0) -> bool:
         return False
     else:
         # Normal trace logs
-        telemetry_logger.info(f"HEALTH CHECK: Memory footprint stable at {mem_used:.2f}MB.")
+        telemetry_logger.info(f"HEALTH CHECK: Memory footprint stable at {mem_used:.2f}MB. Cap scaled to {max_memory_mb:.2f}MB.")
         return True

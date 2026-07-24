@@ -238,6 +238,31 @@ def cc_solomon_chat():
             "retrieval_count": 0
         }
 
+    # 1.1 Retrieve pre-emptive safeguards from Knowledge Graph
+    preemptive_safeguards_prompt = ""
+    try:
+        from solomon_knowledge_cards.graph_engine import KnowledgeGraph
+        graph = KnowledgeGraph(runtime)
+        safeguards = graph.get_failure_safeguards_for_query(message, clearance)
+        if safeguards:
+            safeguards_list = []
+            for sg in safeguards:
+                safeguards_list.append(
+                    f"-> SAFEGUARD [{sg['card_id']}] ({sg['relationship_type']}):\n"
+                    f"Title: {sg['title']}\n"
+                    f"Details:\n{sg['body']}\n"
+                )
+            preemptive_safeguards_prompt = (
+                "\n=== PRE-EMPTIVE PLANNER SAFEGUARDS & PREVENTIONS ===\n"
+                "The following historical FAILURE or REPAIR modes are semantically linked to your current task. "
+                "You MUST incorporate pre-emptive, step-by-step safeguards to completely prevent these issues from occurring:\n" +
+                "\n".join(safeguards_list) +
+                "====================================================\n"
+            )
+            logger.info(f"Knowledge Graph detected and injected {len(safeguards)} pre-emptive safeguards for query.")
+    except Exception as ge:
+        logger.error(f"Knowledge Graph safeguards resolution failed: {str(ge)}")
+
     # 2. Format memory context budget for the planner
     mem_cards = retrieval["memory_context"]
     formatted_mem_list = []
@@ -316,6 +341,9 @@ def cc_solomon_chat():
             f"{memory_context_prompt}\n"
             "-----------------------------------------\n"
         )
+
+    if preemptive_safeguards_prompt:
+        system_instruction += preemptive_safeguards_prompt
 
     reply_content = ""
     # Attempt to query OpenAI GPT if api_key is populated, otherwise fallback to mock planner response
