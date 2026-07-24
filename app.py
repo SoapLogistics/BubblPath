@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, render_template
 
 from hephaestus_forge import hephaestus
 from hephaestus_50_step_optimizers import hephaestus_optimizers
+from hephaestus_50_step_advanced_optimizers import hephaestus_advanced_optimizers
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -48,6 +49,11 @@ def hephaestus_teach():
 @app.route("/api/command-center/hephaestus/optimize-pipeline", methods=["POST"])
 def hephaestus_optimize_pipeline():
     result = hephaestus_optimizers.run_all_optimizations()
+    return jsonify(result)
+
+@app.route("/api/command-center/hephaestus/optimize-advanced", methods=["POST"])
+def hephaestus_optimize_advanced():
+    result = hephaestus_advanced_optimizers.run_advanced_optimizations()
     return jsonify(result)
 
 @app.route("/chat", methods=["POST"])
