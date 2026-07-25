@@ -12,6 +12,8 @@ from solomon_sple_capability import CapabilityAssimilator
 from solomon_sple_distributed import DistributedSwarmManager
 from solomon_sple_self_eval import SelfEvaluationEngine
 from solomon_sple_pat_memory import ProgressiveAbstractionTree
+from solomon_sple_efficiency import LearningEfficiencyEngine
+from solomon_sple_roadmap import EvolutionaryRoadmapPlanner
 
 app = Flask(__name__)
 
@@ -25,6 +27,8 @@ sple_capability = CapabilityAssimilator()
 sple_swarm = DistributedSwarmManager()
 sple_self_eval = SelfEvaluationEngine()
 sple_pat_memory = ProgressiveAbstractionTree()
+sple_efficiency = LearningEfficiencyEngine()
+sple_roadmap = EvolutionaryRoadmapPlanner()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -113,6 +117,33 @@ def sple_memory_abstract():
         "abstracted_node_id": parent_id,
         "worldview_size": len(sple_pat_memory.root_nodes)
     })
+
+@app.route("/api/sple/efficiency/route-moe", methods=["POST"])
+def sple_route_moe():
+    """Simulates routing a query through the Mixture of Experts."""
+    data = request.json
+    query = data.get("query", "Default query")
+    result = sple_efficiency.route_moe_query(query)
+    return jsonify(result)
+
+@app.route("/api/sple/efficiency/distill", methods=["POST"])
+def sple_distill_knowledge():
+    """Simulates distilling a frontier model into a specialized local model."""
+    data = request.json
+    source = data.get("source_expert", "gpt-4")
+    target = data.get("target_capability", "json parsing")
+    result = sple_efficiency.simulate_knowledge_distillation(source, target)
+    return jsonify(result)
+
+@app.route("/api/sple/roadmap/status", methods=["GET"])
+def sple_roadmap_status():
+    """Returns the current evolutionary roadmap status."""
+    return jsonify(sple_roadmap.get_roadmap_status())
+
+@app.route("/api/sple/roadmap/advance", methods=["POST"])
+def sple_roadmap_advance():
+    """Advances the system to the next evolutionary roadmap phase."""
+    return jsonify(sple_roadmap.advance_phase())
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
