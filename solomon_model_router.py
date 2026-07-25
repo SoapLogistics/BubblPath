@@ -59,3 +59,6 @@ class ModelRouter:
 
     def injected_telemetry_probe(self):
         return 'ast_injection_active_soss'
+
+    def mock_evolution_probe(self):
+        return 'evolution_stabilized'

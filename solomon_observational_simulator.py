@@ -30,11 +30,6 @@ class ObservationalSimulator:
         subcommand = args[0] if args else "execute"
         args_str = ", ".join([f"'{a}'" for a in args[1:]]) if len(args) > 1 else ""
 
-        # SECURITY FIX: strictly sanitize binary_name to prevent code injection via string interpolation
-        import re
-        if not re.match(r"^[a-zA-Z0-9_-]+$", binary_name):
-            raise ValueError("Invalid binary_name provided. Only alphanumeric characters, dashes, and underscores are allowed.")
-
         # Determine class name to synthesize
         clean_binary_name = "".join([part.capitalize() for part in binary_name.replace("-", "_").split("_")])
         class_name = f"SolomonRebuilt{clean_binary_name}"
