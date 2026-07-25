@@ -30,7 +30,8 @@ def recall_memory():
         top_k = data.get("top_k", 5)
     else:
         query = request.args.get("query", "")
-        top_k = int(request.args.get("top_k", 5))
+        top_k_str = request.args.get("top_k", "5")
+        top_k = int(top_k_str) if top_k_str.isdigit() else 5
 
     if not query:
         return jsonify({"error": "Missing 'query'"}), 400
