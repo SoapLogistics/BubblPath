@@ -14,6 +14,8 @@ from solomon_sple_self_eval import SelfEvaluationEngine
 from solomon_sple_pat_memory import ProgressiveAbstractionTree
 from solomon_sple_efficiency import LearningEfficiencyEngine
 from solomon_sple_roadmap import EvolutionaryRoadmapPlanner
+from solomon_sple_world_model import WorldModelSimulator
+from solomon_sple_research_horizon import ResearchHorizonPredictor
 
 app = Flask(__name__)
 
@@ -29,6 +31,8 @@ sple_self_eval = SelfEvaluationEngine()
 sple_pat_memory = ProgressiveAbstractionTree()
 sple_efficiency = LearningEfficiencyEngine()
 sple_roadmap = EvolutionaryRoadmapPlanner()
+sple_world_model = WorldModelSimulator()
+sple_research_horizon = ResearchHorizonPredictor()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -144,6 +148,24 @@ def sple_roadmap_status():
 def sple_roadmap_advance():
     """Advances the system to the next evolutionary roadmap phase."""
     return jsonify(sple_roadmap.advance_phase())
+
+@app.route("/api/sple/world-model/simulate", methods=["POST"])
+def sple_world_model_simulate():
+    """Simulates an action in the Model-Based RL World Model."""
+    data = request.json
+    action = data.get("action", "default_action")
+    params = data.get("parameters", {})
+    result = sple_world_model.simulate_action(action, params)
+    return jsonify(result)
+
+@app.route("/api/sple/horizon/predict", methods=["POST"])
+def sple_horizon_predict():
+    """Evaluates a research topic against the future horizon timeline."""
+    data = request.json
+    topic = data.get("topic", "General AI scaling")
+    result = sple_research_horizon.analyze_novelty_opportunity(topic)
+    return jsonify(result)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
