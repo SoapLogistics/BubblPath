@@ -1,9 +1,11 @@
 import os
 import openai
 import hashlib
+import tiktoken
 from flask import Flask, request, jsonify
 from flask_compress import Compress
 from flask_caching import Cache
+from solomon_efficiency_toolkit import SolomonEfficiencyToolkit
 
 app = Flask(__name__)
 # Enable Gzip compression to save bandwidth on API responses
@@ -20,6 +22,16 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 def chat():
     data = request.json
     user_message = data.get("message", "")
+
+    # Apply real efficiency toolkit optimizations to the payload
+    # 1. Minify whitespace
+    user_message = SolomonEfficiencyToolkit.remove_duplicate_whitespace(user_message)
+    # 2. Enforce strict token limits to save OpenAI costs and latency
+    enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    tokens = enc.encode(user_message)
+    if len(tokens) > 2000:
+        # Truncate strictly to 2000 tokens
+        user_message = enc.decode(tokens[:2000])
 
     # Try checking cache first for identical prompts
     cache_key = f"chat_{hashlib.sha256(user_message.encode('utf-8')).hexdigest()}"
