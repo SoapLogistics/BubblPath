@@ -10,8 +10,12 @@ from flask_caching import Cache
 from solomon_efficiency_toolkit import SolomonEfficiencyToolkit
 from solomon_extreme_efficiency_toolkit import SolomonExtremeEfficiencyToolkit
 from solomon_cutting_edge_toolkit import SolomonCuttingEdgeToolkit
+from solomon_bleeding_edge_toolkit import SolomonBleedingEdgeToolkit
 
 app = Flask(__name__)
+
+# Global Continuous Batching Radix Tree to track and prune prompt context prefixes
+PROMPT_RADIX_TREE = SolomonBleedingEdgeToolkit.concept3_radix_tree_prefix_cache()
 
 # Initialize Cutting-Edge Global Paged Memory Pool for HTTP payload buffering
 # 1024 blocks of 4KB = 4MB pre-allocated contiguous memory pool (No GC Pauses)
@@ -61,18 +65,29 @@ def chat():
     if raw_payload:
         SolomonCuttingEdgeToolkit.process1_paged_http_chunking(raw_payload, HTTP_PAGED_POOL)
 
-    # Try Checking Speculative N-Gram Draft Model first for instant local inference
-    draft_reply = SolomonCuttingEdgeToolkit.process2_ngram_speculative_api_cache(user_message, NGRAM_CACHE)
-    if draft_reply:
-        payload = orjson.dumps({"reply": f"Draft: {draft_reply}", "cached": True, "source": "ngram_drafting"})
-        return Response(payload, mimetype='application/json')
+    # Use MoE Intelligent Cache Routing to select the optimal cache subsystem
+    cache_route = SolomonBleedingEdgeToolkit.process1_moe_cache_router(user_message)
 
-    # Try checking Hash Cache for identical prompts
+    # Always compute cache_key since it's used to store the final OpenAI response
     cache_key = f"chat_{hashlib.sha256(user_message.encode('utf-8')).hexdigest()}"
-    cached_response = cache.get(cache_key)
-    if cached_response:
-        payload = orjson.dumps({"reply": cached_response, "cached": True, "source": "hash_cache"})
-        return Response(payload, mimetype='application/json')
+
+    if cache_route == "ngram":
+        # Try Checking Speculative N-Gram Draft Model first for instant local inference
+        draft_reply = SolomonCuttingEdgeToolkit.process2_ngram_speculative_api_cache(user_message, NGRAM_CACHE)
+        if draft_reply:
+            payload = orjson.dumps({"reply": f"Draft: {draft_reply}", "cached": True, "source": "ngram_drafting"})
+            return Response(payload, mimetype='application/json')
+
+    elif cache_route == "hash":
+        # Try checking Hash Cache for identical prompts
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            payload = orjson.dumps({"reply": cached_response, "cached": True, "source": "hash_cache"})
+            return Response(payload, mimetype='application/json')
+
+    # Record prompt in global Radix Tree to simulate continuous batching prefix memory
+    # (Simplified insertion tracking)
+    PROMPT_RADIX_TREE["ref_count"] += 1
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -80,7 +95,7 @@ def chat():
     )
     reply = response.choices[0].message["content"]
 
-    # Store in cache
+    # Store in cache regardless of route to build future history
     cache.set(cache_key, reply)
 
     # Train the Speculative N-Gram model in the background with the successful response

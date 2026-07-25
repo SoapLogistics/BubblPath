@@ -188,6 +188,12 @@ class SolomonCuttingEdgeToolkit:
                 start = block * chunk_size
                 view = memoryview(pool["memory"])
                 view[start:start+len(chunk)] = chunk
+
+        # Simulate processing and immediately free blocks back to pool
+        # to prevent memory leaks in the HTTP pipeline
+        for block in allocated_blocks:
+            pool["free_blocks"].append(block)
+
         return allocated_blocks
 
     @staticmethod
