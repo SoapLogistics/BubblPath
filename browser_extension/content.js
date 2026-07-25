@@ -60,14 +60,31 @@ class AdapterManager {
                 reviewRating: reviewEl ? reviewEl.getAttribute('title') : null
             };
         } else if (this.adapterName === "DraftKingsAdapter" || this.adapterName === "FanDuelAdapter") {
-            // Heuristic scraping for Sportsbooks: look for odds formats like +150, -110
-            const textNodes = document.body.innerText.split('\n');
-            const detectedOdds = textNodes.filter(t => /^[+-]\d{3,}$/.test(t.trim())).slice(0, 10);
+            // Advanced Heuristic Scraping: Capture up to 100 bets with contextual labels
+            const textNodes = document.body.innerText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+            const bets = [];
+
+            for (let i = 0; i < textNodes.length; i++) {
+                if (/^[+-]\d{3,}$/.test(textNodes[i])) {
+                    // Try to grab the previous 1-2 lines for context (e.g., Team Name, Prop)
+                    let contextStr = "";
+                    if (i >= 1 && !/^[+-]\d{3,}$/.test(textNodes[i-1])) contextStr += textNodes[i-1];
+                    if (i >= 2 && !/^[+-]\d{3,}$/.test(textNodes[i-2])) contextStr = textNodes[i-2] + " " + contextStr;
+
+                    bets.push({
+                        odds: textNodes[i],
+                        context: contextStr.trim() || "Unknown Market"
+                    });
+
+                    if (bets.length >= 100) break; // Capture top 100
+                }
+            }
 
             ctx.sportsbook = {
                 platform: this.adapterName,
-                detectedOddsGrid: detectedOdds,
-                liveMutationActive: true // Flag to indicate we could hook a MutationObserver here
+                detectedBets: bets,
+                totalCaptured: bets.length,
+                liveMutationActive: true
             };
         } else if (this.adapterName === "KalshiAdapter") {
             // Advanced Kalshi Logic with Mock Order Book Imbalance calculation
@@ -90,11 +107,29 @@ class AdapterManager {
                 orderBookImbalanceRatio: imbalance.toFixed(4)
             };
         } else if (this.adapterName === "PolymarketAdapter") {
+            // Advanced Heuristic Scraping for Polymarket probabilities (e.g., 45¢, 62%)
+            const textNodes = document.body.innerText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+            const markets = [];
+
+            for (let i = 0; i < textNodes.length; i++) {
+                if (/^\d{1,2}(¢|%)$/.test(textNodes[i])) {
+                    let contextStr = "";
+                    if (i >= 1 && !/^\d{1,2}(¢|%)$/.test(textNodes[i-1])) contextStr += textNodes[i-1];
+
+                    markets.push({
+                        price: textNodes[i],
+                        context: contextStr.trim() || "Unknown Outcome"
+                    });
+
+                    if (markets.length >= 100) break;
+                }
+            }
+
             const titleEl = document.querySelector('h1');
-            const probEls = document.querySelectorAll('.probability-display'); // Generic stub selector
             ctx.polymarket = {
                 marketTitle: titleEl ? titleEl.innerText : null,
-                detectedProbabilities: Array.from(probEls).map(el => el.innerText).slice(0, 5)
+                detectedMarkets: markets,
+                totalCaptured: markets.length
             };
         }
         return ctx;
@@ -218,7 +253,7 @@ function toggleHighlight(actionData, highlight) {
 
 function executeAction(actionData) {
     console.log(`Executing authorized action:`, actionData);
-    if (activeHighlightEl) activeHighlightEl.remove();
+    if (activeHighlightHost) activeHighlightHost.remove();
 
     // Example format: [ACTION: #selector] or [FILL: #selector | value]
     try {
