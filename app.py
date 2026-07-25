@@ -7,6 +7,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from openai import OpenAI
+from solomon_core.event_bus import CognitiveEventBus
+from solomon_core.sple.scheduler import SystemScheduler
+from solomon_core.sple.prometheus import PrometheusEngine
+from solomon_core.gabriel.router import GabrielTaskRouter
 
 # Initialize core services
 limiter = Limiter(
@@ -47,6 +51,19 @@ def create_app() -> Flask:
     openai_client = OpenAI(api_key=api_key if api_key else "dummy_key_to_allow_boot")
     app.extensions['openai'] = openai_client
 
+    # Initialize OS v2.0 Subsystems
+    bus = CognitiveEventBus()
+    scheduler = SystemScheduler(bus)
+    prometheus = PrometheusEngine(bus)
+    gabriel = GabrielTaskRouter(api_key)
+
+    app.extensions['bus'] = bus
+    app.extensions['scheduler'] = scheduler
+    app.extensions['gabriel'] = gabriel
+
+    # Start background loops
+    scheduler.start()
+
     # --- Middleware ---
     @app.before_request
     def enforce_json():
@@ -80,17 +97,25 @@ def create_app() -> Flask:
             return jsonify({"error": "Message cannot be empty."}), 400
 
         try:
-            client: OpenAI = app.extensions['openai']
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": user_message}],
-            )
-            reply = response.choices[0].message.content
-            return jsonify({"reply": reply}), 200
+            # Route complex tasks to Gabriel Engine instead of raw OpenAI API
+            if data.get("use_gabriel", False):
+                gabriel: GabrielTaskRouter = app.extensions['gabriel']
+                result = gabriel.execute_task(user_message, {"source": "chat_endpoint"})
+                return jsonify({"reply": result["consensus"], "metadata": result}), 200
+            else:
+                client: OpenAI = app.extensions['openai']
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": user_message}],
+                )
+                reply = response.choices[0].message.content
+                return jsonify({"reply": reply}), 200
 
         except Exception as e:
             # We log exceptions in a production system.
             print(f"Error during chat execution: {e}")
+            bus: CognitiveEventBus = app.extensions['bus']
+            bus.publish("metrics.friction", {"source": "/chat", "error": str(e)})
             return jsonify({"error": "Internal Server Error"}), 500
 
     return app
