@@ -12,6 +12,31 @@ ENV/
 env.bak/
 venv.bak/
 
+# Logs
+*.log
+npm_output.log
+bun_output.txt
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
 # SQLite
 *.db
 *.sqlite3
+
+# IDE / Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build/Distribution Artifacts
+dist/
+build/
+*.egg-info/
