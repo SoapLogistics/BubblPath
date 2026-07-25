@@ -6,6 +6,7 @@ from solomon_learning_engine import gabriel_learner
 from solomon_metrics import metrics_tracker
 from solomon_abstract_reasoning import abstraction_engine
 from solomon_curiosity_director import curiosity_director
+from solomon_gabriel_100_step_learning_optimizers import gabriel_100_step_optimizer
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -58,6 +59,16 @@ def run_learning_cycle():
         "compression_cycle": compression_results,
         "curiosity_cycle": curiosity_results
     })
+
+@app.route("/system/gabriel/100-step-optimize", methods=["POST"])
+def run_100_step_optimization():
+    """
+    Executes the 100-step Gabriel Engine optimization pipeline.
+    This pushes the 'compounding learning' philosophy to its limits,
+    optimizing everything from memory hygiene to curiosity routing.
+    """
+    result = gabriel_100_step_optimizer.run_100_step_pipeline()
+    return jsonify(result)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
