@@ -20,21 +20,45 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === "teach-solomon") {
-        const text = info.selectionText;
-        if (text) {
-            const context = {
-                url: tab.url,
-                title: tab.title,
-                text: text,
-                is_explicit_teaching: true
-            };
-            await pushToMnemosyne(context, tab.id);
-            // Optional: Provide UI feedback via content script injection
-            chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                func: () => alert("Memory pushed to Solomon Perpetual Learning Engine.")
-            }).catch(e => console.error(e));
-        }
+        // Instead of just grabbing selectionText, ask content script for enriched DOM context
+        chrome.tabs.sendMessage(tab.id, { action: "GATHER_SEMANTIC_SELECTION" }, async (response) => {
+            let enrichedText = info.selectionText;
+            if (response && response.semanticContext) {
+                enrichedText = response.semanticContext;
+            }
+
+            if (enrichedText) {
+                const context = {
+                    url: tab.url,
+                    title: tab.title,
+                    text: enrichedText,
+                    is_explicit_teaching: true
+                };
+                await pushToMnemosyne(context, tab.id);
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: () => {
+                        const notif = document.createElement('div');
+                        notif.textContent = "🧠 Sent to SPLE Memory";
+                        notif.style.position = 'fixed';
+                        notif.style.bottom = '20px';
+                        notif.style.right = '20px';
+                        notif.style.background = '#9b59b6';
+                        notif.style.color = 'white';
+                        notif.style.padding = '10px 20px';
+                        notif.style.borderRadius = '5px';
+                        notif.style.zIndex = '999999';
+                        notif.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                        notif.style.transition = 'opacity 0.5s';
+                        document.body.appendChild(notif);
+                        setTimeout(() => {
+                            notif.style.opacity = '0';
+                            setTimeout(() => notif.remove(), 500);
+                        }, 2500);
+                    }
+                }).catch(e => console.error(e));
+            }
+        });
     }
 });
 

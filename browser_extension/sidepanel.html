@@ -177,6 +177,20 @@
                 <div style="font-size:10px; margin-top:5px;" id="deck-est">Decks Remaining: ~6.0</div>
             </div>
 
+            <div style="margin-top:10px; padding:10px; background:#e8f4f8; border-radius:4px; border: 1px solid #3498db;">
+                <h3 style="margin: 0 0 5px 0; font-size: 13px; color: #2980b9;">Kelly Criterion Bet Sizing</h3>
+                <div style="display:flex; justify-content: space-between; align-items:center; font-size: 12px; margin-bottom: 5px;">
+                    <label>Bankroll ($):</label>
+                    <input type="number" id="kelly-bankroll" value="1000" style="width:60px; padding:2px; font-size:12px;">
+                </div>
+                <div style="font-size: 12px; display: flex; justify-content: space-between;">
+                    <span>Calculated Edge:</span> <strong id="kelly-edge">0.00%</strong>
+                </div>
+                <div style="font-size: 12px; display: flex; justify-content: space-between; margin-top: 5px;">
+                    <span>Optimal Bet Size:</span> <strong id="kelly-bet" style="color: #27ae60; font-size: 14px;">$0.00</strong>
+                </div>
+            </div>
+
             <button id="btn-reset-shoe" class="btn-reject" style="width:100%; margin-top:10px;">Shuffle / Reset Shoe</button>
         </div>
     </div>

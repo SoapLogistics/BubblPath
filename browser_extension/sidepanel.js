@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     document.getElementById('btn-reset-shoe').addEventListener('click', resetShoe);
+    document.getElementById('kelly-bankroll').addEventListener('input', updateCasinoDisplay);
 });
 
 function switchTab(tabName) {
@@ -67,6 +68,28 @@ function updateCasinoDisplay() {
     const trueCount = runningCount / decksRemaining;
     document.getElementById('tc-display').textContent = trueCount.toFixed(1);
     document.getElementById('deck-est').textContent = `Decks Remaining: ~${decksRemaining.toFixed(1)}`;
+
+    // Kelly Criterion calculation
+    // Base house edge for a standard 6-deck shoe is roughly -0.5%
+    // Each +1 True Count shifts the edge by approximately +0.5% towards the player.
+    const playerEdgePercent = -0.5 + (trueCount * 0.5);
+    const edgeDisplay = document.getElementById('kelly-edge');
+    edgeDisplay.textContent = playerEdgePercent.toFixed(2) + '%';
+    edgeDisplay.style.color = playerEdgePercent > 0 ? '#27ae60' : '#e74c3c';
+
+    const bankroll = parseFloat(document.getElementById('kelly-bankroll').value) || 0;
+
+    // Kelly Formula (f* = bp - q / b) simplified for Blackjack paying 1:1 (b=1)
+    // f* = edge / variance. Variance in blackjack is roughly 1.33
+    const variance = 1.33;
+    const decimalEdge = playerEdgePercent / 100;
+    let kellyFraction = decimalEdge > 0 ? decimalEdge / variance : 0;
+
+    // Cap at 0 to avoid negative bet sizing suggestions
+    if (kellyFraction < 0) kellyFraction = 0;
+
+    const betSize = bankroll * kellyFraction;
+    document.getElementById('kelly-bet').textContent = `$${betSize.toFixed(2)}`;
 }
 
 let currentContext = null;
