@@ -22,6 +22,11 @@ from solomon_sple_fractal_substrate import FractalOntologySubstrate
 from solomon_sple_quanta import QuantumSuperpositionRouter, TernaryQuantizationCompressor
 from solomon_sple_pim import ProcessingInMemoryEngine
 from solomon_100_step_hyper_optimizer import HundredStepHyperOptimizer
+from solomon_sple_holographic import HolographicEmbeddingEngine
+from solomon_sple_godel import GodelIncompletenessEscape
+from solomon_sple_tda import TopologicalDataAnalyzer
+from solomon_sple_ou_exploration import OrnsteinUhlenbeckExplorer
+from solomon_sple_nash_swarm import NashEquilibriumSwarmNegotiator
 
 app = Flask(__name__)
 
@@ -46,6 +51,11 @@ sple_quanta_router = QuantumSuperpositionRouter()
 sple_quanta_compressor = TernaryQuantizationCompressor()
 sple_pim = ProcessingInMemoryEngine()
 sple_100_step_optimizer = HundredStepHyperOptimizer()
+sple_holographic = HolographicEmbeddingEngine()
+sple_godel = GodelIncompletenessEscape()
+sple_tda = TopologicalDataAnalyzer()
+sple_ou_explorer = OrnsteinUhlenbeckExplorer()
+sple_nash = NashEquilibriumSwarmNegotiator()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -235,6 +245,38 @@ def sple_optimize_100_step():
     """Runs the 100-Step Hyper-Optimization Awesomeness Pipeline."""
     result = sple_100_step_optimizer.run_100_step_pipeline()
     return jsonify(result)
+
+@app.route("/api/sple/expansion/holographic", methods=["POST"])
+def sple_expansion_holographic():
+    data = request.json
+    text = data.get("text", "Default semantic concept")
+    return jsonify(sple_holographic.compress_to_hologram(text))
+
+@app.route("/api/sple/expansion/godel", methods=["POST"])
+def sple_expansion_godel():
+    data = request.json
+    depth = data.get("depth", 6)
+    topic = data.get("topic", "Recursive self-analysis")
+    return jsonify(sple_godel.evaluate_logic_loop(depth, topic))
+
+@app.route("/api/sple/expansion/tda", methods=["POST"])
+def sple_expansion_tda():
+    data = request.json
+    nodes = data.get("nodes", 1000)
+    edges = data.get("edges", 2500)
+    return jsonify(sple_tda.scan_graph_topology(nodes, edges))
+
+@app.route("/api/sple/expansion/ou-explore", methods=["POST"])
+def sple_expansion_ou():
+    return jsonify(sple_ou_explorer.step_exploration())
+
+@app.route("/api/sple/expansion/nash-swarm", methods=["POST"])
+def sple_expansion_nash():
+    data = request.json
+    bid_a = data.get("bid_a", 10.0)
+    bid_b = data.get("bid_b", 5.0)
+    total = data.get("total_compute", 100.0)
+    return jsonify(sple_nash.negotiate_resources(bid_a, bid_b, total))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
