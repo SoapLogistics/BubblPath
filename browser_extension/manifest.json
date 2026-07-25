@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Solomon Browser Companion",
+  "version": "1.0.0",
+  "description": "Universal front-end capable of securely observing context, assisting the user, and executing explicitly authorized actions.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "alarms"
+  ],
+  "host_permissions": [
+    "*://*.google.com/*",
+    "*://docs.google.com/*",
+    "*://*.github.com/*",
+    "*://*.kalshi.com/*",
+    "*://*.polymarket.com/*",
+    "*://*.draftkings.com/*",
+    "*://*.fanduel.com/*",
+    "*://*.amazon.com/*",
+    "*://*.ebay.com/*",
+    "*://*.youtube.com/*",
+    "*://chatgpt.com/*",
+    "*://chat.openai.com/*",
+    "*://gemini.google.com/*",
+    "*://claude.ai/*",
+    "http://localhost:10000/*",
+    "http://127.0.0.1:10000/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Open Solomon Companion"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "sidebar_action": {
+    "default_panel": "sidepanel.html",
+    "default_title": "Solomon Companion"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
