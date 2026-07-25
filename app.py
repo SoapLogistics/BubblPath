@@ -21,6 +21,7 @@ from solomon_sple_chronos import ChronosTemporalEngine
 from solomon_sple_fractal_substrate import FractalOntologySubstrate
 from solomon_sple_quanta import QuantumSuperpositionRouter, TernaryQuantizationCompressor
 from solomon_sple_pim import ProcessingInMemoryEngine
+from solomon_100_step_hyper_optimizer import HundredStepHyperOptimizer
 
 app = Flask(__name__)
 
@@ -44,6 +45,7 @@ sple_fractal = FractalOntologySubstrate()
 sple_quanta_router = QuantumSuperpositionRouter()
 sple_quanta_compressor = TernaryQuantizationCompressor()
 sple_pim = ProcessingInMemoryEngine()
+sple_100_step_optimizer = HundredStepHyperOptimizer()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -226,6 +228,12 @@ def sple_pim_execute():
     db_size_gb = data.get("database_size_gb", 50.0)
 
     result = sple_pim.execute_in_memory(vector_size, db_size_gb)
+    return jsonify(result)
+
+@app.route("/api/sple/optimize/100-step", methods=["POST"])
+def sple_optimize_100_step():
+    """Runs the 100-Step Hyper-Optimization Awesomeness Pipeline."""
+    result = sple_100_step_optimizer.run_100_step_pipeline()
     return jsonify(result)
 
 if __name__ == "__main__":
