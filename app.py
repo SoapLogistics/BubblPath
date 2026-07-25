@@ -2,9 +2,11 @@ import os
 import openai
 from flask import Flask, request, jsonify
 from solomon_quantized_memory import QuantizedBrainMap
+from solomon_jules_bridge import JulesAutonomousDaemon
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
+jules_daemon = JulesAutonomousDaemon()
 unified_memory.start_ans() # Start background autonomic nervous system
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -62,6 +64,25 @@ def dream_memory():
     unified_memory.dream_cycle(max_steps=steps)
     stats = unified_memory.get_stats()
     return jsonify({"status": "success", "message": "Dream cycle complete.", "stats": stats})
+
+@app.route("/api/jules/execute-blueprint", methods=["POST"])
+def jules_execute():
+    data = request.json or {}
+    blueprint_name = data.get("name", "Unnamed Blueprint")
+    blueprint_text = data.get("blueprint", "")
+
+    if not blueprint_text:
+        return jsonify({"error": "Missing 'blueprint' text"}), 400
+
+    try:
+        jules_daemon.start_blueprint_execution(blueprint_name, blueprint_text)
+        return jsonify({"status": "success", "message": "Autonomous Daemon started."})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/api/jules/status", methods=["GET"])
+def jules_status():
+    return jsonify(jules_daemon.get_status())
 
 @app.route("/chat", methods=["POST"])
 def chat():
