@@ -18,6 +18,7 @@ class SolomonModule:
         self.kernel = None
         self.state = "INIT"
         self.start_time = None
+        self.dependencies: List[str] = []
 
     def attach(self, kernel):
         self.kernel = kernel
@@ -70,16 +71,23 @@ class SolomonKernel:
         logger.info("Solomon OS Kernel Booted.")
 
     def load_module(self, module: SolomonModule):
-        """Analogue to insmod"""
+        """Analogue to insmod. Checks dependencies before loading."""
         with self._lock:
             if module.name in self.modules:
                 logger.warning(f"Module {module.name} is already loaded.")
                 return
 
+            # Check dependencies
+            for dep in module.dependencies:
+                if dep not in self.modules or self.modules[dep].state != "RUNNING":
+                    logger.error(f"Failed to load {module.name}: Missing dependency {dep}")
+                    return False
+
             module.attach(self)
             self.modules[module.name] = module
             module.start()
             logger.info(f"Loaded module: {module.name}")
+            return True
 
     def unload_module(self, module_name: str):
         """Analogue to rmmod"""

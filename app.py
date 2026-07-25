@@ -87,6 +87,34 @@ def vfs_write():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/os/sys/cron", methods=["GET", "POST"])
+def cron_jobs():
+    """Manage background cron jobs in the SchedulingModule."""
+    if request.method == "GET":
+        try:
+            jobs = kernel.call_rpc('list_cron_jobs')
+            return jsonify({"jobs": jobs})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    if request.method == "POST":
+        data = request.json
+        name = data.get("name")
+        topic = data.get("topic")
+        interval = data.get("interval")
+        payload = data.get("payload", {})
+
+        if not all([name, topic, interval]):
+            return jsonify({"error": "name, topic, and interval required"}), 400
+
+        try:
+            success = kernel.call_rpc('add_cron_job', name, topic, int(interval), payload)
+            if success:
+                return jsonify({"status": "success"})
+            return jsonify({"error": "Failed to schedule job"}), 500
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
@@ -95,7 +123,16 @@ def chat():
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": user_message}],
     )
-    return jsonify({"reply": response.choices[0].message["content"]})
+    reply = response.choices[0].message["content"]
+
+    # Parse the LLM's response for actions via the ToolRoutingModule
+    action_info = {}
+    try:
+        action_info = kernel.call_rpc('parse_action', reply)
+    except Exception as e:
+        print(f"Failed to parse action: {e}")
+
+    return jsonify({"reply": reply, "actions": action_info})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

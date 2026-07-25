@@ -4,6 +4,11 @@ import logging
 logger = logging.getLogger("MemoryModule")
 
 class MemoryModule(SolomonModule):
+    def __init__(self):
+        super().__init__()
+        # MemoryModule depends on StorageModule for VFS paging
+        self.dependencies = ["StorageModule"]
+
     def start(self):
         super().start()
         # Initialize Memory (SOK, vectors, graph)
