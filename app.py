@@ -17,6 +17,8 @@ from solomon_sple_roadmap import EvolutionaryRoadmapPlanner
 from solomon_sple_world_model import WorldModelSimulator
 from solomon_sple_research_horizon import ResearchHorizonPredictor
 from solomon_sple_recursive_optimizer import RecursiveSelfOptimizer
+from solomon_sple_chronos import ChronosTemporalEngine
+from solomon_sple_fractal_substrate import FractalOntologySubstrate
 
 app = Flask(__name__)
 
@@ -35,6 +37,8 @@ sple_roadmap = EvolutionaryRoadmapPlanner()
 sple_world_model = WorldModelSimulator()
 sple_research_horizon = ResearchHorizonPredictor()
 sple_recursive_optimizer = RecursiveSelfOptimizer()
+sple_chronos = ChronosTemporalEngine()
+sple_fractal = FractalOntologySubstrate()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -174,6 +178,23 @@ def sple_recursive_improve():
     data = request.json
     target = data.get("target_module", "solomon_sple_core")
     result = sple_recursive_optimizer.attempt_self_modification(target)
+    return jsonify(result)
+
+@app.route("/api/sple/invention/chronos", methods=["POST"])
+def sple_invention_chronos():
+    """Simulates Retrocausal Planning and Temporal Backpropagation."""
+    data = request.json
+    future_state = data.get("future_state", {"goal": "AGI achieved"})
+    actions = data.get("current_actions", ["Train MoE", "Sleep Consolidate", "Halt"])
+    result = sple_chronos.run_retrocausal_projection(future_state, actions)
+    return jsonify(result)
+
+@app.route("/api/sple/invention/fractal", methods=["POST"])
+def sple_invention_fractal():
+    """Simulates Dynamic Ontological Morphing to bypass logical paradoxes."""
+    data = request.json
+    paradox = data.get("paradox", "This statement is false.")
+    result = sple_fractal.morph_topology(paradox)
     return jsonify(result)
 
 
