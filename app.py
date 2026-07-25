@@ -16,6 +16,7 @@ from solomon_sple_efficiency import LearningEfficiencyEngine
 from solomon_sple_roadmap import EvolutionaryRoadmapPlanner
 from solomon_sple_world_model import WorldModelSimulator
 from solomon_sple_research_horizon import ResearchHorizonPredictor
+from solomon_sple_recursive_optimizer import RecursiveSelfOptimizer
 
 app = Flask(__name__)
 
@@ -33,6 +34,7 @@ sple_efficiency = LearningEfficiencyEngine()
 sple_roadmap = EvolutionaryRoadmapPlanner()
 sple_world_model = WorldModelSimulator()
 sple_research_horizon = ResearchHorizonPredictor()
+sple_recursive_optimizer = RecursiveSelfOptimizer()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -164,6 +166,14 @@ def sple_horizon_predict():
     data = request.json
     topic = data.get("topic", "General AI scaling")
     result = sple_research_horizon.analyze_novelty_opportunity(topic)
+    return jsonify(result)
+
+@app.route("/api/sple/recursive-improve", methods=["POST"])
+def sple_recursive_improve():
+    """Triggers a simulated recursive self-improvement cycle on a core module."""
+    data = request.json
+    target = data.get("target_module", "solomon_sple_core")
+    result = sple_recursive_optimizer.attempt_self_modification(target)
     return jsonify(result)
 
 
