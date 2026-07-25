@@ -3,26 +3,18 @@ import openai
 import hashlib
 import tiktoken
 import orjson
-import collections
 from flask import Flask, request, jsonify, Response
 from flask_compress import Compress
 from flask_caching import Cache
 from solomon_efficiency_toolkit import SolomonEfficiencyToolkit
 from solomon_extreme_efficiency_toolkit import SolomonExtremeEfficiencyToolkit
-from solomon_cutting_edge_toolkit import SolomonCuttingEdgeToolkit
-from solomon_bleeding_edge_toolkit import SolomonBleedingEdgeToolkit
+from solomon_invention_land import SolomonInventionEngine
 
 app = Flask(__name__)
 
-# Global Continuous Batching Radix Tree to track and prune prompt context prefixes
-PROMPT_RADIX_TREE = SolomonBleedingEdgeToolkit.concept3_radix_tree_prefix_cache()
-
-# Initialize Cutting-Edge Global Paged Memory Pool for HTTP payload buffering
-# 1024 blocks of 4KB = 4MB pre-allocated contiguous memory pool (No GC Pauses)
-HTTP_PAGED_POOL = SolomonCuttingEdgeToolkit.concept1_paged_attention_allocator(block_size=4096, num_blocks=1024)
-
-# Global N-Gram Speculative Decoding Cache for instant local inference
-NGRAM_CACHE = {}
+# Initialize the Unified Invention Engine
+# Handles Memory Pooling, Radix Drafting, KAN Splines, and Annealing Stateful Logic
+INVENTION_ENGINE = SolomonInventionEngine()
 
 # Enforce strict 1MB limit on request payloads to prevent OOM
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024
@@ -60,34 +52,27 @@ def chat():
     # 5. String Interning for duplicate memory pointers
     user_message = SolomonExtremeEfficiencyToolkit.intern_string(user_message)
 
-    # Route request payload into PagedAttention Memory Pool for zero-GC allocation
+    # Route request payload into Paged Ring Memory Pool for zero-GC allocation
     raw_payload = request.get_data()
     if raw_payload:
-        SolomonCuttingEdgeToolkit.process1_paged_http_chunking(raw_payload, HTTP_PAGED_POOL)
+        INVENTION_ENGINE.ingest_http_request(raw_payload)
 
-    # Use MoE Intelligent Cache Routing to select the optimal cache subsystem
-    cache_route = SolomonBleedingEdgeToolkit.process1_moe_cache_router(user_message)
+    # Master prompt lifecycle: Anneal Workers, MoE Routing, Speculative Drafting
+    draft_reply, cache_route = INVENTION_ENGINE.process_prompt(user_message)
+
+    if draft_reply:
+        payload = orjson.dumps({"reply": f"Draft: {draft_reply}", "cached": True, "source": "ngram_drafting"})
+        return Response(payload, mimetype='application/json')
 
     # Always compute cache_key since it's used to store the final OpenAI response
     cache_key = f"chat_{hashlib.sha256(user_message.encode('utf-8')).hexdigest()}"
 
-    if cache_route == "ngram":
-        # Try Checking Speculative N-Gram Draft Model first for instant local inference
-        draft_reply = SolomonCuttingEdgeToolkit.process2_ngram_speculative_api_cache(user_message, NGRAM_CACHE)
-        if draft_reply:
-            payload = orjson.dumps({"reply": f"Draft: {draft_reply}", "cached": True, "source": "ngram_drafting"})
-            return Response(payload, mimetype='application/json')
-
-    elif cache_route == "hash":
+    if cache_route == "hash":
         # Try checking Hash Cache for identical prompts
         cached_response = cache.get(cache_key)
         if cached_response:
             payload = orjson.dumps({"reply": cached_response, "cached": True, "source": "hash_cache"})
             return Response(payload, mimetype='application/json')
-
-    # Record prompt in global Radix Tree to simulate continuous batching prefix memory
-    # (Simplified insertion tracking)
-    PROMPT_RADIX_TREE["ref_count"] += 1
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -98,14 +83,8 @@ def chat():
     # Store in cache regardless of route to build future history
     cache.set(cache_key, reply)
 
-    # Train the Speculative N-Gram model in the background with the successful response
-    tokens = user_message.split()
-    if len(tokens) >= 2:
-        context = tuple(tokens[-2:])
-        if context not in NGRAM_CACHE:
-            NGRAM_CACHE[context] = collections.Counter()
-        # simplified training: mapping prompt context to API response
-        NGRAM_CACHE[context][reply[:50]] += 1
+    # Provide feedback to the unified engine to train Radix/N-Grams and shift memory topology
+    INVENTION_ENGINE.register_success(user_message, reply)
 
     payload = orjson.dumps({"reply": reply, "source": "openai"})
     return Response(payload, mimetype='application/json')
