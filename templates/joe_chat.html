@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.O.E. (Jules Omega Engine)</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #161b22;
+            padding: 15px 20px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #58a6ff;
+        }
+        .chat-container {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 8px;
+            line-height: 1.4;
+        }
+        .message.joe {
+            align-self: flex-start;
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+        }
+        .message.user {
+            align-self: flex-end;
+            background-color: #1f6feb;
+            color: #ffffff;
+        }
+        .input-area {
+            background-color: #161b22;
+            padding: 15px;
+            border-top: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .input-area input[type="text"], .input-area textarea {
+            width: 100%;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 10px;
+            font-family: inherit;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .input-area textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .submit-btn {
+            background-color: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        .submit-btn:hover {
+            background-color: #2ea043;
+        }
+        .status-indicator {
+            font-size: 0.9em;
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>J.O.E.</h1>
+        <div class="status-indicator" id="status-indicator">Status: Idle</div>
+    </div>
+
+    <div class="chat-container" id="chat-container">
+        <div class="message joe">
+            Jules Omega Engine initialized. Awaiting blueprints.
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="blueprint-name" placeholder="Blueprint Name (e.g. Project Phoenix)">
+        <textarea id="blueprint-text" placeholder="Paste your markdown blueprint here..."></textarea>
+        <div class="controls">
+            <input type="file" id="file-upload" accept=".md,.txt" style="color: #8b949e;">
+            <button class="submit-btn" onclick="submitBlueprint()">Transmit</button>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const statusIndicator = document.getElementById('status-indicator');
+        let currentJobName = null;
+
+        // Handle file upload reading
+        document.getElementById('file-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('blueprint-text').value = e.target.result;
+                if (!document.getElementById('blueprint-name').value) {
+                    document.getElementById('blueprint-name').value = file.name.replace(/\.[^/.]+$/, "");
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.textContent = text;
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function submitBlueprint() {
+            const nameInput = document.getElementById('blueprint-name');
+            const textInput = document.getElementById('blueprint-text');
+            const name = nameInput.value.trim() || 'Unnamed Blueprint';
+            const text = textInput.value.trim();
+
+            if (!text) return;
+
+            // Optimistic UI
+            addMessage(`[Blueprint Submitted]: ${name}`, 'user');
+            nameInput.value = '';
+            textInput.value = '';
+            document.getElementById('file-upload').value = '';
+
+            try {
+                const response = await fetch('/api/joe/queue-blueprint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, blueprint: text })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`, 'joe');
+                }
+            } catch (err) {
+                addMessage(`Transmission failed: ${err.message}`, 'joe');
+            }
+        }
+
+        async function pollStatus() {
+            try {
+                const response = await fetch('/api/joe/status');
+                const data = await response.json();
+
+                if (data.is_running && data.current_job) {
+                    statusIndicator.textContent = `Status: Processing (${data.queued_blueprints} in queue)`;
+
+                    // State transition: Idle -> Processing
+                    if (currentJobName !== data.current_job.name) {
+                        currentJobName = data.current_job.name;
+                        addMessage(`Processing blueprint: ${currentJobName}... (using ${data.current_job.helpers_active} helper threads)`, 'joe');
+                    }
+
+                } else {
+                    statusIndicator.textContent = `Status: Idle`;
+
+                    // State transition: Processing -> Complete
+                    if (currentJobName !== null) {
+                        addMessage(`Blueprint ${currentJobName} completed.`, 'joe');
+                        currentJobName = null;
+                    }
+                }
+            } catch (err) {
+                console.error("Polling error:", err);
+            }
+        }
+
+        // Poll every 5 seconds
+        setInterval(pollStatus, 5000);
+    </script>
+</body>
+</html>
