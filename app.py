@@ -1,6 +1,15 @@
 import os
 import datetime
 import openai
+
+from solomon_quantization_optimization import QuantizationOptimizer
+from solomon_50_step_optimizers import FiftyStepSystemOptimizer
+from solomon_gabriel_50_step_optimizers import GabrielFiftyStepOptimizers
+
+quant_optimizer = QuantizationOptimizer()
+gabriel_fifty_step_optimizer = GabrielFiftyStepOptimizers()
+fifty_step_optimizer = None # Will be initialized dynamically
+
 from flask import Flask, request, jsonify
 from solomon_quantization_engine import (
     HessianSensitivitySolver,
@@ -1140,6 +1149,68 @@ def get_metrics():
     }
     return jsonify(metrics_report)
 
+
+
+@app.route("/api/quantization/benchmarking", methods=["POST"])
+def api_quant_benchmarking():
+    data = request.json or {}
+    return jsonify(quant_optimizer.unified_benchmarking(data.get("model_id", "default"), data.get("precision", "INT8"), data.get("seq_len", 1024)))
+
+@app.route("/api/quantization/precision-ladder", methods=["POST"])
+def api_quant_precision_ladder():
+    data = request.json or {}
+    return jsonify(quant_optimizer.precision_ladder(data.get("workload_type", "general")))
+
+@app.route("/api/quantization/fleet-router", methods=["POST"])
+def api_quant_fleet_router():
+    data = request.json or {}
+    return jsonify(quant_optimizer.fleet_router(data.get("hardware_target", "NVIDIA_GPU")))
+
+@app.route("/api/quantization/outlier-control", methods=["POST"])
+def api_quant_outlier_control():
+    data = request.json or {}
+    return jsonify(quant_optimizer.outlier_control(data.get("activation_tensor", [])))
+
+@app.route("/api/quantization/multilingual-eval", methods=["POST"])
+def api_quant_multilingual_eval():
+    data = request.json or {}
+    return jsonify(quant_optimizer.multilingual_evaluation(data.get("languages", ["en"])))
+
+@app.route("/api/quantization/calibration-version", methods=["POST"])
+def api_quant_calibration_version():
+    data = request.json or {}
+    return jsonify(quant_optimizer.calibration_versioning(data.get("dataset_id", "ds_1"), data.get("model_config", {})))
+
+@app.route("/api/quantization/security-review", methods=["POST"])
+def api_quant_security_review():
+    data = request.json or {}
+    return jsonify(quant_optimizer.artifact_security_review(data.get("artifact_path", "/model/weights.bin"), data.get("expected_hash", "")))
+
+@app.route("/api/quantization/mixed-precision-search", methods=["POST"])
+def api_quant_mixed_precision_search():
+    data = request.json or {}
+    return jsonify(quant_optimizer.mixed_precision_search(data.get("layers", 10), data.get("latency_budget_ms", 10.0)))
+
+@app.route("/api/quantization/qat-recovery", methods=["POST"])
+def api_quant_qat_recovery():
+    data = request.json or {}
+    return jsonify(quant_optimizer.selective_qat_recovery(data.get("sensitivities", {}), data.get("threshold", 0.8)))
+
+@app.route("/api/quantization/sparse", methods=["POST"])
+def api_quant_sparse():
+    data = request.json or {}
+    return jsonify(quant_optimizer.sparse_quantization(data.get("model_id", "default"), data.get("density", 0.5)))
+
+@app.route("/api/quantization/50-step-optimize", methods=["POST"])
+def api_quant_50_step_optimize_pipeline_v3():
+    data = request.json or {}
+    optimizer = FiftyStepSystemOptimizer(db)
+    return jsonify(optimizer.optimize_all(data.get("model_id", "default_model")))
+
+@app.route("/api/command-center/gabriel/50-step-optimize", methods=["POST"])
+def api_gabriel_50_step_optimize():
+    data = request.json or {}
+    return jsonify(gabriel_fifty_step_optimizer.optimize_all(data.get("swarm_id", "default_swarm")))
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=10000)
