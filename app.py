@@ -19,6 +19,8 @@ from solomon_sple_research_horizon import ResearchHorizonPredictor
 from solomon_sple_recursive_optimizer import RecursiveSelfOptimizer
 from solomon_sple_chronos import ChronosTemporalEngine
 from solomon_sple_fractal_substrate import FractalOntologySubstrate
+from solomon_sple_quanta import QuantumSuperpositionRouter, TernaryQuantizationCompressor
+from solomon_sple_pim import ProcessingInMemoryEngine
 
 app = Flask(__name__)
 
@@ -39,6 +41,9 @@ sple_research_horizon = ResearchHorizonPredictor()
 sple_recursive_optimizer = RecursiveSelfOptimizer()
 sple_chronos = ChronosTemporalEngine()
 sple_fractal = FractalOntologySubstrate()
+sple_quanta_router = QuantumSuperpositionRouter()
+sple_quanta_compressor = TernaryQuantizationCompressor()
+sple_pim = ProcessingInMemoryEngine()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -197,6 +202,31 @@ def sple_invention_fractal():
     result = sple_fractal.morph_topology(paradox)
     return jsonify(result)
 
+@app.route("/api/sple/quanta/collapse", methods=["POST"])
+def sple_quanta_collapse():
+    """Simulates Quantum Superposition Routing and Ternary Compression."""
+    data = request.json
+    complexity = data.get("task_complexity", 5.0)
+    nodes = data.get("available_nodes", 100)
+    memory_mb = data.get("memory_block_mb", 1024.0)
+
+    routing_result = sple_quanta_router.collapse_routing_wave(complexity, nodes)
+    compression_result = sple_quanta_compressor.compress_memory_block(memory_mb)
+
+    return jsonify({
+        "routing": routing_result,
+        "compression": compression_result
+    })
+
+@app.route("/api/sple/lean/pim-execute", methods=["POST"])
+def sple_pim_execute():
+    """Simulates bypassing the Von Neumann bottleneck via Processing-In-Memory."""
+    data = request.json
+    vector_size = data.get("query_vector_size", 1536)
+    db_size_gb = data.get("database_size_gb", 50.0)
+
+    result = sple_pim.execute_in_memory(vector_size, db_size_gb)
+    return jsonify(result)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
