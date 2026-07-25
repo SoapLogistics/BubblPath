@@ -50,12 +50,17 @@ class PerpetualLearningEngine:
         self.memory.store_episodic(event_record)
         results["subsystem_results"]["memory"] = "stored_episodic"
 
-        # 2. Knowledge Graph / Abstraction
+        # 2. Knowledge Graph / Abstraction & Horizon Evaluation
         if "facts" in event_data:
             fact_ids = [self.pat_memory.ingest_raw_fact(f) for f in event_data["facts"]]
             if "concept" in event_data:
-                 parent_id = self.pat_memory.abstract_cluster(fact_ids, event_data["concept"])
+                 concept = event_data["concept"]
+                 parent_id = self.pat_memory.abstract_cluster(fact_ids, concept)
                  results["subsystem_results"]["abstraction"] = f"abstracted_node_{parent_id}"
+
+                 # ENHANCEMENT: Evaluate the novelty of this newly abstracted concept
+                 horizon_eval = self.research_horizon.analyze_novelty_opportunity(concept)
+                 results["subsystem_results"]["horizon_eval"] = horizon_eval
 
         # 3. Tool Learning / Capability Assimilation
         if event_type == "tool_usage" or "tool_logs" in event_data:
@@ -63,6 +68,11 @@ class PerpetualLearningEngine:
             tool_logs = event_data.get("tool_logs", "")
             assimilation_result = self.capability.analyze_tool_workflow(tool_name, tool_logs)
             results["subsystem_results"]["capability"] = assimilation_result
+
+            # ENHANCEMENT: If capability successfully assimilated, simulate regression test
+            if assimilation_result.get("status") == "success":
+                regression_passed = self.self_eval.simulate_regression_test(tool_name)
+                results["subsystem_results"]["regression_test"] = regression_passed
 
         # 4. Failure Analysis & Self-Healing
         if event_type == "failure" or event_data.get("status") == "error":
@@ -72,7 +82,7 @@ class PerpetualLearningEngine:
                 eval_result = self.self_eval.red_team_adversarial_review(event_data["code"])
                 results["subsystem_results"]["self_eval"] = eval_result
 
-        # 5. Curiosity & World Model
+        # 5. Curiosity, World Model, & Distributed Swarm Trigger
         predicted_outcome = event_data.get("predicted_outcome")
         actual_outcome = event_data.get("actual_outcome")
         if predicted_outcome and actual_outcome:
@@ -81,6 +91,11 @@ class PerpetualLearningEngine:
             if surprise > 0.5:
                 concept_gap = event_data.get("concept_gap", f"Gap_from_{event_type}")
                 self.curiosity.add_to_frontier(concept_gap)
+
+                # ENHANCEMENT: High surprise triggers a swarm deep-dive
+                swarm_task = f"Deep dive research into anomaly: {concept_gap}"
+                swarm_result = self.swarm.delegate_task(swarm_task, "Researcher")
+                results["subsystem_results"]["swarm_delegation"] = swarm_result
 
         # 6. Meta-Learning Optimization
         if "prompt" in event_data and "success_score" in event_data:
@@ -92,14 +107,23 @@ class PerpetualLearningEngine:
             self.meta_learner.tune_retrieval_parameters(event_type, event_data["success_score"])
             results["subsystem_results"]["meta_learner"] = "prompt_optimized"
 
-        # 7. Experience Replay / Sleep Thresholds
+        # 7. Experience Replay, Sleep Thresholds, & Evolutionary Advance
         if len(self.memory.episodic_memory) > 10:  # Threshold for sleep
             sleep_result = self.memory.trigger_sleep_consolidation()
             results["subsystem_results"]["sleep_consolidation"] = sleep_result
 
-        # 8. Optimization & Efficiency
+            # ENHANCEMENT: If massive consolidation occurs, advance roadmap phase
+            if sleep_result.get("consolidated_events", 0) > 20:
+                roadmap_status = self.roadmap.advance_phase()
+                results["subsystem_results"]["roadmap_advance"] = roadmap_status
+
+        # 8. Optimization & Efficiency Tick
         if event_type == "query":
             route_result = self.efficiency.route_moe_query(event_data.get("query", ""))
             results["subsystem_results"]["moe_route"] = route_result
+
+        # ENHANCEMENT: Universal optimizer tick for every event
+        opt_tick = self.optimizer.run_optimization_cycle()
+        results["subsystem_results"]["optimizer_tick"] = "completed"
 
         return results
