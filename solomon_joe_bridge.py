@@ -38,10 +38,25 @@ class JoeOmegaEngine:
         # System prompt ensuring the AI acts as an autonomous coder
         self.system_prompt = (
             "You are J.O.E. (Jules Omega Engine). You are running as an autonomous background swarm inside Project Solomon. "
-            "Your objective is to execute the given architectural task, write the necessary Python code, "
-            "and output the raw code implementation. Do not include markdown formatting or explanations, ONLY output the raw code "
-            "or shell commands required. If you are modifying a file, output the complete file."
+            "Your objective is to execute the given architectural task flawlessly. "
+            "You MUST output your response in strict JSON format matching the following schema:\n"
+            "{\n"
+            '  "monologue": "Your internal reasoning and plan for solving this specific task.",\n'
+            '  "file_path": "The exact relative path of the file you are modifying or creating (e.g., solomon_core/new_file.py).",\n'
+            '  "code": "The complete, production-ready raw code. Do not use markdown backticks.",\n'
+            '  "bash_command": "Optional. A bash command to run BEFORE committing (e.g., pip install requests). Leave empty string if none."\n'
+            "}"
         )
+
+    def _get_repository_map(self) -> str:
+        """Returns a tree of the current repository so J.O.E. knows what exists."""
+        try:
+            res = subprocess.run(["git", "ls-files"], capture_output=True, text=True, check=True)
+            files = res.stdout.strip().split('\n')
+            # Only return top ~100 files to save context window, or filter relevant
+            return "\n".join(files[:100])
+        except Exception:
+            return "Unknown (Git error)"
 
     def queue_blueprint(self, blueprint_name: str, blueprint_text: str):
         if len(self.blueprint_queue) >= 5:
@@ -139,82 +154,80 @@ class JoeOmegaEngine:
             raise Exception(f"Task {task.title} exhausted.")
 
     def _execute_single_task(self, task: JoeTask, previous_error: str = ""):
-        """Uses OpenAI to generate code, writes it to disk, and commits it. Self-corrects if previous_error provided."""
-        client = openai.Client() # Assumes OPENAI_API_KEY is in environment
+        """Uses OpenAI to generate code via strict JSON, runs bash, writes to disk, and commits/pushes."""
+        client = openai.Client()
+        repo_map = self._get_repository_map()
 
-        # 1. Ask Jules to write the implementation
+        # 1. Ask J.O.E. to write the implementation
         prompt = (
+            f"Repository Map (existing files):\n{repo_map}\n\n"
             f"Current Task: {task.title}\n"
             f"Description: {task.description}\n\n"
-            f"Provide the exact Python implementation to satisfy this task. "
-            f"Start your response with the filename on the first line (e.g., # filename: module.py), "
-            f"then provide the raw code."
         )
 
         if previous_error:
-            prompt += f"\n\nWARNING: Your previous attempt failed with the following error:\n{previous_error}\nAnalyze the error and provide the FIXED code."
+            prompt += f"WARNING: Your previous attempt failed with the following error:\n{previous_error}\nAnalyze the error and provide the FIXED JSON."
 
-        task.logs.append("Requesting code generation from J.O.E. Core (OpenAI)...")
+        task.logs.append("Requesting code generation from J.O.E. Core (JSON Mode)...")
         response = client.chat.completions.create(
             model="gpt-4-turbo-preview",
             messages=[
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.2 if not previous_error else 0.4 # Slightly higher temp on retries for creative fixing
+            response_format={ "type": "json_object" },
+            temperature=0.2 if not previous_error else 0.4
         )
 
-        output = response.choices[0].message.content.strip()
+        try:
+            data = json.loads(response.choices[0].message.content)
+            monologue = data.get("monologue", "Processing...")
+            file_path = data.get("file_path", "joe_output.py")
+            code_content = data.get("code", "")
+            bash_cmd = data.get("bash_command", "")
+        except json.JSONDecodeError as e:
+            raise Exception(f"Failed to parse J.O.E. JSON output: {str(e)}")
 
-        # 2. Parse filename and content
-        lines = output.split('\n')
-        filename = "jules_autonomous_output.py" # Default fallback
-        if lines[0].startswith('# filename:'):
-            filename = lines[0].replace('# filename:', '').strip()
-            content = '\n'.join(lines[1:]).strip()
-        else:
-            content = output
+        # Log J.O.E.'s thoughts to the UI
+        task.logs.append(f"J.O.E. Monologue: {monologue}")
 
-        # Strip markdown code blocks if the AI accidentally included them
-        if content.startswith('```python'):
-            content = content[9:]
-        if content.startswith('```'):
-            content = content[3:]
-        if content.endswith('```'):
-            content = content[:-3]
+        # 2. Execute Optional Bash Command
+        if bash_cmd:
+            task.logs.append(f"Executing bash: {bash_cmd}")
+            try:
+                bash_res = subprocess.run(bash_cmd, shell=True, check=True, capture_output=True, text=True)
+                if bash_res.stdout:
+                    task.logs.append(f"Bash stdout: {bash_res.stdout.strip()[:100]}...")
+            except subprocess.CalledProcessError as e:
+                raise Exception(f"Bash execution failed: {e.stderr}")
 
-        # 3. Write to disk securely (prevent directory traversal)
-        # Ensure the filename is just a safe basename within the current repo directory
-        safe_filename = os.path.basename(filename)
-        if not safe_filename or safe_filename == "" or safe_filename == ".":
-            safe_filename = "jules_autonomous_output.py"
+        # 3. Write to disk safely
+        # We allow subdirectories (e.g. templates/chat.html) but prevent breaking out of repo
+        safe_path = os.path.normpath(file_path)
+        if safe_path.startswith("..") or safe_path.startswith("/"):
+            safe_path = "joe_output.py"
 
-        # Optional check: ensure it has a python extension to prevent arbitrary executable writes
-        if not safe_filename.endswith(".py"):
-             safe_filename += ".py"
+        os.makedirs(os.path.dirname(safe_path) or ".", exist_ok=True)
 
-        task.logs.append(f"Writing implementation securely to {safe_filename}...")
-        with open(safe_filename, 'w') as f:
-            f.write(content.strip() + "\n")
-
-        # override filename for git add
-        filename = safe_filename
+        task.logs.append(f"Writing implementation to {safe_path}...")
+        with open(safe_path, 'w') as f:
+            f.write(code_content + "\n")
 
         # 4. Syntax check (Self-Healing Step 1)
-        if safe_filename.endswith(".py"):
+        if safe_path.endswith(".py"):
             try:
-                subprocess.run(["python", "-m", "py_compile", safe_filename], check=True, capture_output=True, text=True)
+                subprocess.run(["python", "-m", "py_compile", safe_path], check=True, capture_output=True, text=True)
             except subprocess.CalledProcessError as e:
                 raise Exception(f"Syntax Error in generated Python code: {e.stderr}")
 
-        # 5. Run Git Commit (Self-Healing Step 2)
+        # 5. Run Git Commit and Push (True Auto-Deploy)
         task.logs.append("Committing to repository...")
 
         with self.git_lock:
             try:
-                subprocess.run(["git", "add", safe_filename], check=True, capture_output=True, text=True)
+                subprocess.run(["git", "add", safe_path], check=True, capture_output=True, text=True)
 
-                commit_msg = f"omega(auto): complete {task.title.lower()}"
+                commit_msg = f"joe(auto): complete {task.title.lower()}"
                 res = subprocess.run(["git", "commit", "-m", commit_msg], capture_output=True, text=True)
 
                 if res.returncode != 0:
@@ -226,7 +239,14 @@ class JoeOmegaEngine:
                     # Get the commit hash
                     res_hash = subprocess.run(["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True)
                     task.commit_hash = res_hash.stdout.strip()
-                    task.logs.append(f"Committed successfully. Hash: {task.commit_hash}")
+
+                    # TRUE AUTO-DEPLOY: Push to origin
+                    task.logs.append("Pushing changes to origin (Auto-Deploy)...")
+                    push_res = subprocess.run(["git", "push", "origin", "HEAD"], capture_output=True, text=True)
+                    if push_res.returncode != 0:
+                         task.logs.append(f"Git push failed (non-fatal): {push_res.stderr}")
+                    else:
+                         task.logs.append(f"Auto-Deploy pushed successfully. Hash: {task.commit_hash}")
 
             except subprocess.CalledProcessError as e:
                  raise Exception(f"Git subprocess error: {e.stderr}")

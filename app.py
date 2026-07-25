@@ -67,6 +67,13 @@ def dream_memory():
 
 @app.route("/api/joe/queue-blueprint", methods=["POST"])
 def joe_queue():
+    # Require Authentication for RCE protection
+    auth_header = request.headers.get("Authorization")
+    expected_key = os.environ.get("SOLOMON_INTERNAL_AUTH_KEY")
+
+    if not expected_key or auth_header != f"Bearer {expected_key}":
+        return jsonify({"error": "Unauthorized"}), 401
+
     data = request.json or {}
     blueprint_name = data.get("name", "Unnamed Blueprint")
     blueprint_text = data.get("blueprint", "")
@@ -86,6 +93,9 @@ def joe_status():
 
 @app.route("/joe", methods=["GET"])
 def joe_chat_ui():
+    # Only serve the UI if auth key is present, otherwise block
+    if not os.environ.get("SOLOMON_INTERNAL_AUTH_KEY"):
+         return "System Error: SOLOMON_INTERNAL_AUTH_KEY must be set to access J.O.E.", 403
     return render_template("joe_chat.html")
 
 @app.route("/chat", methods=["POST"])

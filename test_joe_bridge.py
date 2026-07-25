@@ -27,7 +27,7 @@ class TestJoeDaemon(unittest.TestCase):
     def test_execute_single_task(self, mock_subprocess, mock_openai_client):
         # Setup mock OpenAI response
         mock_response = MagicMock()
-        mock_response.choices[0].message.content = "# filename: test_output.py\nprint('hello world')"
+        mock_response.choices[0].message.content = '{"monologue": "Thinking...", "file_path": "test_output.py", "code": "print(\'hello world\')", "bash_command": ""}'
         mock_client_instance = MagicMock()
         mock_client_instance.chat.completions.create.return_value = mock_response
         mock_openai_client.return_value = mock_client_instance

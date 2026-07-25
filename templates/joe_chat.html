@@ -113,6 +113,7 @@
     </div>
 
     <div class="input-area">
+        <input type="password" id="auth-key" placeholder="SOLOMON_INTERNAL_AUTH_KEY (Bearer Token)" style="margin-bottom: 10px;">
         <input type="text" id="blueprint-name" placeholder="Blueprint Name (e.g. Project Phoenix)">
         <textarea id="blueprint-text" placeholder="Paste your markdown blueprint here..."></textarea>
         <div class="controls">
@@ -149,12 +150,17 @@
         }
 
         async function submitBlueprint() {
+            const authKey = document.getElementById('auth-key').value.trim();
             const nameInput = document.getElementById('blueprint-name');
             const textInput = document.getElementById('blueprint-text');
             const name = nameInput.value.trim() || 'Unnamed Blueprint';
             const text = textInput.value.trim();
 
             if (!text) return;
+            if (!authKey) {
+                addMessage("Error: Authentication key required.", 'joe');
+                return;
+            }
 
             // Optimistic UI
             addMessage(`[Blueprint Submitted]: ${name}`, 'user');
@@ -165,7 +171,10 @@
             try {
                 const response = await fetch('/api/joe/queue-blueprint', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authKey}`
+                    },
                     body: JSON.stringify({ name: name, blueprint: text })
                 });
 
@@ -178,6 +187,8 @@
             }
         }
 
+        let lastPrintedLogs = new Set();
+
         async function pollStatus() {
             try {
                 const response = await fetch('/api/joe/status');
@@ -189,7 +200,23 @@
                     // State transition: Idle -> Processing
                     if (currentJobName !== data.current_job.name) {
                         currentJobName = data.current_job.name;
-                        addMessage(`Processing blueprint: ${currentJobName}... (using ${data.current_job.helpers_active} helper threads)`, 'joe');
+                        addMessage(`[SYSTEM]: Blueprint '${currentJobName}' engaged. Swarm helpers active: ${data.current_job.helpers_active}`, 'joe');
+                        lastPrintedLogs = new Set(); // Reset logs for new job
+                    }
+
+                    // Stream J.O.E. Monologues in Matrix Style
+                    if (data.current_job.tasks) {
+                        data.current_job.tasks.forEach(task => {
+                            if (task.logs) {
+                                task.logs.forEach(log => {
+                                    // Only print monologues or fatals to keep the UI clean but Matrix-like
+                                    if ((log.includes("J.O.E. Monologue:") || log.includes("FATAL") || log.includes("Auto-Deploy pushed")) && !lastPrintedLogs.has(log)) {
+                                        addMessage(`> ${log}`, 'joe');
+                                        lastPrintedLogs.add(log);
+                                    }
+                                });
+                            }
+                        });
                     }
 
                 } else {
@@ -197,7 +224,7 @@
 
                     // State transition: Processing -> Complete
                     if (currentJobName !== null) {
-                        addMessage(`Blueprint ${currentJobName} completed.`, 'joe');
+                        addMessage(`[SYSTEM]: Blueprint '${currentJobName}' completed to exhaustion.`, 'joe');
                         currentJobName = null;
                     }
                 }
