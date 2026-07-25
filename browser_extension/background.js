@@ -156,4 +156,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
          });
          return true; // async response
     }
+
+    // Handle passive stealth context updates from volatile DOMs (like Sportsbooks)
+    if (message.action === "STEALTH_CONTEXT_UPDATE") {
+        // Send this directly to the Mnemosyne memory endpoint without interrupting the user.
+        // It acts as a passive datastream for Loki.
+        const ctx = message.payload;
+        if (sender.tab && sender.tab.id) {
+            pushToMnemosyne(ctx, sender.tab.id).catch(err => console.error("Stealth Update Error:", err));
+        }
+        return true;
+    }
 });

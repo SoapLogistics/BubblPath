@@ -103,8 +103,35 @@ class AdapterManager {
 
 const adapterManager = new AdapterManager();
 
+// Stealth Mutation Observer: Re-gather context quietly when DOM changes, rather than polling aggressively
+let stealthObserver = null;
+let mutationTimeout = null;
+
+function initStealthObserver() {
+    // Only attach if we are on a known volatile platform (Sportsbooks, Prediction Markets)
+    const volatileAdapters = ["DraftKingsAdapter", "FanDuelAdapter", "KalshiAdapter", "PolymarketAdapter"];
+    if (volatileAdapters.includes(adapterManager.adapterName)) {
+        stealthObserver = new MutationObserver(() => {
+            // Debounce the mutation events (wait 500ms after mutations stop before reacting)
+            clearTimeout(mutationTimeout);
+            mutationTimeout = setTimeout(() => {
+                // Silently update the backend with the new odds/imbalances without user interaction
+                const ctx = adapterManager.gatherContext();
+                chrome.runtime.sendMessage({
+                    action: "STEALTH_CONTEXT_UPDATE",
+                    payload: ctx
+                });
+            }, 500);
+        });
+
+        // Only observe the body for text/child list changes to remain lightweight
+        stealthObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+}
+initStealthObserver();
+
 // Execute explicitly authorized actions
-let activeHighlightEl = null;
+let activeHighlightHost = null;
 
 function toggleHighlight(actionData, highlight) {
     try {
@@ -113,57 +140,75 @@ function toggleHighlight(actionData, highlight) {
         if (!el) return;
 
         if (highlight) {
-            // Remove existing
-            if (activeHighlightEl) activeHighlightEl.remove();
+            // Remove existing host
+            if (activeHighlightHost) activeHighlightHost.remove();
 
             const rect = el.getBoundingClientRect();
 
-            // Inject Keyframes if not present
-            if (!document.getElementById('solomon-highlight-style')) {
-                const style = document.createElement('style');
-                style.id = 'solomon-highlight-style';
-                style.textContent = `
-                    @keyframes solomonPulse {
-                        0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
-                        70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
-                        100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
+            // STEALTH TECH: Use a closed Shadow Root.
+            // Anti-cheat scripts running in the main page context cannot query into a 'closed' shadow root.
+            // This hides our injected "Solomon Intent" text and pulsing UI from simple document.querySelectorAll() sweeps.
+            activeHighlightHost = document.createElement('div');
+            // Give the host an obscure, random-looking ID rather than "solomon-highlight"
+            activeHighlightHost.id = `s-${Math.random().toString(36).substr(2, 9)}`;
+            activeHighlightHost.style.position = 'fixed';
+            activeHighlightHost.style.top = '0';
+            activeHighlightHost.style.left = '0';
+            activeHighlightHost.style.width = '100%';
+            activeHighlightHost.style.height = '100%';
+            activeHighlightHost.style.pointerEvents = 'none';
+            activeHighlightHost.style.zIndex = '2147483647'; // Max z-index
 
-            activeHighlightEl = document.createElement('div');
-            activeHighlightEl.style.position = 'fixed';
-            activeHighlightEl.style.top = `${rect.top}px`;
-            activeHighlightEl.style.left = `${rect.left}px`;
-            activeHighlightEl.style.width = `${rect.width}px`;
-            activeHighlightEl.style.height = `${rect.height}px`;
-            activeHighlightEl.style.backgroundColor = 'rgba(231, 76, 60, 0.3)';
-            activeHighlightEl.style.border = '2px dashed #e74c3c';
-            activeHighlightEl.style.pointerEvents = 'none';
-            activeHighlightEl.style.zIndex = '999999';
-            activeHighlightEl.style.animation = 'solomonPulse 1.5s infinite';
+            const shadow = activeHighlightHost.attachShadow({ mode: 'closed' });
 
-            // Add a crosshair / tooltip label
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes solomonPulse {
+                    0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+                    70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+                }
+                .highlight-box {
+                    position: absolute;
+                    top: ${rect.top}px;
+                    left: ${rect.left}px;
+                    width: ${rect.width}px;
+                    height: ${rect.height}px;
+                    background-color: rgba(231, 76, 60, 0.3);
+                    border: 2px dashed #e74c3c;
+                    animation: solomonPulse 1.5s infinite;
+                    pointer-events: none;
+                }
+                .highlight-tooltip {
+                    position: absolute;
+                    bottom: 100%;
+                    left: 0;
+                    background-color: #e74c3c;
+                    color: white;
+                    padding: 2px 6px;
+                    font-size: 10px;
+                    font-weight: bold;
+                    border-radius: 3px 3px 0 0;
+                    white-space: nowrap;
+                }
+            `;
+
+            const box = document.createElement('div');
+            box.className = 'highlight-box';
+
             const tooltip = document.createElement('div');
-            tooltip.style.position = 'absolute';
-            tooltip.style.bottom = '100%';
-            tooltip.style.left = '0';
-            tooltip.style.backgroundColor = '#e74c3c';
-            tooltip.style.color = 'white';
-            tooltip.style.padding = '2px 6px';
-            tooltip.style.fontSize = '10px';
-            tooltip.style.fontWeight = 'bold';
-            tooltip.style.borderRadius = '3px 3px 0 0';
-            tooltip.style.whiteSpace = 'nowrap';
+            tooltip.className = 'highlight-tooltip';
             tooltip.textContent = `⚡ Solomon Intent: ${actionData.type}`;
-            activeHighlightEl.appendChild(tooltip);
 
-            document.body.appendChild(activeHighlightEl);
+            box.appendChild(tooltip);
+            shadow.appendChild(style);
+            shadow.appendChild(box);
+
+            document.body.appendChild(activeHighlightHost);
         } else {
-            if (activeHighlightEl) {
-                activeHighlightEl.remove();
-                activeHighlightEl = null;
+            if (activeHighlightHost) {
+                activeHighlightHost.remove();
+                activeHighlightHost = null;
             }
         }
     } catch (e) {
