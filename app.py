@@ -1,10 +1,11 @@
 import os
 import openai
 from flask import Flask, request, jsonify
-from solomon_unified_memory import UnifiedMemoryGraph
+from solomon_quantized_memory import QuantizedBrainMap
 
 app = Flask(__name__)
-unified_memory = UnifiedMemoryGraph()
+unified_memory = QuantizedBrainMap()
+unified_memory.start_ans() # Start background autonomic nervous system
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 @app.route("/api/memory/ingest", methods=["POST"])
@@ -44,6 +45,15 @@ def consolidate_memory():
     unified_memory.consolidate()
     stats = unified_memory.get_stats()
     return jsonify({"status": "success", "stats": stats})
+
+@app.route("/api/memory/blob", methods=["GET"])
+def get_memory_blob():
+    """Zero-copy binary response for UI God Eye visualizer"""
+    if os.path.exists("solomon_brain_map.bin"):
+        with open("solomon_brain_map.bin", "rb") as f:
+            data = f.read()
+        return data, 200, {'Content-Type': 'application/octet-stream'}
+    return jsonify({"status": "empty"}), 404
 
 @app.route("/api/memory/dream", methods=["POST"])
 def dream_memory():
