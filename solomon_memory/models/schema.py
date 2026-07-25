@@ -9,6 +9,7 @@ def initialize_schema():
     CREATE TABLE IF NOT EXISTS sok_cards (
         card_id TEXT PRIMARY KEY,
         content TEXT NOT NULL,
+        vector_embedding TEXT,
         embedding_cluster INTEGER DEFAULT 0,
         ttl_expires_at INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
