@@ -113,7 +113,6 @@
     </div>
 
     <div class="input-area">
-        <input type="password" id="auth-key" placeholder="SOLOMON_INTERNAL_AUTH_KEY (Bearer Token)" style="margin-bottom: 10px;">
         <input type="text" id="blueprint-name" placeholder="Blueprint Name (e.g. Project Phoenix)">
         <textarea id="blueprint-text" placeholder="Paste your markdown blueprint here..."></textarea>
         <div class="controls">
@@ -150,17 +149,12 @@
         }
 
         async function submitBlueprint() {
-            const authKey = document.getElementById('auth-key').value.trim();
             const nameInput = document.getElementById('blueprint-name');
             const textInput = document.getElementById('blueprint-text');
             const name = nameInput.value.trim() || 'Unnamed Blueprint';
             const text = textInput.value.trim();
 
             if (!text) return;
-            if (!authKey) {
-                addMessage("Error: Authentication key required.", 'joe');
-                return;
-            }
 
             // Optimistic UI
             addMessage(`[Blueprint Submitted]: ${name}`, 'user');
@@ -171,10 +165,7 @@
             try {
                 const response = await fetch('/api/joe/queue-blueprint', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authKey}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name, blueprint: text })
                 });
 
