@@ -129,6 +129,9 @@ class FractalOntologySynthesizer:
         # Represents the mathematical origin of all concepts.
         self.god_node: Vector = tuple([0.0] * self.dimensions)
 
+        # Omega Cache: Deep integration mapping every concept to its truth value intrinsically
+        self.omega_cache: Dict[str, Dict[str, float]] = {}
+
     def _generate_orthogonal_base(self, seed_string: str) -> Vector:
         """Generates a deterministic vector based on string seeding."""
         # Use a local RNG instance to prevent global random state pollution
@@ -168,11 +171,27 @@ class FractalOntologySynthesizer:
                 for d, concepts in self.domains.items():
                     if popped_concept in concepts:
                         concepts.remove(popped_concept)
+                if popped_concept in self.omega_cache:
+                    del self.omega_cache[popped_concept]
 
             if domain not in self.domains:
                 self.domains[domain] = []
             if concept_name not in self.domains[domain]:
                 self.domains[domain].append(concept_name)
+
+            # Deep Integration: God Node Drift
+            # If the domain is entirely saturated, slightly shift the God Node to remain relative
+            if len(self.domains[domain]) > 10:
+                dom_centroid = self.get_domain_centroid(domain)
+                # Nudge the god node 0.001% toward the heaviest domain's center of gravity
+                self.god_node = vector_add(self.god_node, vector_mul(dom_centroid, 0.00001))
+
+        # Deep Integration: Automatically cache the Omega Truth instantly upon learning
+        # (Executed outside the lock to prevent re-entrant deadlocks, as calculate_omega_truth grabs the lock)
+        try:
+            self.calculate_omega_truth(concept_name)
+        except Exception:
+            pass
 
     # --- Phase 5: Quantum Superposition Integration ---
     def establish_quantum_concept(self, concept_name: str, superpositions: Dict[str, float]) -> None:
@@ -238,12 +257,16 @@ class FractalOntologySynthesizer:
         return cluster_name, base
 
     # --- Phase 6: The Omega Function ---
-    def calculate_omega_truth(self, concept_name: str) -> Dict[str, float]:
+    def calculate_omega_truth(self, concept_name: str, force_recalc: bool = False) -> Dict[str, float]:
         """
         The Omega Function calculates the absolute 'truth value' of a concept.
         It measures semantic density (how central it is to its domain) and its
         distance to the absolute origin (God Node).
+        Deeply integrated: Pulls from O(1) cache if already calculated.
         """
+        if not force_recalc and concept_name in self.omega_cache:
+            return self.omega_cache[concept_name]
+
         with self.lock:
             if concept_name not in self.concepts:
                 raise ValueError(f"Concept '{concept_name}' not found.")
@@ -272,11 +295,14 @@ class FractalOntologySynthesizer:
             normalized_distance = max(0.1, distance_to_god)
             omega_value = (density + 1.0) / normalized_distance
 
-            return {
+            res = {
                 "omega_value": round(omega_value, 4),
                 "domain_density": round(density, 4),
                 "distance_to_god_node": round(distance_to_god, 4)
             }
+
+            self.omega_cache[concept_name] = res
+            return res
 
     def add_context_shadow(self, concept_name: str, context_string: str) -> None:
         """
@@ -397,13 +423,19 @@ class FractalOntologySynthesizer:
 
         return insights
 
-    def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5, use_hyperbolic: bool = False) -> List[Tuple[str, float]]:
+    def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5) -> List[Tuple[str, float]]:
         """
         Find concepts closest to the given vector.
-        Automatically utilizes bitwise XOR similarity for packed vectors to drastically reduce compute time.
-        If use_hyperbolic is True, it uses Poincaré distance for curved hierarchical routing (Phase 2).
+        Deep Integration (Phase 2): Autonomously detects topological shape. If the target domain
+        is deemed 'hierarchical/curved', it auto-routes via Poincaré hyperbolic distance.
+        Otherwise, it falls back to lightning-fast O(1) bitwise XOR logic.
         """
         exclude = exclude or []
+
+        # Auto-Routing Logic: If the domain has a high cluster density, treat it as curved space
+        use_hyperbolic = False
+        if domain_filter and len(self.domains.get(domain_filter, [])) > 5:
+            use_hyperbolic = True
 
         if use_hyperbolic:
             from solomon_fractal_advanced import poincare_distance

@@ -18,16 +18,23 @@ def test_omega_function():
 
 def test_hyperbolic_routing():
     synth = FractalOntologySynthesizer(dimensions=3)
+    # Flat space (<= 5 concepts in domain)
     synth.learn_concept("A", "dom", vector_override=(1.0, 0.0, 0.0), quantize=False)
     synth.learn_concept("B", "dom", vector_override=(-1.0, 0.0, 0.0), quantize=False)
 
     target = (0.9, 0.0, 0.0)
 
-    # Standard Euclidean test (A is closest)
-    standard_res = synth.find_nearest_concepts(target, use_hyperbolic=False)
+    # Standard Euclidean test via auto-router (flat space)
+    standard_res = synth.find_nearest_concepts(target, domain_filter="dom")
     assert standard_res[0][0] == "A"
 
-    # Hyperbolic test (Poincare)
-    hyperbolic_res = synth.find_nearest_concepts(target, use_hyperbolic=True)
+    # Push into Curved space (> 5 concepts in domain)
+    synth.learn_concept("C", "dom", quantize=False)
+    synth.learn_concept("D", "dom", quantize=False)
+    synth.learn_concept("E", "dom", quantize=False)
+    synth.learn_concept("F", "dom", quantize=False)
+
+    # Hyperbolic test via auto-router (curved space threshold crossed)
+    hyperbolic_res = synth.find_nearest_concepts(target, domain_filter="dom")
     # Ensure it successfully executes and returns A as nearest based on inverted distance mapping
     assert hyperbolic_res[0][0] == "A"
