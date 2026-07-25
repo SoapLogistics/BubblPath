@@ -1,1 +1,4 @@
-*.log\n__pycache__/\n*.pyc
+*.log
+__pycache__/
+*.pyc
+solomon_vfs.db

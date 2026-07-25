@@ -39,6 +39,54 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 def os_status():
     return jsonify(kernel.get_system_status())
 
+@app.route("/os/proc", methods=["GET"])
+def os_proc():
+    """Simulates /proc fs, listing detailed runtime information for all loaded modules."""
+    proc_info = {}
+    for name, module in kernel.modules.items():
+        proc_info[name] = module.get_status()
+    return jsonify({"proc": proc_info, "total_modules": len(proc_info)})
+
+@app.route("/os/sys/vfs", methods=["GET"])
+def vfs_list():
+    """Lists files in the Virtual File System."""
+    prefix = request.args.get("prefix", "")
+    try:
+        files = kernel.call_rpc('vfs_list', prefix)
+        return jsonify({"files": files})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/os/sys/vfs/read", methods=["GET"])
+def vfs_read():
+    """Reads a file from the Virtual File System."""
+    path = request.args.get("path")
+    if not path:
+        return jsonify({"error": "path parameter is required"}), 400
+    try:
+        data = kernel.call_rpc('vfs_read', path)
+        if data is None:
+            return jsonify({"error": "File not found"}), 404
+        return jsonify({"path": path, "content": data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/os/sys/vfs/write", methods=["POST"])
+def vfs_write():
+    """Writes JSON data to the Virtual File System."""
+    data = request.json
+    path = data.get("path")
+    content = data.get("content")
+    if not path or content is None:
+         return jsonify({"error": "path and content are required"}), 400
+    try:
+        success = kernel.call_rpc('vfs_write', path, content)
+        if success:
+             return jsonify({"status": "success", "path": path})
+        return jsonify({"error": "Write failed"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
