@@ -9,6 +9,15 @@ from solomon_browser_companion import BrowserCompanionBackend
 
 companion_backend = BrowserCompanionBackend()
 
+@app.route("/health", methods=["GET"])
+def health():
+    """Diagnostic endpoint to verify server status and auth."""
+    auth = request.headers.get("Authorization")
+    expected_auth = f"Bearer {os.environ.get('SOLOMON_INTERNAL_AUTH_KEY', '')}"
+    if not os.environ.get('SOLOMON_INTERNAL_AUTH_KEY') or auth != expected_auth:
+        return jsonify({"status": "unauthorized"}), 401
+    return jsonify({"status": "healthy", "service": "solomon"})
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json

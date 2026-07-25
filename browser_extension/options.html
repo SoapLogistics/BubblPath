@@ -20,8 +20,11 @@
         <label for="auth-key">Authorization Key</label>
         <input type="password" id="auth-key" placeholder="Enter SOLOMON_INTERNAL_AUTH_KEY">
     </div>
-    <button id="save-btn">Save</button>
-    <div id="status" style="margin-top: 10px; color: green;"></div>
+    <div style="display: flex; gap: 10px;">
+        <button id="save-btn">Save</button>
+        <button id="test-btn" style="background: #e67e22;">Test Connection</button>
+    </div>
+    <div id="status" style="margin-top: 10px; font-weight: bold;"></div>
     <script src="options.js"></script>
 </body>
 </html>
