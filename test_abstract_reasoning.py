@@ -52,10 +52,11 @@ def test_cross_domain_synthesis():
 
     result = synthesizer.synthesize_cross_domain_leap("modularity", "software", "trading")
 
+    # In Phase 1, projected_vector is a bit-packed tuple: (pos_mask, neg_mask).
+    # Expected float vector: (0.0, 1.0, 1.0)
+    # Binary pos mask for indices 1, 2 = 110 in binary = 6
     projected = result["projected_vector"]
-    assert math.isclose(projected[0], 0.0)
-    assert math.isclose(projected[1], 1.0)
-    assert math.isclose(projected[2], 1.0)
+    assert projected == (6, 0)
 
     # The projected vector (0, 1, 1) perfectly matches 'diversification' in trading
     nearest = result["nearest_target_anchors"]

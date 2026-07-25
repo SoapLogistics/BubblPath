@@ -3,15 +3,39 @@ import random
 from typing import Dict, List, Tuple, Any
 from collections import OrderedDict
 
-# Fast immutable vector using pure Python tuples
+# Fast immutable vector using pure Python tuples.
+# Note: For ternary math, vectors are returned as bit-packed integers for O(1) ops.
 Vector = Tuple[float, ...]
 
-def quantize_to_ternary(v: Vector, threshold: float = 0.3) -> Vector:
+def quantize_to_ternary(v: Vector, threshold: float = 0.3) -> Tuple[int, int]:
     """
-    Compresses a float vector into a ternary representation (-1.0, 0.0, 1.0)
-    using a threshold. Extreme memory and computational efficiency.
+    Compresses a float vector into a ternary representation (-1, 0, 1).
+    To achieve extreme bitwise efficiency (Phase 1), we pack the entire vector into two integers:
+    - pos_mask: bit is 1 if value is 1.0
+    - neg_mask: bit is 1 if value is -1.0
+    Returns (pos_mask, neg_mask).
     """
-    return tuple(1.0 if val > threshold else (-1.0 if val < -threshold else 0.0) for val in v)
+    pos_mask = 0
+    neg_mask = 0
+    for i, val in enumerate(v):
+        if val > threshold:
+            pos_mask |= (1 << i)
+        elif val < -threshold:
+            neg_mask |= (1 << i)
+    return (pos_mask, neg_mask)
+
+def dequantize_from_ternary(packed: Tuple[int, int], dimensions: int) -> Vector:
+    """Expands a (pos_mask, neg_mask) tuple back to a standard Vector for float math."""
+    pos_mask, neg_mask = packed
+    vec = []
+    for i in range(dimensions):
+        if (pos_mask & (1 << i)):
+            vec.append(1.0)
+        elif (neg_mask & (1 << i)):
+            vec.append(-1.0)
+        else:
+            vec.append(0.0)
+    return tuple(vec)
 
 def vector_add(v1: Vector, v2: Vector) -> Vector:
     return tuple(a + b for a, b in zip(v1, v2))
@@ -35,6 +59,36 @@ def cosine_similarity(v1: Vector, v2: Vector) -> float:
         return 0.0
     return dot_product(v1, v2) / (mag1 * mag2)
 
+def bitwise_ternary_similarity(t1: Tuple[int, int], t2: Tuple[int, int], dimensions: int) -> float:
+    """
+    O(1) semantic similarity using XOR and POPCOUNT logic on bit-packed masks.
+    This replaces float-based cosine_similarity for extreme speed.
+    """
+    pos1, neg1 = t1
+    pos2, neg2 = t2
+
+    # Matching elements (pos to pos, neg to neg)
+    match_pos = pos1 & pos2
+    match_neg = neg1 & neg2
+    matches = match_pos | match_neg
+
+    # Conflicting elements (pos to neg, neg to pos)
+    conflict_pos_neg = pos1 & neg2
+    conflict_neg_pos = neg1 & pos2
+    conflicts = conflict_pos_neg | conflict_neg_pos
+
+    # Count set bits (Python 3.10+ int.bit_count())
+    match_count = matches.bit_count()
+    conflict_count = conflicts.bit_count()
+
+    # Calculate active dimensions to normalize
+    active1 = (pos1 | neg1).bit_count()
+    active2 = (pos2 | neg2).bit_count()
+    total_active = max(1, (active1 + active2) / 2) # Prevent div by zero
+
+    # Score = matches - conflicts, normalized by active dimensions
+    return (match_count - conflict_count) / total_active
+
 
 class ProgressiveAbstractionTree:
     """Legacy tree class representing previous heuristic groupings."""
@@ -50,7 +104,8 @@ class FractalOntologySynthesizer:
     def __init__(self, dimensions: int = 64, max_concepts: int = 10000):
         self.dimensions = dimensions
         self.max_concepts = max_concepts
-        self.concepts: OrderedDict[str, Vector] = OrderedDict()
+        # Concepts now store either standard vectors or extremely packed ternary tuples (pos_mask, neg_mask)
+        self.concepts: OrderedDict[str, Any] = OrderedDict()
         self.domains: Dict[str, List[str]] = {}
 
     def _generate_orthogonal_base(self, seed_string: str) -> Vector:
@@ -104,7 +159,11 @@ class FractalOntologySynthesizer:
 
         sum_vec = tuple([0.0] * self.dimensions)
         for concept in self.domains[domain]:
-            sum_vec = vector_add(sum_vec, self.concepts[concept])
+            c_val = self.concepts[concept]
+            # Dequantize if it's bit-packed
+            if len(c_val) == 2 and isinstance(c_val[0], int):
+                c_val = dequantize_from_ternary(c_val, self.dimensions)
+            sum_vec = vector_add(sum_vec, c_val)
 
         return vector_mul(sum_vec, 1.0 / len(self.domains[domain]))
 
@@ -119,8 +178,12 @@ class FractalOntologySynthesizer:
         src_centroid = self.get_domain_centroid(source_domain)
         tgt_centroid = self.get_domain_centroid(target_domain)
 
+        c_val = self.concepts[source_concept]
+        if len(c_val) == 2 and isinstance(c_val[0], int):
+            c_val = dequantize_from_ternary(c_val, self.dimensions)
+
         # Abstract the concept by removing its source domain's local gravity
-        abstracted_concept = vector_sub(self.concepts[source_concept], src_centroid)
+        abstracted_concept = vector_sub(c_val, src_centroid)
 
         # Project the abstraction into the target domain space
         projected_concept = vector_add(abstracted_concept, tgt_centroid)
@@ -193,12 +256,18 @@ class FractalOntologySynthesizer:
         return insights
 
     def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5) -> List[Tuple[str, float]]:
-        """Find concepts closest to the given vector using cosine similarity (O(1) semantic search cache)."""
+        """
+        Find concepts closest to the given vector.
+        Automatically utilizes bitwise XOR similarity for packed vectors to drastically reduce compute time.
+        """
         exclude = exclude or []
 
         allowed_concepts = None
         if domain_filter and domain_filter in self.domains:
             allowed_concepts = set(self.domains[domain_filter])
+
+        # Temporarily quantize the incoming target float vector to compare purely via bitwise ops
+        target_packed = quantize_to_ternary(target_vector)
 
         similarities = []
         for name, vec in self.concepts.items():
@@ -207,7 +276,13 @@ class FractalOntologySynthesizer:
             if allowed_concepts is not None and name not in allowed_concepts:
                 continue
 
-            sim = cosine_similarity(target_vector, vec)
+            if len(vec) == 2 and isinstance(vec[0], int):
+                # O(1) Bitwise execution path
+                sim = bitwise_ternary_similarity(target_packed, vec, self.dimensions)
+            else:
+                # Fallback to float execution path
+                sim = cosine_similarity(target_vector, vec)
+
             similarities.append((name, sim))
 
         similarities.sort(key=lambda x: x[1], reverse=True)
