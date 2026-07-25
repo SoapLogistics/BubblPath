@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from flask_compress import Compress
 from flask_caching import Cache
 from solomon_efficiency_toolkit import SolomonEfficiencyToolkit
+from solomon_extreme_efficiency_toolkit import SolomonExtremeEfficiencyToolkit
 
 app = Flask(__name__)
 # Enable Gzip compression to save bandwidth on API responses
@@ -24,14 +25,22 @@ def chat():
     user_message = data.get("message", "")
 
     # Apply real efficiency toolkit optimizations to the payload
-    # 1. Minify whitespace
+    # 1. Strip naive HTML
+    user_message = SolomonExtremeEfficiencyToolkit.strip_html_tags(user_message)
+    # 2. Minify whitespace
     user_message = SolomonEfficiencyToolkit.remove_duplicate_whitespace(user_message)
-    # 2. Enforce strict token limits to save OpenAI costs and latency
+    # 3. Fast Sliding Window string truncation before tokenization
+    user_message = SolomonExtremeEfficiencyToolkit.sliding_window_truncate(user_message, 8000)
+
+    # 4. Enforce strict token limits to save OpenAI costs and latency
     enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
     tokens = enc.encode(user_message)
     if len(tokens) > 2000:
         # Truncate strictly to 2000 tokens
         user_message = enc.decode(tokens[:2000])
+
+    # 5. String Interning for duplicate memory pointers
+    user_message = SolomonExtremeEfficiencyToolkit.intern_string(user_message)
 
     # Try checking cache first for identical prompts
     cache_key = f"chat_{hashlib.sha256(user_message.encode('utf-8')).hexdigest()}"
