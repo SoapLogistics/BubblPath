@@ -20,5 +20,31 @@ class TestChronosAPI(unittest.TestCase):
         self.assertTrue(data['success'])
         self.assertEqual(data['final_state']['at_store'], True)
 
+    def test_tda_analyze(self):
+        payload = {
+            "points": [[0,0], [1,0], [0,1], [1,1], [5,5]],
+            "epsilon": 1.1
+        }
+        resp = self.app.post('/api/sple/tda/analyze', json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data['topology']['clusters_b0'], 2)
+
+    def test_goedel_monitor(self):
+        payload = {"state": {"looping": True}}
+        # Trigger 3 times to hit threshold
+        self.app.post('/api/sple/goedel/monitor', json=payload)
+        self.app.post('/api/sple/goedel/monitor', json=payload)
+        resp = self.app.post('/api/sple/goedel/monitor', json=payload)
+        data = json.loads(resp.data)
+        self.assertTrue(data['triggered'])
+
+    def test_ou_step(self):
+        payload = {"reset": True}
+        resp = self.app.post('/api/sple/ou-exploration/step', json=payload)
+        data = json.loads(resp.data)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['state']), 1)
+
 if __name__ == '__main__':
     unittest.main()
