@@ -10,6 +10,8 @@ from solomon_sple_memory import SPLEMemoryManager
 from solomon_sple_optimizer import SPLEOptimizer
 from solomon_sple_capability import CapabilityAssimilator
 from solomon_sple_distributed import DistributedSwarmManager
+from solomon_sple_self_eval import SelfEvaluationEngine
+from solomon_sple_pat_memory import ProgressiveAbstractionTree
 
 app = Flask(__name__)
 
@@ -21,6 +23,8 @@ sple_memory = SPLEMemoryManager()
 sple_optimizer = SPLEOptimizer()
 sple_capability = CapabilityAssimilator()
 sple_swarm = DistributedSwarmManager()
+sple_self_eval = SelfEvaluationEngine()
+sple_pat_memory = ProgressiveAbstractionTree()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -86,6 +90,29 @@ def sple_delegate():
     result = sple_swarm.delegate_task(task, role)
     return jsonify(result)
 
+@app.route("/api/sple/evaluate", methods=["POST"])
+def sple_evaluate():
+    """Triggers the adversarial Self-Evaluation engine."""
+    data = request.json
+    target_code = data.get("code", "def default(): pass")
+    result = sple_self_eval.red_team_adversarial_review(target_code)
+    return jsonify(result)
+
+@app.route("/api/sple/memory/abstract", methods=["POST"])
+def sple_memory_abstract():
+    """Simulates abstracting facts into a Progressive Abstraction Tree."""
+    data = request.json
+    facts = data.get("facts", ["The sky is blue", "Water is wet"])
+    concept = data.get("concept", "Basic Natural Truths")
+
+    fact_ids = [sple_pat_memory.ingest_raw_fact(f) for f in facts]
+    parent_id = sple_pat_memory.abstract_cluster(fact_ids, concept)
+
+    return jsonify({
+        "status": "success",
+        "abstracted_node_id": parent_id,
+        "worldview_size": len(sple_pat_memory.root_nodes)
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
