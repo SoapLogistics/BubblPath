@@ -21,12 +21,12 @@ class ZeroCopyMemorySubstrate:
     MAGIC = b'ZCM1'
     VERSION = 1
 
-    # Record format:
+    # Record format (Cache-Line Aligned & Int8 Quantized):
     # [id: Q (8)] [timestamp: Q (8)] [valence: f (4)] [arousal: f (4)]
-    # [concept_hash: Q (8)] [embedding: 128f (512)]
-    # Total: 32 + 512 = 544 bytes
+    # [concept_hash: Q (8)] [embedding: 128s (128)] [padding: 32x (32)]
+    # Total: 32 + 128 + 32 = 192 bytes (Exactly 3 x 64-byte L1 Cache Lines)
     EMBEDDING_DIM = 128
-    RECORD_FORMAT = f'<QQffQ{EMBEDDING_DIM}f'
+    RECORD_FORMAT = f'<QQffQ{EMBEDDING_DIM}s32x'
     RECORD_SIZE = struct.calcsize(RECORD_FORMAT)
 
     def __init__(self, filepath, max_records=10000):
@@ -88,10 +88,19 @@ class ZeroCopyMemorySubstrate:
 
         offset = self.HEADER_SIZE + (self.num_records * self.RECORD_SIZE)
 
+        # Int8 Quantization to slash memory footprint
+        norm = np.linalg.norm(embedding)
+        if norm > 0:
+            embedding_norm = embedding / norm
+        else:
+            embedding_norm = embedding
+
+        quantized = np.clip(np.round(embedding_norm * 127), -128, 127).astype(np.int8)
+        embedding_bytes = quantized.tobytes()
+
         # Prepare data
-        # *embedding unpacks the 128 floats
         struct.pack_into(self.RECORD_FORMAT, self.mmap_obj, offset,
-                         record_id, timestamp, valence, arousal, concept_hash, *embedding)
+                         record_id, timestamp, valence, arousal, concept_hash, embedding_bytes)
 
         self.num_records += 1
 
@@ -111,13 +120,16 @@ class ZeroCopyMemorySubstrate:
         offset = self.HEADER_SIZE + (index * self.RECORD_SIZE)
         data = struct.unpack_from(self.RECORD_FORMAT, self.mmap_obj, offset)
 
+        quantized = np.frombuffer(data[5], dtype=np.int8)
+        dequantized = (quantized.astype(np.float32) / 127.0)
+
         return {
             "id": data[0],
             "timestamp": data[1],
             "valence": data[2],
             "arousal": data[3],
             "concept_hash": data[4],
-            "embedding": np.array(data[5:], dtype=np.float32)
+            "embedding": dequantized
         }
 
     def get_raw_embeddings_matrix(self):
@@ -132,15 +144,16 @@ class ZeroCopyMemorySubstrate:
         # We need to construct a structured array or use strides directly.
         # It's cleaner to read it via an ndarray buffer using offset.
 
-        # Define a numpy dtype that matches our struct
-        # We explicitly use little-endian formats to match the '<' in struct format
+        # Define a numpy dtype that matches our struct exactly for zero-copy mapping
+        # 192 bytes total size to guarantee cache alignment
         record_dtype = np.dtype([
             ('id', '<u8'),
             ('timestamp', '<u8'),
             ('valence', '<f4'),
             ('arousal', '<f4'),
             ('concept_hash', '<u8'),
-            ('embedding', '<f4', (self.EMBEDDING_DIM,))
+            ('embedding', '<i1', (self.EMBEDDING_DIM,)),
+            ('padding', 'V32')
         ])
 
         # Read directly from mmap as a numpy array, without copying!
@@ -156,28 +169,27 @@ class ZeroCopyMemorySubstrate:
 
     def search_similar(self, query_embedding, top_k=5):
         """
-        Demonstrates extreme efficiency using zero-copy matrix multiplication
-        for cosine similarity.
+        Demonstrates extreme efficiency using cache-aligned zero-copy matrix
+        multiplication directly over the int8 quantized space.
         """
         if self.num_records == 0:
             return []
 
-        embeddings = self.get_raw_embeddings_matrix()
+        # Raw mapped int8 embeddings (zero-copy)
+        embeddings_int8 = self.get_raw_embeddings_matrix()
 
-        # Normalize query
+        # Normalize and quantize query to int8 for extremely fast integer dot products
         query_norm = np.linalg.norm(query_embedding)
         if query_norm == 0:
             query_normalized = query_embedding
         else:
             query_normalized = query_embedding / query_norm
 
-        # Normalize embeddings in memory (or assume they are normalized)
-        # For speed, we just do dot product (cosine similarity if normalized)
-        # To be safe, let's normalize the slice (this creates a copy for norms, but matrix mult is fast)
-        norms = np.linalg.norm(embeddings, axis=1)
-        norms[norms == 0] = 1 # prevent division by zero
+        query_int8 = np.clip(np.round(query_normalized * 127), -128, 127).astype(np.int8)
 
-        similarities = np.dot(embeddings, query_normalized) / norms
+        # Upcast slightly to int32 for the dot product to avoid 8-bit overflow
+        # (This vectorization is extremely fast on modern CPUs, leveraging SIMD)
+        similarities = np.dot(embeddings_int8.astype(np.int32), query_int8.astype(np.int32))
 
         # Get top k indices
         k = min(top_k, self.num_records)
