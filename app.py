@@ -1,12 +1,12 @@
 import os
 import openai
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from solomon_quantized_memory import QuantizedBrainMap
-from solomon_jules_bridge import JulesAutonomousDaemon
+from solomon_joe_bridge import JoeOmegaEngine
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
-jules_daemon = JulesAutonomousDaemon()
+joe_daemon = JoeOmegaEngine()
 unified_memory.start_ans() # Start background autonomic nervous system
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -65,8 +65,8 @@ def dream_memory():
     stats = unified_memory.get_stats()
     return jsonify({"status": "success", "message": "Dream cycle complete.", "stats": stats})
 
-@app.route("/api/jules/execute-blueprint", methods=["POST"])
-def jules_execute():
+@app.route("/api/joe/queue-blueprint", methods=["POST"])
+def joe_queue():
     data = request.json or {}
     blueprint_name = data.get("name", "Unnamed Blueprint")
     blueprint_text = data.get("blueprint", "")
@@ -75,14 +75,18 @@ def jules_execute():
         return jsonify({"error": "Missing 'blueprint' text"}), 400
 
     try:
-        jules_daemon.start_blueprint_execution(blueprint_name, blueprint_text)
-        return jsonify({"status": "success", "message": "Autonomous Daemon started."})
+        joe_daemon.queue_blueprint(blueprint_name, blueprint_text)
+        return jsonify({"status": "success", "message": "Blueprint added to J.O.E. Queue."})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-@app.route("/api/jules/status", methods=["GET"])
-def jules_status():
-    return jsonify(jules_daemon.get_status())
+@app.route("/api/joe/status", methods=["GET"])
+def joe_status():
+    return jsonify(joe_daemon.get_status())
+
+@app.route("/joe", methods=["GET"])
+def joe_chat_ui():
+    return render_template("joe_chat.html")
 
 @app.route("/chat", methods=["POST"])
 def chat():

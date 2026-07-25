@@ -85,6 +85,7 @@ class QuantizedBrainMap:
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
+        self.nodes_lock = threading.Lock()
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
@@ -106,29 +107,40 @@ class QuantizedBrainMap:
                 self.dream_cycle(max_steps=5)
 
     def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
-        node = QuantizedMemoryNode(node_type, content, importance, valence, arousal)
-        idx = node.id_int % self.max_nodes
+        with self.nodes_lock:
+            if len(self.nodes) >= self.max_nodes:
+                # Force a consolidation to free up space, or return a failure/drop
+                self.consolidate()
+                if len(self.nodes) >= self.max_nodes:
+                    raise Exception("QuantizedBrainMap is at absolute capacity and cannot be pruned further.")
 
-        # Handle collision (simple linear probing for prototype)
-        while idx in self.nodes:
-            idx = (idx + 1) % self.max_nodes
+            node = QuantizedMemoryNode(node_type, content, importance, valence, arousal)
+            idx = node.id_int % self.max_nodes
 
-        node.id_int = idx
-        self.nodes[idx] = node
-        self.id_map[node.id_str] = idx
+            # Handle collision (simple linear probing for prototype)
+            while idx in self.nodes:
+                idx = (idx + 1) % self.max_nodes
 
-        # Check Amygdala Protocol (high arousal -> instant cache)
-        if arousal > 0.7 or valence < -0.7:
-            self.amygdala_cache[node.id_str] = node
+            node.id_int = idx
+            self.nodes[idx] = node
+            self.id_map[node.id_str] = idx
 
-        self._auto_link_ternary(node)
-        self.is_matrix_dirty = True
-        return node.id_str
+            # Check Amygdala Protocol (high arousal -> instant cache)
+            if arousal > 0.7 or valence < -0.7:
+                self.amygdala_cache[node.id_str] = node
+
+            self._auto_link_ternary(node)
+            self.is_matrix_dirty = True
+            return node.id_str
 
     def _auto_link_ternary(self, new_node: QuantizedMemoryNode):
         """Uses fast bitwise/vectorized math for semantic similarity instead of strings"""
         idx = new_node.id_int
-        for existing_idx, existing_node in self.nodes.items():
+
+        # Must be called with self.nodes_lock held or safely copy keys
+        node_items = list(self.nodes.items())
+
+        for existing_idx, existing_node in node_items:
             if idx == existing_idx:
                 continue
 
@@ -202,14 +214,16 @@ class QuantizedBrainMap:
         # Mock initial activation based on query matching (normally would be dot product of query embedding)
         query_words = set(query_lower.split())
         activated_indices = []
-        for idx, node in self.nodes.items():
-            if isinstance(node.content, str):
-                node_words = set(node.content.lower().split())
-                overlap = len(query_words.intersection(node_words))
-                if overlap > 0:
-                    act_vector[idx] = min(1.0, overlap / len(query_words))
-                    node.access()
-                    activated_indices.append(idx)
+
+        with self.nodes_lock:
+            for idx, node in self.nodes.items():
+                if isinstance(node.content, str):
+                    node_words = set(node.content.lower().split())
+                    overlap = len(query_words.intersection(node_words))
+                    if overlap > 0:
+                        act_vector[idx] = min(1.0, overlap / len(query_words))
+                        node.access()
+                        activated_indices.append(idx)
 
         # 2. Spread activation (SpMV: Sparse Matrix-Vector Multiplication)
         spread_steps = 3
@@ -220,28 +234,29 @@ class QuantizedBrainMap:
             act_vector = np.clip(act_vector + spread, 0.0, 1.0)
 
         # Update node activations
-        for idx in np.where(act_vector > 0.1)[0]:
-            if idx in self.nodes:
-                self.nodes[idx].activation = act_vector[idx]
-
-        # 3. Retrieve top
-        sorted_indices = np.argsort(act_vector)[::-1]
-        results = []
-        retrieved_nodes = []
-        for idx in sorted_indices:
-            if act_vector[idx] > 0.1:
+        with self.nodes_lock:
+            for idx in np.where(act_vector > 0.1)[0]:
                 if idx in self.nodes:
-                    node = self.nodes[idx]
-                    retrieved_nodes.append(node)
-                    results.append(self._node_to_dict(node))
-                else:
-                    # Retrieve from binary blob
-                    blob_node = self._read_from_blob(idx)
-                    if blob_node:
-                        results.append(blob_node)
+                    self.nodes[idx].activation = act_vector[idx]
 
-                if len(results) >= top_k:
-                    break
+            # 3. Retrieve top
+            sorted_indices = np.argsort(act_vector)[::-1]
+            results = []
+            retrieved_nodes = []
+            for idx in sorted_indices:
+                if act_vector[idx] > 0.1:
+                    if idx in self.nodes:
+                        node = self.nodes[idx]
+                        retrieved_nodes.append(node)
+                        results.append(self._node_to_dict(node))
+                    else:
+                        # Retrieve from binary blob
+                        blob_node = self._read_from_blob(idx)
+                        if blob_node:
+                            results.append(blob_node)
+
+                    if len(results) >= top_k:
+                        break
 
         # 3.2 Vectorized Hebbian delta-weight updates
         self._vectorized_hebbian_learning(retrieved_nodes)
@@ -271,7 +286,11 @@ class QuantizedBrainMap:
         nodes_to_remove = []
         nodes_to_serialize = []
 
-        for idx, node in self.nodes.items():
+        with self.nodes_lock:
+            # Need to iterate over a copy of items to avoid size changed during iteration
+            node_items = list(self.nodes.items())
+
+        for idx, node in node_items:
             # 2.2 Ebbinghaus Decay
             node.ebbinghaus_decay(current_time)
 
@@ -315,10 +334,12 @@ class QuantizedBrainMap:
                     # Remove from L1 RAM (Nodes dict)
                     nodes_to_remove.append(n.id_int)
 
-        for idx in nodes_to_remove:
-            self._remove_node(idx)
+        with self.nodes_lock:
+            for idx in nodes_to_remove:
+                self._remove_node(idx)
 
     def _remove_node(self, idx: int):
+        # Must be called with nodes_lock
         if idx in self.nodes:
             del self.id_map[self.nodes[idx].id_str]
             del self.nodes[idx]
@@ -329,10 +350,12 @@ class QuantizedBrainMap:
         self.is_matrix_dirty = True
 
     def dream_cycle(self, max_steps: int = 10):
-        if len(self.nodes) < 3:
-            return
+        with self.nodes_lock:
+            if len(self.nodes) < 3:
+                return
 
-        nodes_list = list(self.nodes.values())
+            nodes_list = list(self.nodes.values())
+
         start_node = random.choice(nodes_list)
         current_idx = start_node.id_int
 
