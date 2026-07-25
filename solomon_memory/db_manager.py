@@ -88,7 +88,7 @@ class DatabaseManager:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             layer TEXT NOT NULL,          -- e.g., 'episodic', 'semantic', 'strategic'
             content TEXT NOT NULL,
-            embedding BLOB,               -- Vector representation
+            embedding TEXT,               -- JSON serialized vector
             confidence REAL DEFAULT 1.0,
             use_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
