@@ -13,6 +13,7 @@ from solomon_nash_swarm import Agent, NashSwarmNegotiator
 from solomon_tda import TDAEngine
 from solomon_goedel_escape import GoedelEscapeEngine
 from solomon_ou_exploration import OUExplorationEngine
+from solomon_250_hardening import HyperHardeningPipeline
 
 # Global instances for the APIs
 fractal_synth = FractalOntologySynthesizer()
@@ -48,6 +49,20 @@ def ou_step():
         ou_engine.reset()
     state = ou_engine.step()
     return jsonify({"success": True, "state": state})
+
+# Instantiate the pipeline lazily or per request if state needs to be fresh,
+# but for the API demo a global instance works fine.
+hardening_pipeline = HyperHardeningPipeline()
+
+@app.route("/api/system/harden-250", methods=["POST"])
+def harden_system():
+    # In a real environment, this should be an async background task.
+    # For now, it runs synchronously.
+    report = hardening_pipeline.execute_all()
+    return jsonify({
+        "success": True,
+        "report": report
+    })
 
 @app.route("/api/chronos/simulate", methods=["POST"])
 def chronos_simulate():

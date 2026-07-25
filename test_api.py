@@ -46,5 +46,13 @@ class TestChronosAPI(unittest.TestCase):
         self.assertTrue(data['success'])
         self.assertEqual(len(data['state']), 1)
 
+    def test_harden_250(self):
+        resp = self.app.post('/api/system/harden-250', json={})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertTrue(data['success'])
+        self.assertEqual(data['report']['total_tasks_run'], 250)
+        self.assertEqual(data['report']['successful_tasks'], 250)
+
 if __name__ == '__main__':
     unittest.main()
