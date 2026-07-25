@@ -7,6 +7,8 @@ from flask_limiter.util import get_remote_address
 from api.routes.cognitive import cognitive_bp
 from api.routes.memory import memory_bp
 from api.routes.chat import chat_bp
+from api.routes.finance import finance_bp
+from api.routes.forge import forge_bp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +32,8 @@ def create_app():
     app.register_blueprint(cognitive_bp)
     app.register_blueprint(memory_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(finance_bp)
+    app.register_blueprint(forge_bp)
 
     @app.route("/health", methods=["GET"])
     def root_health():
