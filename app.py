@@ -7,6 +7,11 @@ from solomon_metrics import metrics_tracker
 from solomon_abstract_reasoning import abstraction_engine
 from solomon_curiosity_director import curiosity_director
 from solomon_gabriel_100_step_learning_optimizers import gabriel_100_step_optimizer
+from solomon_amygdala_router import amygdala
+from solomon_clean_room_synthesizer import clean_room
+from solomon_chronos_planner import chronos_planner
+from solomon_fractal_ontology import fractal_synthesizer
+from solomon_zero_copy_memory import zero_copy_substrate
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -16,6 +21,12 @@ def chat():
     start_time = time.time()
     data = request.json
     user_message = data.get("message", "")
+
+    # Path 5: Amygdala Fast-Routing (Bypass LLM if highly familiar)
+    routing_decision = amygdala.route_request(user_message)
+    if routing_decision["routed_to"] == "amygdala_reflex":
+        metrics_tracker.record_task(routing_decision["latency_ms"], success=True)
+        return jsonify(routing_decision)
 
     # Prepend context from memory
     context = gabriel_learner.retrieve_context(user_message)
@@ -69,6 +80,33 @@ def run_100_step_optimization():
     """
     result = gabriel_100_step_optimizer.run_100_step_pipeline()
     return jsonify(result)
+
+@app.route("/system/gabriel/invention-lab/simulate", methods=["POST"])
+def simulate_invention_lab():
+    """
+    Executes a simulation of the 5 'Invention Land' experimental architectural paths.
+    """
+    results = {}
+
+    # Simulate Path 1: Zero Copy Memory Write/Read
+    zero_copy_substrate.write_heuristic(0.99, 42)
+    results["path_1_zero_copy"] = zero_copy_substrate.read_heuristics()
+
+    # Simulate Path 2: Fractal Ontology Synthesis
+    mock_abstraction = {"concept": "Modularization", "confidence": 0.95}
+    results["path_2_fractal"] = fractal_synthesizer.run_synthesis_cycle([mock_abstraction])
+
+    # Simulate Path 3: Chronos Temporal Planner (Backward Plan & Rewind)
+    chronos_planner.generate_backward_plan("Goal_A")
+    results["path_3_chronos"] = chronos_planner.temporal_rewind("Goal_A", 2)
+
+    # Simulate Path 4: Clean-Room Code Synthesis
+    safe_code = "def fast_math(x, y): return x * y"
+    load_result = clean_room.synthesize_and_load("fast_math", safe_code)
+    exec_result = clean_room.execute_capability("fast_math", 5, 10)
+    results["path_4_clean_room"] = {"load_status": load_result, "execution": exec_result}
+
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
