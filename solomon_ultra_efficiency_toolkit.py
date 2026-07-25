@@ -2,6 +2,7 @@ import math
 import struct
 import array
 import collections
+import sys
 
 class SolomonUltraEfficiencyToolkit:
     """
