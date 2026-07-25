@@ -73,5 +73,43 @@ def run_infinite_learning():
         "total_concepts_in_memory": len(fractal_synthesizer.concepts)
     }), 200
 
+@app.route("/api/sple/fractal-ontology/quantum-collapse", methods=["POST"])
+def quantum_collapse():
+    """Forces waveform collapse on a quantum superposition concept."""
+    data = request.json or {}
+    concept_name = data.get("concept_name")
+
+    if not concept_name:
+        return jsonify({"error": "Missing concept_name"}), 400
+
+    try:
+        domain = fractal_synthesizer.observe_quantum_concept(concept_name)
+        return jsonify({
+            "status": "success",
+            "concept_name": concept_name,
+            "collapsed_domain": domain
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/api/sple/fractal-ontology/holographic-bind", methods=["POST"])
+def holographic_bind():
+    """Binds multiple concepts into a single HRR interference pattern."""
+    data = request.json or {}
+    concepts = data.get("concepts", [])
+
+    if not concepts or not isinstance(concepts, list):
+        return jsonify({"error": "Provide an array of 'concepts'"}), 400
+
+    try:
+        cluster_name, vector = fractal_synthesizer.synthesize_holographic_cluster(concepts)
+        return jsonify({
+            "status": "success",
+            "cluster_name": cluster_name,
+            "vector": list(vector) # Return full float projection
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

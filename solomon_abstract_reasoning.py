@@ -1,7 +1,14 @@
 import math
 import random
+import threading
+import time
+import logging
 from typing import Dict, List, Tuple, Any
 from collections import OrderedDict
+
+# Set up local logger for background tasks
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("FractalDream")
 
 # Fast immutable vector using pure Python tuples.
 # Note: For ternary math, vectors are returned as bit-packed integers for O(1) ops.
@@ -107,6 +114,16 @@ class FractalOntologySynthesizer:
         # Concepts now store either standard vectors or extremely packed ternary tuples (pos_mask, neg_mask)
         self.concepts: OrderedDict[str, Any] = OrderedDict()
         self.domains: Dict[str, List[str]] = {}
+        # Context Shadows (Phase 4): stores secondary vectors representing contextual origin
+        self.context_shadows: Dict[str, Vector] = {}
+
+        # Thread safety for concurrent API/Dream operations
+        self.lock = threading.Lock()
+        self._dreaming = False
+        self._dream_thread = None
+
+        # Advanced Modules Integration
+        self.quantum_registry: Dict[str, Any] = {} # For Phase 5
 
     def _generate_orthogonal_base(self, seed_string: str) -> Vector:
         """Generates a deterministic vector based on string seeding."""
@@ -136,21 +153,98 @@ class FractalOntologySynthesizer:
         if quantize:
             vec = quantize_to_ternary(vec)
 
-        # LRU cache behavior
-        if concept_name in self.concepts:
-            del self.concepts[concept_name]
-        self.concepts[concept_name] = vec
-        if len(self.concepts) > self.max_concepts:
-            popped_concept, _ = self.concepts.popitem(last=False)
-            # Remove from domains as well
-            for d, concepts in self.domains.items():
-                if popped_concept in concepts:
-                    concepts.remove(popped_concept)
+        with self.lock:
+            # LRU cache behavior
+            if concept_name in self.concepts:
+                del self.concepts[concept_name]
+            self.concepts[concept_name] = vec
+            if len(self.concepts) > self.max_concepts:
+                popped_concept, _ = self.concepts.popitem(last=False)
+                # Remove from domains as well
+                for d, concepts in self.domains.items():
+                    if popped_concept in concepts:
+                        concepts.remove(popped_concept)
 
-        if domain not in self.domains:
-            self.domains[domain] = []
-        if concept_name not in self.domains[domain]:
-            self.domains[domain].append(concept_name)
+            if domain not in self.domains:
+                self.domains[domain] = []
+            if concept_name not in self.domains[domain]:
+                self.domains[domain].append(concept_name)
+
+    # --- Phase 5: Quantum Superposition Integration ---
+    def establish_quantum_concept(self, concept_name: str, superpositions: Dict[str, float]) -> None:
+        """
+        Creates a concept in quantum superposition across multiple domains.
+        The concept does not exist as a physical vector until observed.
+        """
+        from solomon_fractal_advanced import QuantumConcept
+        with self.lock:
+            q = QuantumConcept(concept_name)
+            for dom, prob in superpositions.items():
+                q.add_superposition(dom, prob)
+            self.quantum_registry[concept_name] = q
+
+    def observe_quantum_concept(self, concept_name: str) -> str:
+        """
+        Forces wave collapse on a quantum concept, converting it into a
+        permanent standard concept locked to the chosen domain.
+        """
+        with self.lock:
+            if concept_name not in self.quantum_registry:
+                raise ValueError(f"No quantum state for '{concept_name}'")
+
+            q = self.quantum_registry[concept_name]
+            chosen_domain = q.observe()
+
+        # Register it mathematically now that it exists
+        self.learn_concept(concept_name, chosen_domain)
+        return chosen_domain
+
+    # --- Phase 6: Holographic HRR Integration ---
+    def synthesize_holographic_cluster(self, concept_names: List[str]) -> Tuple[str, Vector]:
+        """
+        Uses circular convolution to compress an infinite number of concepts
+        into a single interference pattern of the same topological size (O(1) memory).
+        """
+        from solomon_fractal_advanced import circular_convolution
+        if not concept_names:
+            raise ValueError("Provide at least one concept to bind.")
+
+        with self.lock:
+            base = self.concepts.get(concept_names[0])
+            if base is None:
+                raise ValueError(f"Base concept '{concept_names[0]}' not found.")
+
+            if len(base) == 2 and isinstance(base[0], int):
+                base = dequantize_from_ternary(base, self.dimensions)
+
+            for name in concept_names[1:]:
+                nxt = self.concepts.get(name)
+                if not nxt:
+                    continue
+                if len(nxt) == 2 and isinstance(nxt[0], int):
+                    nxt = dequantize_from_ternary(nxt, self.dimensions)
+
+                # Bind into interference pattern
+                base = circular_convolution(base, nxt)
+
+            cluster_name = f"holo_cluster::{hash(''.join(concept_names))}"
+            # Store the float interference pattern (do not quantize)
+            self.concepts[cluster_name] = base
+
+        return cluster_name, base
+
+    def add_context_shadow(self, concept_name: str, context_string: str) -> None:
+        """
+        Phase 4: Multi-Modal Contextual Bridging.
+        Maps an arbitrary context string (e.g. JSON metadata, code snippets) into a
+        secondary 'shadow' vector that influences future centroid weighting.
+        """
+        with self.lock:
+            if concept_name not in self.concepts:
+                raise ValueError(f"Concept '{concept_name}' not found.")
+            # Map context to a standard float vector
+            shadow_vec = self._generate_orthogonal_base(context_string)
+            self.context_shadows[concept_name] = shadow_vec
 
     def get_domain_centroid(self, domain: str) -> Vector:
         """Calculate the centroid (mean vector) of a domain based on its concepts."""
@@ -213,7 +307,9 @@ class FractalOntologySynthesizer:
         Permanently learns the synthesized hybrid concepts, endlessly expanding capability.
         """
         insights = []
-        domain_list = list(self.domains.keys())
+
+        with self.lock:
+            domain_list = list(self.domains.keys())
 
         if len(domain_list) < 2:
             return [{"error": "Infinite learning requires at least two populated domains."}]
@@ -222,10 +318,11 @@ class FractalOntologySynthesizer:
             # 1. Select random source and target domains
             src_domain, tgt_domain = random.sample(domain_list, 2)
 
-            # 2. Select random concept from source domain
-            if not self.domains[src_domain]:
-                continue
-            src_concept = random.choice(self.domains[src_domain])
+            # 2. Select random concept from source domain safely
+            with self.lock:
+                if not self.domains.get(src_domain):
+                    continue
+                src_concept = random.choice(self.domains[src_domain])
 
             # 3. Perform Synthesis Leap
             try:
@@ -287,3 +384,39 @@ class FractalOntologySynthesizer:
 
         similarities.sort(key=lambda x: x[1], reverse=True)
         return similarities[:top_k]
+
+    def start_dream_state(self, cycle_interval_seconds: int = 60):
+        """
+        Phase 3: Dream State Daemon.
+        Spawns a background thread that continuously runs the infinite learning cycle
+        during idle time, autonomously evolving the ontology without external prompt.
+        """
+        if self._dreaming:
+            logger.info("Dream state already active.")
+            return
+
+        self._dreaming = True
+
+        def _dream_loop():
+            logger.info("Fractal Ontology entered Dream State. Infinite Learning activated.")
+            while self._dreaming:
+                try:
+                    # Run a small batch of learning to not lock up the CPU
+                    insights = self.run_infinite_learning_cycle(iterations=5)
+                    if insights and "error" not in insights[0]:
+                        logger.info(f"[Dream] Synthesized {len(insights)} new concepts autonomously.")
+                except Exception as e:
+                    # Log appropriately rather than swallowing blindly
+                    logger.error(f"[Dream] Mathematical anomaly encountered: {str(e)}", exc_info=True)
+
+                time.sleep(cycle_interval_seconds)
+
+        self._dream_thread = threading.Thread(target=_dream_loop, daemon=True)
+        self._dream_thread.start()
+
+    def stop_dream_state(self):
+        """Halts the autonomous background evolution."""
+        self._dreaming = False
+        if self._dream_thread:
+            self._dream_thread.join(timeout=1.0)
+            logger.info("Dream State halted.")
