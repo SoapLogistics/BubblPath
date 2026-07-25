@@ -4,6 +4,8 @@ import openai
 from flask import Flask, request, jsonify
 from solomon_learning_engine import gabriel_learner
 from solomon_metrics import metrics_tracker
+from solomon_abstract_reasoning import abstraction_engine
+from solomon_curiosity_director import curiosity_director
 
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -27,7 +29,6 @@ def chat():
 
         # Post-task Learning Loop
         gabriel_learner.extract_pattern(user_message, reply)
-        gabriel_learner.compress_knowledge()
 
         latency = (time.time() - start_time) * 1000
         metrics_tracker.record_task(latency, success=True)
@@ -42,6 +43,21 @@ def chat():
 @app.route("/metrics", methods=["GET"])
 def get_metrics():
     return jsonify(metrics_tracker.get_stats())
+
+@app.route("/system/run-learning-cycle", methods=["POST"])
+def run_learning_cycle():
+    """
+    Manually triggers the background learning loops:
+    1. Compresses raw patterns into abstractions.
+    2. Directs curiosity to generate research tasks.
+    """
+    compression_results = abstraction_engine.run_compression_cycle()
+    curiosity_results = curiosity_director.scan_frontier()
+
+    return jsonify({
+        "compression_cycle": compression_results,
+        "curiosity_cycle": curiosity_results
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
