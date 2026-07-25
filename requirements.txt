@@ -1,2 +1,5 @@
-flask
-openai
+Flask>=3.1.0
+openai==0.28.1
+Flask-Limiter>=4.1.0
+limits>=3.13.0
+gunicorn>=26.0.0
