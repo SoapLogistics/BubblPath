@@ -6,8 +6,35 @@ from solomon_core.gabriel.amygdala import AmygdalaRouter
 app = Flask(__name__)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
+import threading
+import time
+
 # Initialize the global Amygdala Router
 amygdala = AmygdalaRouter()
+
+def start_dream_cycle():
+    """
+    Background daemon thread to periodically consolidate and prune memories.
+    Runs every 60 seconds. In a true production 20-year system, this might run
+    nightly, but for fast iteration/efficiency, we run it frequently.
+    """
+    def _dream_loop():
+        while True:
+            try:
+                # We use sleep so the thread doesn't hog the CPU
+                time.sleep(60)
+                pruned = amygdala.dream_consolidation(max_capacity=5000, max_age_seconds=3600)
+                if pruned > 0:
+                    print(f"[DREAM CYCLE] Pruned {pruned} weak/old synapses from reflex arc.")
+            except Exception as e:
+                # Ensure the background thread never dies from an uncaught exception
+                print(f"[DREAM CYCLE] Error during consolidation: {e}")
+
+    dream_thread = threading.Thread(target=_dream_loop, daemon=True)
+    dream_thread.start()
+
+# Start the dream cycle when the app starts
+start_dream_cycle()
 
 @app.route("/chat", methods=["POST"])
 def chat():

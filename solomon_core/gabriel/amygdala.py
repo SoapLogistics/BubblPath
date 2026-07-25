@@ -15,7 +15,7 @@ class AmygdalaRouter:
     """
 
     def __init__(self):
-        # The reflex cache: maps quantized hashes to (response, hit_count)
+        # The reflex cache: maps quantized hashes to {response, hit_count, last_accessed}
         # In a 20-year lifespan, this could be backed by SQLite/MemoryMap,
         # but for ultimate speed, it's an in-memory dictionary.
         self._reflex_arc = {}
@@ -72,13 +72,17 @@ class AmygdalaRouter:
         # A task is "simple" if it has low complexity and low novelty (we've seen it)
         # If it's a known reflex, we bypass the LLM.
         if q_key in self._reflex_arc and tags["complexity"] < 0.5:
-            response, hits = self._reflex_arc[q_key]
-            # Update hit count for "myelination" (strengthening the pathway)
-            self._reflex_arc[q_key] = (response, hits + 1)
+            cached_data = self._reflex_arc[q_key]
+            # Update hit count and timestamp for "myelination" and pruning logic
+            self._reflex_arc[q_key] = {
+                "response": cached_data["response"],
+                "hit_count": cached_data["hit_count"] + 1,
+                "last_accessed": time.time()
+            }
 
             return {
                 "route": "reflex",
-                "response": response,
+                "response": cached_data["response"],
                 "tags": tags,
                 "metrics": {"time_saved_ms": 1500, "energy_saved": "high"} # Theoretical metrics
             }
@@ -99,7 +103,59 @@ class AmygdalaRouter:
         # Only learn low-complexity things unless forced
         if force or tags["complexity"] < 0.5:
             q_key = self._quantize(text)
-            # Initialize with 1 hit
-            self._reflex_arc[q_key] = (response, 1)
+            # Initialize with 1 hit and current time
+            self._reflex_arc[q_key] = {
+                "response": response,
+                "hit_count": 1,
+                "last_accessed": time.time()
+            }
             return True
         return False
+
+    def dream_consolidation(self, max_capacity: int = 1000, max_age_seconds: int = 86400):
+        """
+        Synaptic Pruning: Prevents memory bloat over a 20-year lifespan.
+        Evicts memories that are older than max_age_seconds if they have low hit counts,
+        and strictly limits the absolute size of the reflex arc to max_capacity based on LRU/hits.
+        Returns the number of pruned reflexes.
+        """
+        initial_size = len(self._reflex_arc)
+        if initial_size == 0:
+            return 0
+
+        current_time = time.time()
+
+        # Thread-safety: iterate over a copy of the items since the dictionary
+        # might be modified by incoming web requests concurrently.
+        current_items = list(self._reflex_arc.items())
+
+        # Step 1: Age-based pruning (if it hasn't been accessed in max_age_seconds and hits < 3)
+        keys_to_delete = [
+            k for k, v in current_items
+            if (current_time - v["last_accessed"]) > max_age_seconds and v["hit_count"] < 3
+        ]
+
+        for k in keys_to_delete:
+            # Safe deletion: dict.pop ignores if it was already deleted by another thread
+            self._reflex_arc.pop(k, None)
+
+        # Step 2: Capacity-based pruning (if still over limit, sort by score and prune tail)
+        if len(self._reflex_arc) > max_capacity:
+            # Re-fetch items safely
+            current_items = list(self._reflex_arc.items())
+
+            # Score = hits + (time_recently_accessed bonus)
+            # We want to keep high hits and recently accessed.
+            # Sort ascending (lowest score first = prime targets for deletion)
+            sorted_items = sorted(
+                current_items,
+                key=lambda item: item[1]["hit_count"] + (1.0 / max(1, current_time - item[1]["last_accessed"]))
+            )
+
+            # Delete the weakest items until we are at capacity
+            overage = len(self._reflex_arc) - max_capacity
+            for i in range(overage):
+                weak_key = sorted_items[i][0]
+                self._reflex_arc.pop(weak_key, None)
+
+        return initial_size - len(self._reflex_arc)
