@@ -55,10 +55,11 @@ class FractalOntologySynthesizer:
 
     def _generate_orthogonal_base(self, seed_string: str) -> Vector:
         """Generates a deterministic vector based on string seeding."""
-        random.seed(seed_string)
+        # Use a local RNG instance to prevent global random state pollution
+        rng = random.Random(seed_string)
         vec = []
         for _ in range(self.dimensions):
-            val = random.uniform(-1.0, 1.0)
+            val = rng.uniform(-1.0, 1.0)
             vec.append(val)
 
         t_vec = tuple(vec)
