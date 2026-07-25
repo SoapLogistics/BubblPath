@@ -16,14 +16,16 @@ def ingest_memory():
     node_id = unified_memory.ingest(
         node_type=data["type"],
         content=data["content"],
-        importance=data.get("importance", 0.5)
+        importance=data.get("importance", 0.5),
+        valence=data.get("valence", 0.0),
+        arousal=data.get("arousal", 0.0)
     )
     return jsonify({"status": "success", "node_id": node_id})
 
 @app.route("/api/memory/recall", methods=["GET", "POST"])
 def recall_memory():
     if request.method == "POST":
-        data = request.json
+        data = request.json or {}
         query = data.get("query", "")
         top_k = data.get("top_k", 5)
     else:
@@ -41,6 +43,14 @@ def consolidate_memory():
     unified_memory.consolidate()
     stats = unified_memory.get_stats()
     return jsonify({"status": "success", "stats": stats})
+
+@app.route("/api/memory/dream", methods=["POST"])
+def dream_memory():
+    data = request.json or {}
+    steps = data.get("steps", 10)
+    unified_memory.dream_cycle(max_steps=steps)
+    stats = unified_memory.get_stats()
+    return jsonify({"status": "success", "message": "Dream cycle complete.", "stats": stats})
 
 @app.route("/chat", methods=["POST"])
 def chat():
