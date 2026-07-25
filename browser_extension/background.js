@@ -9,6 +9,35 @@ async function getConfig() {
     });
 }
 
+// Context Menu for Teaching SPLE
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.create({
+        id: "teach-solomon",
+        title: "Teach Solomon (SPLE)",
+        contexts: ["selection"]
+    });
+});
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    if (info.menuItemId === "teach-solomon") {
+        const text = info.selectionText;
+        if (text) {
+            const context = {
+                url: tab.url,
+                title: tab.title,
+                text: text,
+                is_explicit_teaching: true
+            };
+            await pushToMnemosyne(context, tab.id);
+            // Optional: Provide UI feedback via content script injection
+            chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => alert("Memory pushed to Solomon Perpetual Learning Engine.")
+            }).catch(e => console.error(e));
+        }
+    }
+});
+
 // Initialize Side Panel to open on extension icon click (Chrome/Edge only)
 if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error(error));
@@ -83,6 +112,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse(response);
         });
         return true; // async response
+    }
+
+    if (message.action === "HOVER_ACTION") {
+        const { tabId, actionData, highlight } = message.payload;
+        chrome.tabs.sendMessage(tabId, { action: "HIGHLIGHT_ACTION", payload: { actionData, highlight } });
+        return true;
     }
 
     if (message.action === "GET_CURRENT_TAB_CONTEXT") {

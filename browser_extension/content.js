@@ -57,17 +57,84 @@ function extractGitHub() {
     return context;
 }
 
+// Kalshi & Polymarket specific extraction stubs
+function extractKalshi() {
+    const context = getGenericContext();
+    // Simulate extracting order book/pricing from DOM
+    const titleEl = document.querySelector('h1');
+    const priceEls = document.querySelectorAll('.price-display'); // Generic stub selector
+
+    context.kalshi = {
+        marketTitle: titleEl ? titleEl.innerText : null,
+        detectedPrices: Array.from(priceEls).map(el => el.innerText).slice(0, 5)
+    };
+    return context;
+}
+
+function extractPolymarket() {
+    const context = getGenericContext();
+    const titleEl = document.querySelector('h1');
+    const probEls = document.querySelectorAll('.probability-display'); // Generic stub selector
+
+    context.polymarket = {
+        marketTitle: titleEl ? titleEl.innerText : null,
+        detectedProbabilities: Array.from(probEls).map(el => el.innerText).slice(0, 5)
+    };
+    return context;
+}
+
 function gatherContext() {
     if (currentAdapter === "GitHubAdapter") {
         return extractGitHub();
+    } else if (currentAdapter === "KalshiAdapter") {
+        return extractKalshi();
+    } else if (currentAdapter === "PolymarketAdapter") {
+        return extractPolymarket();
     }
     // We can expand other specific adapters here or load them modularly
     return getGenericContext();
 }
 
 // Execute explicitly authorized actions
+let activeHighlightEl = null;
+
+function toggleHighlight(actionData, highlight) {
+    try {
+        if (!actionData.selector) return;
+        const el = document.querySelector(actionData.selector);
+        if (!el) return;
+
+        if (highlight) {
+            // Remove existing
+            if (activeHighlightEl) activeHighlightEl.remove();
+
+            const rect = el.getBoundingClientRect();
+            activeHighlightEl = document.createElement('div');
+            activeHighlightEl.style.position = 'fixed';
+            activeHighlightEl.style.top = `${rect.top}px`;
+            activeHighlightEl.style.left = `${rect.left}px`;
+            activeHighlightEl.style.width = `${rect.width}px`;
+            activeHighlightEl.style.height = `${rect.height}px`;
+            activeHighlightEl.style.backgroundColor = 'rgba(231, 76, 60, 0.3)';
+            activeHighlightEl.style.border = '2px solid #e74c3c';
+            activeHighlightEl.style.pointerEvents = 'none';
+            activeHighlightEl.style.zIndex = '999999';
+            activeHighlightEl.style.transition = 'all 0.2s';
+            document.body.appendChild(activeHighlightEl);
+        } else {
+            if (activeHighlightEl) {
+                activeHighlightEl.remove();
+                activeHighlightEl = null;
+            }
+        }
+    } catch (e) {
+        // ignore highlight errors
+    }
+}
+
 function executeAction(actionData) {
     console.log(`Executing authorized action:`, actionData);
+    if (activeHighlightEl) activeHighlightEl.remove();
 
     // Example format: [ACTION: #selector] or [FILL: #selector | value]
     try {
@@ -96,6 +163,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "GATHER_CONTEXT") {
         const ctx = gatherContext();
         sendResponse({ context: ctx });
+    } else if (message.action === "HIGHLIGHT_ACTION") {
+        toggleHighlight(message.payload.actionData, message.payload.highlight);
+        sendResponse({ success: true });
     } else if (message.action === "EXECUTE_ACTION") {
         const result = executeAction(message.payload);
         sendResponse(result);

@@ -6,9 +6,33 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 10px;
+            padding: 0;
             background-color: #f9f9fb;
             color: #333;
+        }
+        .tabs {
+            display: flex;
+            background: #2c3e50;
+            color: white;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .tab.active {
+            background: #34495e;
+            border-bottom: 2px solid #e1b12c;
+        }
+        .tab-content {
+            display: none;
+            padding: 10px;
+        }
+        .tab-content.active {
+            display: block;
         }
         h2 {
             font-size: 16px;
@@ -101,23 +125,60 @@
     </style>
 </head>
 <body>
-
-    <div class="section">
-        <h2>Active Context Observation</h2>
-        <div class="context-box" id="context-display">Loading context...</div>
-        <button class="btn-refresh" id="btn-refresh-context">Refresh Context</button>
+    <div class="tabs">
+        <div class="tab active" id="tab-companion">Companion</div>
+        <div class="tab" id="tab-casino">Casino Lab</div>
     </div>
 
-    <div class="section">
-        <h2>Solomon AI Chat</h2>
-        <textarea id="chat-input" rows="3" placeholder="Ask Solomon about this page..."></textarea>
-        <button id="chat-btn">Send to Solomon</button>
-        <div id="chat-log"></div>
+    <div id="content-companion" class="tab-content active">
+        <div class="section">
+            <h2>Active Context Observation</h2>
+            <div class="context-box" id="context-display">Loading context...</div>
+            <button class="btn-refresh" id="btn-refresh-context">Refresh Context</button>
+        </div>
+
+        <div class="section">
+            <h2>Solomon AI Chat</h2>
+            <textarea id="chat-input" rows="3" placeholder="Ask Solomon about this page..."></textarea>
+            <button id="chat-btn">Send to Solomon</button>
+            <div id="chat-log"></div>
+        </div>
+
+        <div class="section" id="action-queue-section" style="display: none;">
+            <h2>Action Authorization Required</h2>
+            <div id="action-list"></div>
+        </div>
     </div>
 
-    <div class="section" id="action-queue-section" style="display: none;">
-        <h2>Action Authorization Required</h2>
-        <div id="action-list"></div>
+    <div id="content-casino" class="tab-content">
+        <div class="section">
+            <h2>Blackjack Tracker</h2>
+            <p style="font-size:12px; color:#666;">Track your manual shoe inputs and basic strategy seamlessly offline.</p>
+
+            <div style="margin-top:10px;">
+                <label style="font-size:12px; font-weight:bold;">Log Card:</label>
+                <div style="display:flex; gap:5px; margin-top:5px; flex-wrap:wrap;">
+                    <button class="btn-refresh btn-card" data-val="2" style="width:30px; padding:5px;">2</button>
+                    <button class="btn-refresh btn-card" data-val="3" style="width:30px; padding:5px;">3</button>
+                    <button class="btn-refresh btn-card" data-val="4" style="width:30px; padding:5px;">4</button>
+                    <button class="btn-refresh btn-card" data-val="5" style="width:30px; padding:5px;">5</button>
+                    <button class="btn-refresh btn-card" data-val="6" style="width:30px; padding:5px;">6</button>
+                    <button class="btn-refresh btn-card" data-val="7" style="width:30px; padding:5px; background:#e74c3c;">7</button>
+                    <button class="btn-refresh btn-card" data-val="8" style="width:30px; padding:5px; background:#e74c3c;">8</button>
+                    <button class="btn-refresh btn-card" data-val="9" style="width:30px; padding:5px; background:#e74c3c;">9</button>
+                    <button class="btn-refresh btn-card" data-val="10" style="width:30px; padding:5px; background:#2ecc71;">T</button>
+                    <button class="btn-refresh btn-card" data-val="A" style="width:30px; padding:5px; background:#2ecc71;">A</button>
+                </div>
+            </div>
+
+            <div style="margin-top:15px; padding:10px; background:#f1f2f6; border-radius:4px; text-align:center;">
+                <div>Running Count: <strong id="rc-display">0</strong></div>
+                <div>True Count: <strong id="tc-display">0.0</strong></div>
+                <div style="font-size:10px; margin-top:5px;" id="deck-est">Decks Remaining: ~6.0</div>
+            </div>
+
+            <button id="btn-reset-shoe" class="btn-reject" style="width:100%; margin-top:10px;">Shuffle / Reset Shoe</button>
+        </div>
     </div>
 
     <script src="sidepanel.js"></script>

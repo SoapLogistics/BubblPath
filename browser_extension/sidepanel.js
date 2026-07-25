@@ -13,9 +13,61 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshContext();
 
     document.getElementById('btn-refresh-context').addEventListener('click', refreshContext);
-
     document.getElementById('chat-btn').addEventListener('click', sendChatMessage);
+
+    // Tab switching logic
+    document.getElementById('tab-companion').addEventListener('click', () => switchTab('companion'));
+    document.getElementById('tab-casino').addEventListener('click', () => switchTab('casino'));
+
+    // Casino Lab logic
+    document.querySelectorAll('.btn-card').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const val = e.target.getAttribute('data-val');
+            logCard(val);
+        });
+    });
+    document.getElementById('btn-reset-shoe').addEventListener('click', resetShoe);
 });
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    document.getElementById(`content-${tabName}`).classList.add('active');
+}
+
+// Basic Casino Lab Logic (Hi-Lo System)
+let runningCount = 0;
+let cardsDealt = 0;
+const totalDecks = 6;
+
+function logCard(card) {
+    cardsDealt++;
+    if (['2','3','4','5','6'].includes(card)) {
+        runningCount++;
+    } else if (['10','A'].includes(card)) {
+        runningCount--;
+    }
+    updateCasinoDisplay();
+}
+
+function resetShoe() {
+    runningCount = 0;
+    cardsDealt = 0;
+    updateCasinoDisplay();
+}
+
+function updateCasinoDisplay() {
+    document.getElementById('rc-display').textContent = runningCount;
+
+    let decksRemaining = totalDecks - (cardsDealt / 52);
+    if (decksRemaining < 0.5) decksRemaining = 0.5; // floor
+
+    const trueCount = runningCount / decksRemaining;
+    document.getElementById('tc-display').textContent = trueCount.toFixed(1);
+    document.getElementById('deck-est').textContent = `Decks Remaining: ~${decksRemaining.toFixed(1)}`;
+}
 
 let currentContext = null;
 let currentTabId = null;
@@ -135,6 +187,25 @@ function queueActions(actions) {
             valDiv.appendChild(valCode);
             card.appendChild(valDiv);
         }
+
+        // Highlight element on hover
+        card.addEventListener('mouseenter', () => {
+            if (currentTabId) {
+                chrome.runtime.sendMessage({
+                    action: "HOVER_ACTION",
+                    payload: { tabId: currentTabId, actionData: action, highlight: true }
+                });
+            }
+        });
+
+        card.addEventListener('mouseleave', () => {
+            if (currentTabId) {
+                chrome.runtime.sendMessage({
+                    action: "HOVER_ACTION",
+                    payload: { tabId: currentTabId, actionData: action, highlight: false }
+                });
+            }
+        });
 
         const btnGroup = document.createElement('div');
         btnGroup.className = 'button-group';
