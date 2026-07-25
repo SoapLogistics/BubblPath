@@ -1,39 +1,62 @@
 import os
-from flask import Flask, request, jsonify
-from openai import OpenAI, OpenAIError
+from typing import Tuple
+
+from flask import Flask, request, jsonify, Response
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from openai import OpenAI
 
 app = Flask(__name__)
 
-# Attempt to instantiate client if API key is provided, but allow app to load for health checks
-try:
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "dummy_key"))
-except OpenAIError:
-    client = None
+# Security: Limit payloads to 1MB to prevent DoS attacks
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024
+
+# Security: Rate limit endpoints to prevent abuse
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# Instantiate the global client. If OPENAI_API_KEY is not set, we pass a dummy value
+# to prevent the app from crashing on startup (which breaks the /health endpoint).
+# The client will fail gracefully when attempting an actual API call.
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "dummy_key"))
+
 
 @app.route("/chat", methods=["POST"])
-def chat():
-    if not client:
-        return jsonify({"error": "OpenAI client is not initialized"}), 500
-
-    data = request.json
-    if not data or "message" not in data:
-        return jsonify({"error": "Missing 'message' in request body"}), 400
-
-    user_message = data.get("message", "")
+@limiter.limit("5 per minute")
+def chat() -> Tuple[Response, int]:
+    data = request.json or {}
+    if "message" not in data:
+        return jsonify({"error": "Missing 'message'"}), 400
 
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
+            messages=[{"role": "user", "content": str(data["message"])}],
         )
-        reply = response.choices[0].message.content
-        return jsonify({"reply": reply})
+        return jsonify({"reply": response.choices[0].message.content}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/health", methods=["GET"])
-def health():
+
+@app.route("/health")
+@limiter.exempt
+def health() -> Tuple[Response, int]:
     return jsonify({"status": "healthy"}), 200
+
+
+@app.errorhandler(413)
+def request_entity_too_large(error: Exception) -> Tuple[Response, int]:
+    return jsonify({"error": "Payload too large. Maximum size is 1MB."}), 413
+
+
+@app.errorhandler(429)
+def ratelimit_handler(error: Exception) -> Tuple[Response, int]:
+    return jsonify({"error": "Rate limit exceeded"}), 429
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
