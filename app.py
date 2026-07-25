@@ -2,13 +2,18 @@ import os
 import openai
 import hashlib
 import tiktoken
-from flask import Flask, request, jsonify
+import orjson
+from flask import Flask, request, jsonify, Response
 from flask_compress import Compress
 from flask_caching import Cache
 from solomon_efficiency_toolkit import SolomonEfficiencyToolkit
 from solomon_extreme_efficiency_toolkit import SolomonExtremeEfficiencyToolkit
 
 app = Flask(__name__)
+
+# Enforce strict 1MB limit on request payloads to prevent OOM
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024
+
 # Enable Gzip compression to save bandwidth on API responses
 compress = Compress()
 compress.init_app(app)
@@ -46,7 +51,9 @@ def chat():
     cache_key = f"chat_{hashlib.sha256(user_message.encode('utf-8')).hexdigest()}"
     cached_response = cache.get(cache_key)
     if cached_response:
-        return jsonify({"reply": cached_response, "cached": True})
+        # Use ultra-fast orjson instead of standard json
+        payload = orjson.dumps({"reply": cached_response, "cached": True})
+        return Response(payload, mimetype='application/json')
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -56,7 +63,10 @@ def chat():
 
     # Store in cache
     cache.set(cache_key, reply)
-    return jsonify({"reply": reply})
+
+    # Use ultra-fast orjson instead of standard json
+    payload = orjson.dumps({"reply": reply})
+    return Response(payload, mimetype='application/json')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

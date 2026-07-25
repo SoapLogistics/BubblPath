@@ -4,3 +4,5 @@ Flask-Compress
 Flask-Caching
 gunicorn
 tiktoken
+orjson
+gevent
