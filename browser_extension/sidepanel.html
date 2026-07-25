@@ -125,9 +125,11 @@
     </style>
 </head>
 <body>
-    <div class="tabs">
+    <div class="tabs" style="font-size: 11px;">
         <div class="tab active" id="tab-companion">Companion</div>
-        <div class="tab" id="tab-casino">Casino Lab</div>
+        <div class="tab" id="tab-loki">Loki Eng.</div>
+        <div class="tab" id="tab-hephaestus">App Forge</div>
+        <div class="tab" id="tab-casino">Casino</div>
     </div>
 
     <div id="content-companion" class="tab-content active">
@@ -147,6 +149,26 @@
         <div class="section" id="action-queue-section" style="display: none;">
             <h2>Action Authorization Required</h2>
             <div id="action-list"></div>
+        </div>
+    </div>
+
+    <div id="content-loki" class="tab-content">
+        <div class="section">
+            <h2>Loki Predictive Engine</h2>
+            <p style="font-size:12px; color:#666;">Streaming Context from Prediction Markets / Sportsbooks</p>
+            <div id="loki-context-display" style="font-size:11px; background:#f1f2f6; padding:8px; border-radius:4px; margin-bottom:10px;">Waiting for Market Context...</div>
+            <button class="btn-refresh" id="btn-loki-predict" style="background:#e67e22;">Request Market Prediction</button>
+            <div id="loki-prediction-output" style="margin-top:10px; font-weight:bold; font-size:13px; text-align:center;"></div>
+        </div>
+    </div>
+
+    <div id="content-hephaestus" class="tab-content">
+        <div class="section">
+            <h2>Hephaestus App Forge</h2>
+            <p style="font-size:12px; color:#666;">Code Scaffolding & AST Injection</p>
+            <textarea id="hephaestus-prompt" rows="3" placeholder="Describe the scaffolding or injection required..."></textarea>
+            <button class="btn-refresh" id="btn-hephaestus-scaffold" style="background:#9b59b6;">Scaffold Project / AST</button>
+            <div id="hephaestus-output" style="margin-top:10px; font-size:11px; color:#333; background:#e8f4f8; padding:5px; border-radius:4px;"></div>
         </div>
     </div>
 

@@ -41,10 +41,33 @@ class AdapterManager {
             const titleEl = document.querySelector('.js-issue-title');
             const bodyEl = document.querySelector('.comment-body');
             const diffEl = document.querySelector('.diff-view'); // simplified
+            const prStatusEl = document.querySelector('.State'); // PR state (Merged, Closed, Open)
+
             ctx.github = {
                 prTitle: titleEl ? titleEl.innerText : null,
                 issueBody: bodyEl ? bodyEl.innerText : null,
+                prState: prStatusEl ? prStatusEl.innerText.trim() : 'Unknown',
                 hasDiffs: !!diffEl
+            };
+        } else if (this.adapterName === "AmazonAdapter") {
+            const titleEl = document.querySelector('#productTitle');
+            const priceEl = document.querySelector('.a-price .a-offscreen');
+            const reviewEl = document.querySelector('#acrPopover');
+
+            ctx.amazon = {
+                productTitle: titleEl ? titleEl.innerText.trim() : null,
+                detectedPrice: priceEl ? priceEl.innerText.trim() : null,
+                reviewRating: reviewEl ? reviewEl.getAttribute('title') : null
+            };
+        } else if (this.adapterName === "DraftKingsAdapter" || this.adapterName === "FanDuelAdapter") {
+            // Heuristic scraping for Sportsbooks: look for odds formats like +150, -110
+            const textNodes = document.body.innerText.split('\n');
+            const detectedOdds = textNodes.filter(t => /^[+-]\d{3,}$/.test(t.trim())).slice(0, 10);
+
+            ctx.sportsbook = {
+                platform: this.adapterName,
+                detectedOddsGrid: detectedOdds,
+                liveMutationActive: true // Flag to indicate we could hook a MutationObserver here
             };
         } else if (this.adapterName === "KalshiAdapter") {
             // Advanced Kalshi Logic with Mock Order Book Imbalance calculation

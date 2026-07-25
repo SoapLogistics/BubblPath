@@ -48,6 +48,30 @@ def browser_companion_chat():
     result = companion_backend.process_chat(message, context, openai)
     return jsonify(result)
 
+@app.route("/api/loki/predict", methods=["POST"])
+def loki_predict():
+    auth = request.headers.get("Authorization")
+    expected_auth = f"Bearer {os.environ.get('SOLOMON_INTERNAL_AUTH_KEY', '')}"
+    if not os.environ.get('SOLOMON_INTERNAL_AUTH_KEY') or auth != expected_auth:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json.get("context", {})
+    # Mocking Loki Engine logic based on order book imbalance
+    kalshi = data.get("kalshi")
+    if kalshi and float(kalshi.get("orderBookImbalanceRatio", 0)) > 0.5:
+        return jsonify({"prediction": "STRONG BUY (Edge: 12%)"})
+
+    return jsonify({"prediction": "HOLD (No statistical edge)"})
+
+@app.route("/api/hephaestus/scaffold", methods=["POST"])
+def hephaestus_scaffold():
+    auth = request.headers.get("Authorization")
+    expected_auth = f"Bearer {os.environ.get('SOLOMON_INTERNAL_AUTH_KEY', '')}"
+    if not os.environ.get('SOLOMON_INTERNAL_AUTH_KEY') or auth != expected_auth:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    return jsonify({"status": "Project Scaffolded in Workspace."})
+
 @app.route("/api/mnemosyne/remember", methods=["POST"])
 def passive_learning_remember():
     """

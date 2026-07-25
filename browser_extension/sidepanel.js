@@ -17,7 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tab switching logic
     document.getElementById('tab-companion').addEventListener('click', () => switchTab('companion'));
+    document.getElementById('tab-loki').addEventListener('click', () => switchTab('loki'));
+    document.getElementById('tab-hephaestus').addEventListener('click', () => switchTab('hephaestus'));
     document.getElementById('tab-casino').addEventListener('click', () => switchTab('casino'));
+
+    // Engine API logic
+    document.getElementById('btn-loki-predict').addEventListener('click', requestLokiPrediction);
+    document.getElementById('btn-hephaestus-scaffold').addEventListener('click', requestHephaestusScaffold);
 
     // Casino Lab logic
     document.querySelectorAll('.btn-card').forEach(btn => {
@@ -95,6 +101,53 @@ function updateCasinoDisplay() {
 let currentContext = null;
 let currentTabId = null;
 
+async function requestLokiPrediction() {
+    const out = document.getElementById('loki-prediction-output');
+    out.textContent = "Analyzing probabilities...";
+    out.style.color = "#333";
+    try {
+        const config = await getConfig();
+        const res = await fetch(`${config.backendUrl}/api/loki/predict`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${config.authKey}`
+            },
+            body: JSON.stringify({ context: currentContext })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        out.textContent = data.prediction || "No actionable edge detected.";
+        out.style.color = data.prediction.includes('BET') ? '#27ae60' : '#e74c3c';
+    } catch (e) {
+        out.textContent = `Error: ${e.message}`;
+        out.style.color = "red";
+    }
+}
+
+async function requestHephaestusScaffold() {
+    const prompt = document.getElementById('hephaestus-prompt').value;
+    if (!prompt) return;
+    const out = document.getElementById('hephaestus-output');
+    out.textContent = "Scaffolding in forge...";
+    try {
+        const config = await getConfig();
+        const res = await fetch(`${config.backendUrl}/api/hephaestus/scaffold`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${config.authKey}`
+            },
+            body: JSON.stringify({ prompt, context: currentContext })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        out.textContent = data.status || "Scaffolding complete.";
+    } catch (e) {
+        out.textContent = `Error: ${e.message}`;
+    }
+}
+
 function refreshContext() {
     const display = document.getElementById('context-display');
     display.textContent = "Fetching context...";
@@ -118,6 +171,15 @@ function refreshContext() {
                 displayTxt += `\nGitHub PR/Issue: ${currentContext.github.prTitle || 'N/A'}`;
             }
             display.textContent = displayTxt;
+
+            // Update Loki Context display if applicable
+            const lokiDisplay = document.getElementById('loki-context-display');
+            if (currentContext.kalshi || currentContext.polymarket || currentContext.sportsbook) {
+                lokiDisplay.textContent = JSON.stringify(currentContext.kalshi || currentContext.polymarket || currentContext.sportsbook, null, 2);
+            } else {
+                lokiDisplay.textContent = "No supported market context detected on this page.";
+            }
+
         } else {
             display.textContent = "No context available.";
         }
