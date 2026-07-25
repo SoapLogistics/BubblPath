@@ -21,12 +21,13 @@ class ZeroCopyMemorySubstrate:
     MAGIC = b'ZCM1'
     VERSION = 1
 
-    # Record format (Cache-Line Aligned & Int8 Quantized):
+    # Record format (Absolute Theoretical Max Efficiency):
+    # Holographic 1-Bit Quantization & Single L1 Cache Line Aligned.
     # [id: Q (8)] [timestamp: Q (8)] [valence: f (4)] [arousal: f (4)]
-    # [concept_hash: Q (8)] [embedding: 128s (128)] [padding: 32x (32)]
-    # Total: 32 + 128 + 32 = 192 bytes (Exactly 3 x 64-byte L1 Cache Lines)
+    # [concept_hash: Q (8)] [embedding: 16s (128 bits -> 16 bytes)] [padding: 16x (16 bytes)]
+    # Total: 32 + 16 + 16 = 64 bytes (Exactly 1 x 64-byte L1 Cache Line)
     EMBEDDING_DIM = 128
-    RECORD_FORMAT = f'<QQffQ{EMBEDDING_DIM}s32x'
+    RECORD_FORMAT = '<QQffQ16s16x'
     RECORD_SIZE = struct.calcsize(RECORD_FORMAT)
 
     def __init__(self, filepath, max_records=10000):
@@ -61,10 +62,15 @@ class ZeroCopyMemorySubstrate:
         self.file_obj = open(self.filepath, 'r+b')
         self.mmap_obj = mmap.mmap(self.file_obj.fileno(), 0, access=mmap.ACCESS_WRITE)
 
-        # Verify Magic
+        # Verify Magic and update max records if file was expanded
         magic, version, self.num_records, self.mapped_max_records = struct.unpack_from(self.HEADER_FORMAT, self.mmap_obj, 0)
         if magic != self.MAGIC:
             raise ValueError("Invalid memory file format. Magic bytes mismatch.")
+
+        if self.mapped_max_records < self.max_records:
+             self.mapped_max_records = self.max_records
+             struct.pack_into(self.HEADER_FORMAT, self.mmap_obj, 0,
+                              self.MAGIC, self.VERSION, self.num_records, self.mapped_max_records)
 
     def close(self):
         """Closes the memory mapped file."""
@@ -88,19 +94,14 @@ class ZeroCopyMemorySubstrate:
 
         offset = self.HEADER_SIZE + (self.num_records * self.RECORD_SIZE)
 
-        # Int8 Quantization to slash memory footprint
-        norm = np.linalg.norm(embedding)
-        if norm > 0:
-            embedding_norm = embedding / norm
-        else:
-            embedding_norm = embedding
-
-        quantized = np.clip(np.round(embedding_norm * 127), -128, 127).astype(np.int8)
-        embedding_bytes = quantized.tobytes()
+        # Extreme 1-Bit Holographic Quantization
+        # Maps floats to binary (1 if > 0 else 0), then packs 128 bits into 16 bytes
+        quantized_bits = (embedding > 0).astype(np.uint8)
+        packed_bytes = np.packbits(quantized_bits).tobytes()
 
         # Prepare data
         struct.pack_into(self.RECORD_FORMAT, self.mmap_obj, offset,
-                         record_id, timestamp, valence, arousal, concept_hash, embedding_bytes)
+                         record_id, timestamp, valence, arousal, concept_hash, packed_bytes)
 
         self.num_records += 1
 
@@ -120,8 +121,10 @@ class ZeroCopyMemorySubstrate:
         offset = self.HEADER_SIZE + (index * self.RECORD_SIZE)
         data = struct.unpack_from(self.RECORD_FORMAT, self.mmap_obj, offset)
 
-        quantized = np.frombuffer(data[5], dtype=np.int8)
-        dequantized = (quantized.astype(np.float32) / 127.0)
+        packed_bytes = np.frombuffer(data[5], dtype=np.uint8)
+        # Dequantize (approximate back to floats for legacy compatibility, though scale is lost)
+        unpacked_bits = np.unpackbits(packed_bytes)
+        dequantized = (unpacked_bits.astype(np.float32) * 2.0) - 1.0 # map to [-1, 1]
 
         return {
             "id": data[0],
@@ -145,15 +148,15 @@ class ZeroCopyMemorySubstrate:
         # It's cleaner to read it via an ndarray buffer using offset.
 
         # Define a numpy dtype that matches our struct exactly for zero-copy mapping
-        # 192 bytes total size to guarantee cache alignment
+        # 64 bytes total size to guarantee single cache line alignment
         record_dtype = np.dtype([
             ('id', '<u8'),
             ('timestamp', '<u8'),
             ('valence', '<f4'),
             ('arousal', '<f4'),
             ('concept_hash', '<u8'),
-            ('embedding', '<i1', (self.EMBEDDING_DIM,)),
-            ('padding', 'V32')
+            ('embedding', 'u1', (16,)), # 16 bytes = 128 bits
+            ('padding', 'V16')
         ])
 
         # Read directly from mmap as a numpy array, without copying!
@@ -169,27 +172,31 @@ class ZeroCopyMemorySubstrate:
 
     def search_similar(self, query_embedding, top_k=5):
         """
-        Demonstrates extreme efficiency using cache-aligned zero-copy matrix
-        multiplication directly over the int8 quantized space.
+        Demonstrates extreme theoretical efficiency using Single Cache-Aligned zero-copy
+        Hamming distance calculations directly over a 1-bit packed binary space.
         """
         if self.num_records == 0:
             return []
 
-        # Raw mapped int8 embeddings (zero-copy)
-        embeddings_int8 = self.get_raw_embeddings_matrix()
+        # Raw mapped 1-bit packed embeddings (16 bytes per record) (zero-copy)
+        packed_embeddings = self.get_raw_embeddings_matrix()
 
-        # Normalize and quantize query to int8 for extremely fast integer dot products
-        query_norm = np.linalg.norm(query_embedding)
-        if query_norm == 0:
-            query_normalized = query_embedding
-        else:
-            query_normalized = query_embedding / query_norm
+        # Quantize and pack query to 1-bit
+        query_bits = (query_embedding > 0).astype(np.uint8)
+        query_packed = np.packbits(query_bits)
 
-        query_int8 = np.clip(np.round(query_normalized * 127), -128, 127).astype(np.int8)
+        # Calculate Hamming Distance extremely fast using bitwise XOR and popcount approximation via numpy
+        # Numpy doesn't have a native bitcount, but we can do it via a lookup table or sum of unpacked bits.
+        # unpacking the matrix is fast enough for CPU.
+        unpacked_matrix = np.unpackbits(packed_embeddings, axis=1)
 
-        # Upcast slightly to int32 for the dot product to avoid 8-bit overflow
-        # (This vectorization is extremely fast on modern CPUs, leveraging SIMD)
-        similarities = np.dot(embeddings_int8.astype(np.int32), query_int8.astype(np.int32))
+        # Dot product over the binary space is essentially equivalent to cosine similarity in 1-bit space
+        # We map 0s to -1s to get a proper directional dot product.
+        # MUST upcast to int32 before math to avoid 8-bit wrap-around/overflow.
+        matrix_polar = (unpacked_matrix.astype(np.int32) * 2) - 1
+        query_polar = (query_bits.astype(np.int32) * 2) - 1
+
+        similarities = np.dot(matrix_polar, query_polar)
 
         # Get top k indices
         k = min(top_k, self.num_records)

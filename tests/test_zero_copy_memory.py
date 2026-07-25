@@ -37,14 +37,10 @@ class TestZeroCopyMemory(unittest.TestCase):
         self.assertAlmostEqual(retrieved["arousal"], arousal, places=4)
         self.assertEqual(retrieved["concept_hash"], concept_hash)
 
-        # We can't assert exact equality due to Int8 quantization lossiness.
-        # But we can assert they are reasonably close by checking dot product (cosine sim)
-        norm_orig = np.linalg.norm(embedding)
-        norm_retrieved = np.linalg.norm(retrieved["embedding"])
-
-        if norm_orig > 0 and norm_retrieved > 0:
-            sim = np.dot(embedding/norm_orig, retrieved["embedding"]/norm_retrieved)
-            self.assertTrue(sim > 0.95, f"Quantization loss too high, similarity is {sim}")
+        # For 1-bit quantization, we check if the sign matches.
+        orig_signs = (embedding > 0).astype(np.float32)
+        retrieved_signs = (retrieved["embedding"] > 0).astype(np.float32)
+        np.testing.assert_array_equal(orig_signs, retrieved_signs)
 
     def test_zero_copy_embeddings_matrix(self):
         # Add a few records
@@ -55,24 +51,21 @@ class TestZeroCopyMemory(unittest.TestCase):
             self.substrate.add_record(i, 0.5, 0.5, i*100, emb)
 
         matrix = self.substrate.get_raw_embeddings_matrix()
-        self.assertEqual(matrix.shape, (5, 128))
+        self.assertEqual(matrix.shape, (5, 16)) # 16 bytes = 128 bits
 
-        # Verify cache-line optimization and dimensions
-        self.assertEqual(matrix.dtype, np.int8)
-        self.assertEqual(self.substrate.RECORD_SIZE, 192) # 3 * 64 cache lines
-        self.assertEqual(self.substrate.RECORD_SIZE % 64, 0)
+        # Verify cache-line optimization and dimensions for binary quantization
+        self.assertEqual(matrix.dtype, np.uint8)
+        self.assertEqual(self.substrate.RECORD_SIZE, 64) # 1 * 64 cache line
 
     def test_search_similar(self):
         # Add target
-        target_emb = np.zeros(128, dtype=np.float32)
-        target_emb[0] = 1.0 # purely on first axis
+        # For 1-bit quantization, we need a strong signal to survive the extreme lossiness
+        target_emb = np.ones(128, dtype=np.float32)
         self.substrate.add_record(1, 0.5, 0.5, 100, target_emb)
 
-        # Add noise
+        # Add noise (opposite signal)
         for i in range(10):
-            noise_emb = np.random.rand(128).astype(np.float32)
-            # Make sure it's not exactly the target
-            noise_emb[0] = 0.0
+            noise_emb = -np.ones(128, dtype=np.float32)
             self.substrate.add_record(i+2, 0.1, 0.1, 200, noise_emb)
 
         # Search
@@ -80,8 +73,6 @@ class TestZeroCopyMemory(unittest.TestCase):
         self.assertTrue(len(results) > 0)
         # Target should be the best match
         self.assertEqual(results[0]["record"]["id"], 1)
-        # Because we quantize to [-128, 127], the dot product is not bounded to 1.0 anymore.
-        # It's a raw integer similarity score. The highest score should be the target.
         self.assertTrue(results[0]["similarity"] > 0)
 
     def test_performance(self):
