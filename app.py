@@ -111,5 +111,24 @@ def holographic_bind():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+@app.route("/api/sple/fractal-ontology/omega-truth", methods=["POST"])
+def omega_truth():
+    """Calculates the ultimate Omega Truth value of a concept based on the God Node."""
+    data = request.json or {}
+    concept_name = data.get("concept_name")
+
+    if not concept_name:
+        return jsonify({"error": "Missing concept_name"}), 400
+
+    try:
+        truth_metrics = fractal_synthesizer.calculate_omega_truth(concept_name)
+        return jsonify({
+            "status": "success",
+            "concept_name": concept_name,
+            "metrics": truth_metrics
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

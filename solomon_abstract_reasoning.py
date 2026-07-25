@@ -125,6 +125,10 @@ class FractalOntologySynthesizer:
         # Advanced Modules Integration
         self.quantum_registry: Dict[str, Any] = {} # For Phase 5
 
+        # Phase 6: The God Node (Absolute Zero-Point Anchor)
+        # Represents the mathematical origin of all concepts.
+        self.god_node: Vector = tuple([0.0] * self.dimensions)
+
     def _generate_orthogonal_base(self, seed_string: str) -> Vector:
         """Generates a deterministic vector based on string seeding."""
         # Use a local RNG instance to prevent global random state pollution
@@ -232,6 +236,47 @@ class FractalOntologySynthesizer:
             self.concepts[cluster_name] = base
 
         return cluster_name, base
+
+    # --- Phase 6: The Omega Function ---
+    def calculate_omega_truth(self, concept_name: str) -> Dict[str, float]:
+        """
+        The Omega Function calculates the absolute 'truth value' of a concept.
+        It measures semantic density (how central it is to its domain) and its
+        distance to the absolute origin (God Node).
+        """
+        with self.lock:
+            if concept_name not in self.concepts:
+                raise ValueError(f"Concept '{concept_name}' not found.")
+
+            c_val = self.concepts[concept_name]
+            if len(c_val) == 2 and isinstance(c_val[0], int):
+                c_val = dequantize_from_ternary(c_val, self.dimensions)
+
+            # Find which domains this concept belongs to
+            parent_domains = [d for d, concepts in self.domains.items() if concept_name in concepts]
+
+            density = 0.0
+            if parent_domains:
+                # Calculate how close it is to the core truth of its own domains
+                for d in parent_domains:
+                    centroid = self.get_domain_centroid(d)
+                    density += cosine_similarity(c_val, centroid)
+                density = density / len(parent_domains)
+
+            # Distance from absolute zero (God Node)
+            # The closer to zero, the more fundamental/abstract the concept is.
+            distance_to_god = math.sqrt(sum((a - b)**2 for a, b in zip(c_val, self.god_node)))
+
+            # Omega Value: High density (central to its domain) and low distance to God Node (fundamental)
+            # Normalizing distance to prevent division by zero or extreme scaling
+            normalized_distance = max(0.1, distance_to_god)
+            omega_value = (density + 1.0) / normalized_distance
+
+            return {
+                "omega_value": round(omega_value, 4),
+                "domain_density": round(density, 4),
+                "distance_to_god_node": round(distance_to_god, 4)
+            }
 
     def add_context_shadow(self, concept_name: str, context_string: str) -> None:
         """
@@ -352,12 +397,19 @@ class FractalOntologySynthesizer:
 
         return insights
 
-    def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5) -> List[Tuple[str, float]]:
+    def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5, use_hyperbolic: bool = False) -> List[Tuple[str, float]]:
         """
         Find concepts closest to the given vector.
         Automatically utilizes bitwise XOR similarity for packed vectors to drastically reduce compute time.
+        If use_hyperbolic is True, it uses Poincaré distance for curved hierarchical routing (Phase 2).
         """
         exclude = exclude or []
+
+        if use_hyperbolic:
+            from solomon_fractal_advanced import poincare_distance
+            # Hyperbolic distance requires float vectors
+            if len(target_vector) == 2 and isinstance(target_vector[0], int):
+                target_vector = dequantize_from_ternary(target_vector, self.dimensions)
 
         allowed_concepts = None
         if domain_filter and domain_filter in self.domains:
@@ -373,12 +425,26 @@ class FractalOntologySynthesizer:
             if allowed_concepts is not None and name not in allowed_concepts:
                 continue
 
-            if len(vec) == 2 and isinstance(vec[0], int):
-                # O(1) Bitwise execution path
-                sim = bitwise_ternary_similarity(target_packed, vec, self.dimensions)
+            if use_hyperbolic:
+                # Convert stored concept to float if packed
+                if len(vec) == 2 and isinstance(vec[0], int):
+                    vec = dequantize_from_ternary(vec, self.dimensions)
+                # We normalize vectors slightly inside the unit disk for Poincare to prevent math domain errors
+                mag_t = max(vector_magnitude(target_vector), 0.001)
+                mag_v = max(vector_magnitude(vec), 0.001)
+                t_norm = tuple(v / mag_t * 0.99 for v in target_vector)
+                v_norm = tuple(v / mag_v * 0.99 for v in vec)
+
+                dist = poincare_distance(t_norm, v_norm)
+                # We invert distance so higher is better, matching similarity sorting
+                sim = 1.0 / (1.0 + dist)
             else:
-                # Fallback to float execution path
-                sim = cosine_similarity(target_vector, vec)
+                if len(vec) == 2 and isinstance(vec[0], int):
+                    # O(1) Bitwise execution path
+                    sim = bitwise_ternary_similarity(target_packed, vec, self.dimensions)
+                else:
+                    # Fallback to float execution path
+                    sim = cosine_similarity(target_vector, vec)
 
             similarities.append((name, sim))
 
