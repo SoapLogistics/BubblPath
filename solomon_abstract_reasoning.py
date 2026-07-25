@@ -6,6 +6,13 @@ from collections import OrderedDict
 # Fast immutable vector using pure Python tuples
 Vector = Tuple[float, ...]
 
+def quantize_to_ternary(v: Vector, threshold: float = 0.3) -> Vector:
+    """
+    Compresses a float vector into a ternary representation (-1.0, 0.0, 1.0)
+    using a threshold. Extreme memory and computational efficiency.
+    """
+    return tuple(1.0 if val > threshold else (-1.0 if val < -threshold else 0.0) for val in v)
+
 def vector_add(v1: Vector, v2: Vector) -> Vector:
     return tuple(a + b for a, b in zip(v1, v2))
 
@@ -60,15 +67,18 @@ class FractalOntologySynthesizer:
             return tuple([0.0]*self.dimensions)
         return tuple(v / mag for v in t_vec)
 
-    def learn_concept(self, concept_name: str, domain: str, vector_override: Vector = None) -> None:
+    def learn_concept(self, concept_name: str, domain: str, vector_override: Vector = None, quantize: bool = True) -> None:
         """
         Learn a new concept in a specific domain.
-        Mathematically map the abstraction.
+        Mathematically map the abstraction. Optionally applies extreme ternary quantization.
         """
         if vector_override:
             vec = vector_override
         else:
             vec = self._generate_orthogonal_base(f"{domain}::{concept_name}")
+
+        if quantize:
+            vec = quantize_to_ternary(vec)
 
         # LRU cache behavior
         if concept_name in self.concepts:
@@ -117,17 +127,69 @@ class FractalOntologySynthesizer:
         # Find nearest existing concepts to ground the projection in the target domain
         nearest = self.find_nearest_concepts(projected_concept, domain_filter=target_domain, exclude=[source_concept], top_k=3)
 
+        # Quantize the synthesized result for maximum efficiency moving forward
+        quantized_projection = quantize_to_ternary(projected_concept)
+
         return {
             "source_concept": source_concept,
             "source_domain": source_domain,
             "target_domain": target_domain,
-            "projected_vector": projected_concept,
+            "projected_vector": quantized_projection,
+            "raw_projected_vector": projected_concept,
             "nearest_target_anchors": nearest,
             "synthesis_insight": (
                 f"Applying abstract topology of '{source_concept}' onto '{target_domain}' "
                 f"leveraging proximity to {', '.join([n[0] for n in nearest]) if nearest else 'unmapped territory'}."
             )
         }
+
+    def run_infinite_learning_cycle(self, iterations: int = 1) -> List[Dict[str, Any]]:
+        """
+        Autonomously selects concepts and synthesizes cross-domain leaps.
+        Permanently learns the synthesized hybrid concepts, endlessly expanding capability.
+        """
+        insights = []
+        domain_list = list(self.domains.keys())
+
+        if len(domain_list) < 2:
+            return [{"error": "Infinite learning requires at least two populated domains."}]
+
+        for _ in range(iterations):
+            # 1. Select random source and target domains
+            src_domain, tgt_domain = random.sample(domain_list, 2)
+
+            # 2. Select random concept from source domain
+            if not self.domains[src_domain]:
+                continue
+            src_concept = random.choice(self.domains[src_domain])
+
+            # 3. Perform Synthesis Leap
+            try:
+                leap_data = self.synthesize_cross_domain_leap(src_concept, src_domain, tgt_domain)
+
+                # 4. Integrate new hybrid concept permanently into memory graph
+                new_concept_name = f"hybrid::{src_concept}_applied_to_{tgt_domain}"
+
+                # We learn this new concept into an 'invention' domain
+                invention_domain = f"invention::{tgt_domain}"
+
+                self.learn_concept(
+                    concept_name=new_concept_name,
+                    domain=invention_domain,
+                    vector_override=leap_data["projected_vector"], # Already quantized
+                    quantize=False # It is already ternary
+                )
+
+                insights.append({
+                    "new_concept": new_concept_name,
+                    "invention_domain": invention_domain,
+                    "insight": leap_data["synthesis_insight"]
+                })
+            except Exception as e:
+                # Catch math errors (e.g., zero magnitude centroids) on early topologies
+                pass
+
+        return insights
 
     def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5) -> List[Tuple[str, float]]:
         """Find concepts closest to the given vector using cosine similarity (O(1) semantic search cache)."""

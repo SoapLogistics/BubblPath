@@ -64,7 +64,8 @@ def test_cross_domain_synthesis():
 
 def test_deterministic_generation():
     synthesizer = FractalOntologySynthesizer(dimensions=10)
-    synthesizer.learn_concept("test_concept", "test_domain")
+    # Don't quantize for this specific math test since quantization alters the normalized magnitude
+    synthesizer.learn_concept("test_concept", "test_domain", quantize=False)
 
     vec = synthesizer.concepts["test_concept"]
     assert len(vec) == 10

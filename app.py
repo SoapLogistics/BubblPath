@@ -55,5 +55,23 @@ def synthesize_cross_domain():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
+@app.route("/api/sple/fractal-ontology/infinite-learning-cycle", methods=["POST"])
+def run_infinite_learning():
+    """
+    Executes the infinite recursive learning cycle to synthesize and learn new concepts automatically.
+    """
+    data = request.json or {}
+    iterations = data.get("iterations", 1)
+
+    insights = fractal_synthesizer.run_infinite_learning_cycle(iterations=iterations)
+
+    return jsonify({
+        "status": "success",
+        "iterations": iterations,
+        "new_insights_generated": len(insights),
+        "insights": insights,
+        "total_concepts_in_memory": len(fractal_synthesizer.concepts)
+    }), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
