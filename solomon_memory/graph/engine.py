@@ -1,8 +1,8 @@
 import uuid
 import time
 import json
-import math
 import logging
+import numpy as np
 from typing import Dict, Any, List, Optional
 from solomon_memory.db_manager import DatabaseManager
 from solomon_core.event_bus import CognitiveEventBus
@@ -14,10 +14,11 @@ logger = logging.getLogger("MnemosyneEngine")
 def cosine_similarity(v1: List[float], v2: List[float]) -> float:
     """Calculate the cosine similarity between two vectors."""
     if not v1 or not v2: return 0.0
-    dot_product = sum(a * b for a, b in zip(v1, v2))
-    norm_v1 = math.sqrt(sum(a * a for a in v1))
-    norm_v2 = math.sqrt(sum(b * b for b in v2))
-    return dot_product / (norm_v1 * norm_v2) if norm_v1 and norm_v2 else 0.0
+    vec1 = np.array(v1)
+    vec2 = np.array(v2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+    return float(np.dot(vec1, vec2) / (norm1 * norm2)) if norm1 and norm2 else 0.0
 
 class MnemosyneGraphEngine:
     """
@@ -71,13 +72,34 @@ class MnemosyneGraphEngine:
         query = "SELECT card_id, content, vector_embedding FROM sok_cards WHERE ttl_expires_at > ?"
         rows = self.db.fetch_all(query, (current_time,))
 
+        # Vectorized Matrix Multiplication for massive speed gains over loops
+        valid_rows = [row for row in rows if row["vector_embedding"]]
+        if not valid_rows: return []
+
+        # Build matrix
+        matrix = np.array([json.loads(row["vector_embedding"]) for row in valid_rows])
+        q_vec = np.array(query_vector)
+
+        # Normalize
+        q_norm = np.linalg.norm(q_vec)
+        matrix_norms = np.linalg.norm(matrix, axis=1)
+
+        # Handle zero norms
+        if q_norm == 0.0: return []
+        matrix_norms[matrix_norms == 0.0] = 1.0 # prevent div by zero
+
+        # Calculate dot products and similarities simultaneously
+        dot_products = np.dot(matrix, q_vec)
+        similarities = dot_products / (matrix_norms * q_norm)
+
         results = []
-        for row in rows:
-            if not row["vector_embedding"]: continue
-            card_vector = json.loads(row["vector_embedding"])
-            sim = cosine_similarity(query_vector, card_vector)
+        for i, sim in enumerate(similarities):
             if sim >= threshold:
-                results.append({"card_id": row["card_id"], "content": row["content"], "similarity": sim})
+                results.append({
+                    "card_id": valid_rows[i]["card_id"],
+                    "content": valid_rows[i]["content"],
+                    "similarity": float(sim)
+                })
 
         results.sort(key=lambda x: x["similarity"], reverse=True)
         return results[:top_k]

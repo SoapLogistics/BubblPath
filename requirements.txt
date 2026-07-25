@@ -2,3 +2,4 @@ Flask==3.0.0
 gunicorn==21.2.0
 openai==0.28.0
 Flask-Limiter==3.5.0
+numpy==1.26.4
