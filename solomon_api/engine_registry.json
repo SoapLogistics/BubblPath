@@ -141,6 +141,63 @@
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_futures_engine",
+      "display_name": "Futures Engine",
+      "source_path": "services/solomon_futures_engine.py",
+      "owner_family": "loki",
+      "status_class": "active_readiness",
+      "entrypoint": "FuturesEngine",
+      "route_paths": [],
+      "readiness_keys": [
+        "futures_ready"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_futures_engine.md",
+      "test_paths": [
+        "tests/futures/test_threshold_logic.py"
+      ],
+      "approval_required": true,
+      "mutates_state": true,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.futures.v1",
+      "memory_writeback": [
+        "fact_memory"
+      ]
+    },
+    {
+      "engine_id": "futures_dashboard_backend",
+      "display_name": "Futures Dashboard Backend",
+      "source_path": "backend/services/futures_dashboard_backend.py",
+      "owner_family": "loki",
+      "status_class": "active_route",
+      "entrypoint": "FuturesDashboardBackend",
+      "route_paths": [
+        "/api/futures/projections",
+        "/api/futures/execute"
+      ],
+      "readiness_keys": [],
+      "parent_surface": "templates/futures_dashboard.html",
+      "doc_path": "docs/futures_dashboard_backend.md",
+      "test_paths": [
+        "tests/futures/test_threshold_logic.py"
+      ],
+      "approval_required": true,
+      "mutates_state": true,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.futures.dashboard.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [

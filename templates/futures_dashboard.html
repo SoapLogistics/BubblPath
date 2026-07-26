@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+        }
+        #hud {
+            background: rgba(0, 20, 0, 0.8);
+            padding: 15px;
+            border: 1px solid #0f0;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { margin-top: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
+        .stat { margin: 5px 0; font-size: 0.9rem; }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #0f0; padding: 8px; text-align: left; }
+        th { background-color: #002200; }
+
+        .valence-blue { color: #0088ff; font-weight: bold; animation: pulse-blue 2s infinite; }
+        .valence-red { color: #ff0000; font-weight: bold; animation: pulse-red 2s infinite; }
+
+        @keyframes pulse-blue { 50% { text-shadow: 0 0 10px #0088ff; } }
+        @keyframes pulse-red { 50% { text-shadow: 0 0 10px #ff0000; } }
+
+        .refusal-alert {
+            display: none;
+            background-color: #330000;
+            color: #ff0000;
+            border: 1px solid #ff0000;
+            padding: 10px;
+            margin-top: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <h1>Solomon Futures Engine</h1>
+        <div class="stat">Status: <span class="blink">ACTIVATED_SUPERVISED</span></div>
+        <div class="stat">Data Health: <span id="overallHealth">UNKNOWN</span></div>
+
+        <div id="refusalAlert" class="refusal-alert">
+            <strong>GOVERNANCE REFUSAL</strong><br>
+            Audit ID: <span id="refusalAuditId"></span><br>
+            Reason: <span id="refusalReason"></span>
+        </div>
+
+        <table id="projectionsTable">
+            <thead>
+                <tr>
+                    <th>Target ID</th>
+                    <th>Confidence</th>
+                    <th>Threshold Met</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Populated via API -->
+            </tbody>
+        </table>
+
+        <button id="refreshBtn" style="margin-top:15px; padding: 8px 16px; background:#002200; color:#0f0; border:1px solid #0f0; cursor:pointer;">Refresh Projections</button>
+        <button id="forceRunBtn" style="margin-top:15px; margin-left:10px; padding: 8px 16px; background:#330000; color:#ff0000; border:1px solid #ff0000; cursor:pointer;">Trigger Target Execution (Governed)</button>
+    </div>
+
+    <script>
+        async function fetchProjections() {
+            try {
+                const response = await fetch('/api/futures/projections');
+                const data = await response.json();
+
+                if (data.status === 'refused') {
+                    showRefusal(data);
+                    return;
+                }
+
+                hideRefusal();
+                renderProjections(data.projections || []);
+            } catch (e) {
+                console.error("Failed to fetch futures data", e);
+            }
+        }
+
+        function renderProjections(projections) {
+            const tbody = document.querySelector('#projectionsTable tbody');
+            tbody.innerHTML = '';
+
+            let allVerified = projections.length > 0;
+
+            projections.forEach(proj => {
+                const tr = document.createElement('tr');
+
+                let thresholdClass = '';
+                let thresholdText = 'NONE';
+
+                if (proj.threshold_90_met) {
+                    thresholdClass = 'valence-blue';
+                    thresholdText = '90.0 MET';
+                } else if (proj.threshold_80_met) {
+                    thresholdClass = 'valence-red';
+                    thresholdText = '80.0 MET';
+                }
+
+                if (proj.data_health !== 'verified') {
+                    allVerified = false;
+                }
+
+                tr.innerHTML = `
+                    <td>${proj.target_id}</td>
+                    <td>${proj.confidence.toFixed(2)}%</td>
+                    <td class="${thresholdClass}">${thresholdText}</td>
+                    <td>${proj.data_health.toUpperCase()}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            const healthSpan = document.getElementById('overallHealth');
+            if (projections.length === 0) {
+                healthSpan.textContent = 'NO DATA';
+                healthSpan.style.color = '#0f0';
+            } else if (allVerified) {
+                healthSpan.textContent = 'VERIFIED';
+                healthSpan.style.color = '#0088ff';
+            } else {
+                healthSpan.textContent = 'MARGINAL';
+                healthSpan.style.color = '#ff9900';
+            }
+        }
+
+        async function triggerExecution() {
+            try {
+                const response = await fetch('/api/futures/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: "mutate_target" })
+                });
+
+                const data = await response.json();
+                if (data.status === 'refused') {
+                    showRefusal(data);
+                } else {
+                    hideRefusal();
+                    alert("Execution Approved: " + (data.audit_id || 'OK'));
+                    fetchProjections();
+                }
+            } catch(e) {
+                console.error("Execution failed", e);
+            }
+        }
+
+        function showRefusal(data) {
+            const alert = document.getElementById('refusalAlert');
+            document.getElementById('refusalAuditId').textContent = data.audit_id || 'UNKNOWN';
+            document.getElementById('refusalReason').textContent = data.reason || 'Unauthorized operation';
+            alert.style.display = 'block';
+        }
+
+        function hideRefusal() {
+            document.getElementById('refusalAlert').style.display = 'none';
+        }
+
+        document.getElementById('refreshBtn').addEventListener('click', fetchProjections);
+        document.getElementById('forceRunBtn').addEventListener('click', triggerExecution);
+
+        // Initial fetch
+        fetchProjections();
+    </script>
+</body>
+</html>
