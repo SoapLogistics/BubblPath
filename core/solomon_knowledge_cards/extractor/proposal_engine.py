@@ -76,6 +76,7 @@ class ProposalEngine:
         summary = f"Proposed operational update based on approved remediation {repair_card_id} to prevent port and environment conflicts."
 
         # Build dry-run proposal body
+        formatted_remediation = remediation_actions.replace('\n', '\n  > ')
         proposal_body = (
             f"### Proposed Procedure Amendment\n"
             f"**Target Document:** `{file_path}`\n"
@@ -86,7 +87,7 @@ class ProposalEngine:
             f"```markdown\n"
             f"## [PROPOSED] Self-Healing Protocol\n"
             f"- Before executing tool deployments, execute port diagnostics and resolve binding conflicts as detailed in {repair_card_id}:\n"
-            f"  > {remediation_actions.replace('\n', '\n  > ')}\n"
+            f"  > {formatted_remediation}\n"
             f"```\n"
         )
 
