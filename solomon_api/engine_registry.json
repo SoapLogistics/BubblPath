@@ -34,7 +34,8 @@
         "lesson_on_completed_packet",
         "failure_pattern_on_refusal_or_error"
       ],
-      "refusal_behavior": "Returns blocked status and requires human approval before execution."
+      "refusal_behavior": "Returns blocked status and requires human approval before execution.",
+      "execution_tier": "T5_human_gate"
     },
     {
       "engine_id": "joe_blueprint_facade",
@@ -44,7 +45,8 @@
       "status_class": "active_route",
       "entrypoint": "JoeBlueprintFacade",
       "route_paths": [
-        "/api/joe/queue-blueprint"
+        "/api/joe/queue-blueprint",
+        "/api/joe/quantized-execute"
       ],
       "readiness_keys": [],
       "parent_surface": null,
@@ -61,7 +63,8 @@
       "safe_default": "dry_run",
       "known_blockers": [],
       "output_contract": "solomon.joe.blueprint_queue.v1",
-      "memory_writeback": []
+      "memory_writeback": [],
+      "execution_tier": "T1_deterministic_for_dry_run"
     },
     {
       "engine_id": "solomon_governance_approval_packet",

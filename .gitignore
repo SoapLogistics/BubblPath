@@ -1,6 +1,7 @@
-__pycache__/
+# Existing ignores
 *.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.DS_Store
+__pycache__/
+*.db
+*.db-shm
+*.db-wal
+*.bin

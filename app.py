@@ -5,10 +5,14 @@ from flask import Flask, request, jsonify, render_template
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 from solomon_quantized_memory import QuantizedBrainMap
+from core.solomon_quantized_efficiency import QuantizedEngineBudget, Tier, SizeClass
+
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
 unified_memory.start_ans()
+quantized_budget = QuantizedEngineBudget()
+
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Instantiate Gabriel's perpetual absorption loop engine
@@ -685,6 +689,24 @@ def dream_memory():
     unified_memory.dream_cycle(max_steps=steps)
     stats = unified_memory.get_stats()
     return jsonify({"status": "success", "message": "Dream cycle complete.", "stats": stats})
+
+
+@app.route("/api/joe/quantized-execute", methods=["POST"])
+def quantized_execute():
+    data = request.json or {}
+    engine_id = data.get("engine_id")
+    tier_name = data.get("tier", "T1_deterministic_for_dry_run")
+
+    try:
+        tier = Tier[tier_name]
+    except KeyError:
+        return jsonify({"status": "error", "message": f"Invalid tier: {tier_name}"}), 400
+
+    try:
+        quantized_budget.allocate(tier, 100)
+        return jsonify({"status": "success", "message": f"Execution approved for {engine_id} at tier {tier_name}"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/god-eye")
 def god_eye():
