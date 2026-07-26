@@ -3,8 +3,8 @@ import uuid
 import os
 import re
 from typing import Optional, List, Dict, Any
-from solomon_knowledge_cards.api.repository import CardRepository
-from solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.api.repository import CardRepository
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
 
 class ProposalEngine:
     def __init__(self, repository: CardRepository):

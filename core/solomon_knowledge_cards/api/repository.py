@@ -1,8 +1,8 @@
 import re
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
-from solomon_knowledge_cards.api.embeddings import SemanticEmbedder
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.api.embeddings import SemanticEmbedder
 
 class CardRepository:
     def __init__(self, db_manager: DatabaseManager, embedder: Optional[SemanticEmbedder] = None):
@@ -17,9 +17,9 @@ class CardRepository:
 
         self.db_manager.store_card(card, updater=creator, reason=reason or "Initial creation")
 
-    def get_card(self, card_id: str) -> Optional[KnowledgeCard]:
+    def get_card(self, card_id: str, include_deleted: bool = False) -> Optional[KnowledgeCard]:
         """Reads a card by ID."""
-        return self.db_manager.get_card(card_id)
+        return self.db_manager.get_card(card_id, include_deleted=include_deleted)
 
     def update_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
         """Updates a card, regenerating its embedding vector."""
@@ -50,7 +50,10 @@ class CardRepository:
 
         # Accept newly extended semantic link types
         # Validate that link_type is a valid link relation
-        supported_links = {"PARENT", "RELATED", "SUPERSEDES", "DEPENDS_ON", "PREVENTS", "ENHANCES", "PROPOSES_UPDATE_TO"}
+        supported_links = {
+            "PARENT", "RELATED", "SUPERSEDES", "DEPENDS_ON", "PREVENTS", "ENHANCES", "PROPOSES_UPDATE_TO",
+            "DERIVED_FROM", "RELATED_TO", "REPLACES", "CONFLICTS_WITH", "IMPLEMENTS", "VALIDATES"
+        }
         if link_type not in supported_links:
             raise ValueError(f"Unsupported link type: {link_type}")
 
