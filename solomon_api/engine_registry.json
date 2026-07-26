@@ -141,6 +141,33 @@
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_continuous_optimizer",
+      "display_name": "Continuous Optimizer",
+      "source_path": "services/solomon_continuous_optimizer.py",
+      "owner_family": "efficiency",
+      "status_class": "active_route",
+      "entrypoint": "ContinuousOptimizationEngine",
+      "route_paths": [
+        "/api/joe/quantized-execute"
+      ],
+      "readiness_keys": [],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_continuous_optimizer.md",
+      "test_paths": [
+        "tests/test_continuous_optimizer.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.efficiency.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [

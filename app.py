@@ -692,3 +692,11 @@ def god_eye():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
+@app.route("/api/joe/quantized-execute", methods=["POST"])
+def quantized_execute():
+    from services.solomon_continuous_optimizer import ContinuousOptimizationEngine
+    payload = request.json or {}
+    engine = ContinuousOptimizationEngine()
+    result = engine.optimize_payload(payload)
+    return jsonify(result)
