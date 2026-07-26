@@ -1,0 +1,9 @@
+--- docs/solomon_engine_registry.md
++++ docs/solomon_engine_registry.md
+@@ -5,4 +5,5 @@
+ | Engine ID | Status Class | Route/Readiness | Doc | Test | Blockers | Next Action |
+ |---|---|---|---|---|---|---|
+ | `solomon_joe_bridge` | `approval_blocked` | `/api/joe/status`, `/api/joe/queue-blueprint` | `docs/solomon_joe_bridge.md` | `tests/integration/solomon_joe_bridge_smoke.py` | duplicate backend/services import collision, subprocess launches jules CLI, repo allowlist missing | Resolve blockers to allow limited dry-run usage. |
+-| `joe_blueprint_facade` | `active_route` | `/api/joe/queue-blueprint` | `docs/joe_blueprint_facade.md` | `tests/test_joe_blueprint_facade.py` | None | Maintain proxy routing for dry-run capabilities. || `solomon_validation_framework` | `active_readiness` | `solomon_validation_framework_active` | `docs/architecture/md8_testing_framework.md` | `tests/test_validation_framework.py` | None | Ensure zero-copy memory ring buffer logs correctly. |
++| `joe_blueprint_facade` | `active_route` | `/api/joe/queue-blueprint` | `docs/joe_blueprint_facade.md` | `tests/test_joe_blueprint_facade.py` | None | Maintain proxy routing for dry-run capabilities. |
++| `solomon_validation_framework` | `active_readiness` | `solomon_validation_framework_active` | `docs/architecture/md8_testing_framework.md` | `tests/test_validation_framework.py` | None | Ensure zero-copy memory ring buffer logs correctly. |
