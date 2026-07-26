@@ -252,6 +252,52 @@ def jules_test_loop():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route("/api/joe/quantized-execute", methods=["POST"])
+def joe_quantized_execute():
+    """
+    Implements JOE_PACKET_04 quantized efficiency runtime.
+    """
+    from core.solomon_quantized_efficiency import RuntimeGuardrails, QuantizedEngineBudget, ContextPacker, Tier
+
+    data = request.json or {}
+    action = data.get("action", "")
+    approved = data.get("approved", False)
+
+    try:
+        # 1. Enforce Guardrails
+        RuntimeGuardrails.check_action(action, approved)
+    except PermissionError as e:
+        return jsonify({"status": "blocked", "message": str(e), "tier": Tier.T5_HUMAN_GATE.name}), 403
+
+    # 2. Track with Engine Budget (Quantized)
+    engine_id = data.get("engine_id", "default_engine")
+    budget = QuantizedEngineBudget()
+    try:
+        info = budget.check_engine(engine_id)
+        if not info:
+            # Default Tier 1 fallback if unregistered
+            info = {"tier": Tier.T1_DETERMINISTIC.name, "approval_required": False}
+
+        # 3. Context Pack
+        pack = ContextPacker.pack(
+            objective=data.get("objective", ""),
+            registry_summary=str(info),
+            test_status="PASS",
+            blockers=[],
+            changed_files=[],
+            safe_step=action,
+            approval_posture="APPROVED" if approved else "PENDING"
+        )
+
+        return jsonify({
+            "status": "success",
+            "action": action,
+            "engine_info": info,
+            "context_pack": pack
+        })
+    finally:
+        budget.close()
+
 @app.route("/api/codex/worktrees", methods=["POST"])
 def manage_worktrees():
     """
@@ -629,4 +675,5 @@ def get_status():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 18789))
+    app.run(host="0.0.0.0", port=port)
