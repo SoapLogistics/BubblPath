@@ -110,7 +110,7 @@ class ProposalEngine:
             tags=["proposal", "mutation", "procedure-update", procedure_id.lower()],
             security_classification="INTERNAL",
             evidence=f"Repair card {repair_card_id} successfully resolved a deployment block in active worker task logs.",
-            why_created=f"To safely propogate the remediation from {repair_card_id} into canonical standard operating checklists without silent disk corruption.",
+            why_created="To safely propagate the remediation from " + repair_card_id + " into canonical standard operating checklists without silent disk corruption.",
             problem_solved=f"Prevents future instances of {procedure_id} from hitting the same unmitigated failure pathway.",
             future_work_dependent=f"Future runs of {procedure_id} will reference this active proposal to execute self-healing steps."
         )
