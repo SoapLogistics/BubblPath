@@ -62,6 +62,89 @@
       "known_blockers": [],
       "output_contract": "solomon.joe.blueprint_queue.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "guardian_resident_engine",
+      "display_name": "Guardian Resident",
+      "source_path": "services/guardian_resident.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_readiness",
+      "entrypoint": "GuardianResident",
+      "route_paths": [],
+      "readiness_keys": [
+        "guardian_resident_engine"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/guardian_resident.md",
+      "test_paths": [
+        "scripts/resident_soak_test.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.guardian.resident.v1",
+      "memory_writeback": []
+    },
+    {
+      "engine_id": "jules_resident_engine",
+      "display_name": "Jules Resident",
+      "source_path": "services/jules_resident.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_readiness",
+      "entrypoint": "JulesResident",
+      "route_paths": [],
+      "readiness_keys": [
+        "jules_resident_engine"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/jules_resident.md",
+      "test_paths": [
+        "scripts/resident_soak_test.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.jules.resident.v1",
+      "memory_writeback": []
+    },
+    {
+      "engine_id": "resident_dashboard_facade",
+      "display_name": "Resident Dashboard Facade",
+      "source_path": "backend/services/resident_dashboard.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_route",
+      "entrypoint": "dashboard_bp",
+      "route_paths": [
+        "/api/residents/status"
+      ],
+      "readiness_keys": [
+        "resident_dashboard_facade"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/resident_dashboard.md",
+      "test_paths": [
+        "scripts/resident_soak_test.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.resident.dashboard.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [
