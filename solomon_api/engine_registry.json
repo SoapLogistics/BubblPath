@@ -141,6 +141,33 @@
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_verification_framework",
+      "display_name": "Verification Framework",
+      "source_path": "services/solomon_verification_framework.py",
+      "owner_family": "governance",
+      "status_class": "active_readiness",
+      "entrypoint": "VerificationFramework",
+      "route_paths": [],
+      "readiness_keys": [
+        "verif_ready"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_verification_framework.md",
+      "test_paths": [
+        "tests/test_verification_framework.py"
+      ],
+      "approval_required": false,
+      "mutates_state": true,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.verification.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [
