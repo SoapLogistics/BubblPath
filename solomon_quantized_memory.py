@@ -137,19 +137,29 @@ class QuantizedBrainMap:
         """Uses fast bitwise/vectorized math for semantic similarity instead of strings"""
         idx = new_node.id_int
 
-        # Must be called with self.nodes_lock held or safely copy keys
-        node_items = list(self.nodes.items())
+        # Must be called with self.nodes_lock held
+        if not self.nodes:
+            return
 
-        for existing_idx, existing_node in node_items:
-            if idx == existing_idx:
+        indices = list(self.nodes.keys())
+        if len(indices) <= 1:
+            return
+
+        # Stack ternary vectors into a 2D matrix for a single BLAS-accelerated dot product
+        vectors = np.array([self.nodes[existing_idx].ternary_vector for existing_idx in indices], dtype=np.int8)
+
+        # Calculate all dot products in a single vectorized CPU operation
+        similarities = np.dot(vectors, new_node.ternary_vector) / 128.0
+
+        for i, similarity in enumerate(similarities):
+            existing_idx = indices[i]
+            if existing_idx == idx:
                 continue
-
-            # Simulated bitwise XNOR (dot product on ternary is equivalent and fast)
-            similarity = np.dot(new_node.ternary_vector, existing_node.ternary_vector) / 128.0
 
             if similarity > 0.3:
                 self.adj_matrix[idx, existing_idx] = similarity
-                self.adj_matrix[existing_idx, idx] = similarity * 0.5 # reverse edge weaker
+                self.adj_matrix[existing_idx, idx] = similarity * 0.5  # reverse edge weaker
+
         self.is_matrix_dirty = True
 
     def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
