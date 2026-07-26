@@ -1,11 +1,14 @@
 import os
 import traceback
 import openai
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
+from solomon_quantized_memory import QuantizedBrainMap
 
 app = Flask(__name__)
+unified_memory = QuantizedBrainMap()
+unified_memory.start_ans()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Instantiate Gabriel's perpetual absorption loop engine
@@ -627,6 +630,65 @@ def get_status():
         "mode": "aggressive_code_thief_enabled"
     })
 
+
+@app.route("/api/memory/ingest", methods=["POST"])
+def ingest_memory():
+    data = request.json
+    if not data or "content" not in data or "type" not in data:
+        return jsonify({"error": "Missing 'content' or 'type'"}), 400
+
+    node_id = unified_memory.ingest(
+        node_type=data["type"],
+        content=data["content"],
+        importance=data.get("importance", 0.5),
+        valence=data.get("valence", 0.0),
+        arousal=data.get("arousal", 0.0)
+    )
+    return jsonify({"status": "success", "node_id": node_id})
+
+@app.route("/api/memory/recall", methods=["GET", "POST"])
+def recall_memory():
+    if request.method == "POST":
+        data = request.json or {}
+        query = data.get("query", "")
+        top_k = data.get("top_k", 5)
+    else:
+        query = request.args.get("query", "")
+        top_k_str = request.args.get("top_k", "5")
+        top_k = int(top_k_str) if top_k_str.isdigit() else 5
+
+    if not query:
+        return jsonify({"error": "Missing 'query'"}), 400
+
+    results = unified_memory.recall(query, top_k=top_k)
+    return jsonify({"status": "success", "results": results})
+
+@app.route("/api/memory/consolidate", methods=["POST"])
+def consolidate_memory():
+    unified_memory.consolidate()
+    stats = unified_memory.get_stats()
+    return jsonify({"status": "success", "stats": stats})
+
+@app.route("/api/memory/blob", methods=["GET"])
+def get_memory_blob():
+    """Zero-copy binary response for UI God Eye visualizer"""
+    if os.path.exists("solomon_brain_map.bin"):
+        with open("solomon_brain_map.bin", "rb") as f:
+            data = f.read()
+        return data, 200, {'Content-Type': 'application/octet-stream'}
+    return jsonify({"status": "empty"}), 404
+
+@app.route("/api/memory/dream", methods=["POST"])
+def dream_memory():
+    data = request.json or {}
+    steps = data.get("steps", 10)
+    unified_memory.dream_cycle(max_steps=steps)
+    stats = unified_memory.get_stats()
+    return jsonify({"status": "success", "message": "Dream cycle complete.", "stats": stats})
+
+@app.route("/god-eye")
+def god_eye():
+    return render_template("god_eye.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

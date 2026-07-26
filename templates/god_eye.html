@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>God Eye 3D Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+        }
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0, 20, 0, 0.8);
+            padding: 15px;
+            border: 1px solid #0f0;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            max-width: 300px;
+        }
+        h1 { margin-top: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
+        .stat { margin: 5px 0; font-size: 0.9rem; }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <h1>God Eye Visualizer</h1>
+        <div class="stat">Status: <span class="blink">ONLINE</span></div>
+        <div class="stat">Nodes: <span id="nodeCount">0</span></div>
+        <div class="stat">Edges: <span id="edgeCount">0</span></div>
+        <div class="stat">Valence: <span id="valenceStatus">NEUTRAL</span></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Setup Three.js Scene
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.001);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 400;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 1);
+        document.body.appendChild(renderer.domElement);
+
+        // Connectome Data Structure
+        const particles = new THREE.BufferGeometry();
+        const maxNodes = 500;
+        const positions = new Float32Array(maxNodes * 3);
+        const colors = new Float32Array(maxNodes * 3);
+        const sizes = new Float32Array(maxNodes);
+
+        // Generate mock data for the nodes (simulating memory graph)
+        let activeNodes = 0;
+        function initNodes() {
+            for(let i = 0; i < maxNodes; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 600;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 600;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 600;
+                
+                colors[i * 3] = 0;     // R
+                colors[i * 3 + 1] = 1; // G
+                colors[i * 3 + 2] = 0; // B
+                
+                sizes[i] = Math.random() * 2 + 1;
+                activeNodes++;
+            }
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            // Note: points material doesn't use size attribute natively in standard shader, using uniform size
+        }
+        initNodes();
+
+        const pMaterial = new THREE.PointsMaterial({
+            size: 4,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particleSystem = new THREE.Points(particles, pMaterial);
+        scene.add(particleSystem);
+
+        // Edges (Connections)
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x00ff00,
+            transparent: true,
+            opacity: 0.15
+        });
+
+        const lineGeometry = new THREE.BufferGeometry();
+        const linePositions = new Float32Array(maxNodes * 6);
+        let edgeCount = 0;
+
+        function updateEdges() {
+            let lineIndex = 0;
+            edgeCount = 0;
+            const posAttr = particles.getAttribute('position');
+            
+            for(let i = 0; i < maxNodes; i++) {
+                for(let j = i + 1; j < maxNodes; j++) {
+                    const dx = posAttr.getX(i) - posAttr.getX(j);
+                    const dy = posAttr.getY(i) - posAttr.getY(j);
+                    const dz = posAttr.getZ(i) - posAttr.getZ(j);
+                    const distSq = dx*dx + dy*dy + dz*dz;
+                    
+                    // Connect if close enough (simulating synaptic connections)
+                    if(distSq < 15000) {
+                        linePositions[lineIndex++] = posAttr.getX(i);
+                        linePositions[lineIndex++] = posAttr.getY(i);
+                        linePositions[lineIndex++] = posAttr.getZ(i);
+                        
+                        linePositions[lineIndex++] = posAttr.getX(j);
+                        linePositions[lineIndex++] = posAttr.getY(j);
+                        linePositions[lineIndex++] = posAttr.getZ(j);
+                        edgeCount++;
+                    }
+                }
+            }
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions.slice(0, lineIndex), 3));
+            lineGeometry.attributes.position.needsUpdate = true;
+            
+            document.getElementById('nodeCount').innerText = maxNodes;
+            document.getElementById('edgeCount').innerText = edgeCount;
+        }
+
+        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+        scene.add(lines);
+
+        updateEdges();
+
+        // Animation Loop
+        let frame = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the entire connectome
+            particleSystem.rotation.y += 0.002;
+            particleSystem.rotation.x += 0.001;
+            lines.rotation.y += 0.002;
+            lines.rotation.x += 0.001;
+
+            // Simulate synaptic firing and valance changes
+            frame++;
+            if (frame % 30 === 0) {
+                const colorAttr = particles.getAttribute('color');
+                let redDominant = 0;
+                let blueDominant = 0;
+                
+                for(let i = 0; i < maxNodes; i++) {
+                    // Randomly activate nodes
+                    if (Math.random() > 0.95) {
+                        // Flash red or blue based on random valence
+                        const isRed = Math.random() > 0.5;
+                        colorAttr.setXYZ(i, isRed ? 1 : 0, 0, isRed ? 0 : 1);
+                        if (isRed) redDominant++;
+                        else blueDominant++;
+                    } else {
+                        // Fade back to baseline green
+                        const r = Math.max(0, colorAttr.getX(i) - 0.05);
+                        const g = Math.min(1, colorAttr.getY(i) + 0.05);
+                        const b = Math.max(0, colorAttr.getZ(i) - 0.05);
+                        colorAttr.setXYZ(i, r, g, b);
+                    }
+                }
+                colorAttr.needsUpdate = true;
+                
+                if (redDominant > blueDominant + 5) {
+                    document.getElementById('valenceStatus').innerText = "NEGATIVE / AVERSIVE";
+                    document.getElementById('valenceStatus').style.color = "#ff0000";
+                } else if (blueDominant > redDominant + 5) {
+                    document.getElementById('valenceStatus').innerText = "POSITIVE / REWARDING";
+                    document.getElementById('valenceStatus').style.color = "#0088ff";
+                } else {
+                    document.getElementById('valenceStatus').innerText = "NEUTRAL";
+                    document.getElementById('valenceStatus').style.color = "#00ff00";
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Polling loop for actual memory blob (mock integration)
+        setInterval(async () => {
+            try {
+                // In a production environment with proper CAP'N PROTO parsing, 
+                // we would parse the raw binary here and update the nodes.
+                // For now, this just verifies the endpoint is alive.
+                const response = await fetch('/api/memory/blob');
+                if (response.ok) {
+                    console.log("Memory graph fetched successfully.");
+                }
+            } catch (e) {
+                console.error("Failed to fetch memory graph:", e);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
