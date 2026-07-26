@@ -4,20 +4,30 @@ import os
 import datetime
 import threading
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
+from core.solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
 
 class DatabaseManager:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-        self._lock = threading.RLock()
-        self._init_db()
+    _instances = {}
+    _lock = threading.RLock()
+
+    def __new__(cls, db_path: str = "solomon_soss.db"):
+        with cls._lock:
+            if db_path not in cls._instances:
+                instance = super(DatabaseManager, cls).__new__(cls)
+                instance.db_path = db_path
+                instance._init_db()
+                cls._instances[db_path] = instance
+            return cls._instances[db_path]
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON;")
-        conn.execute("PRAGMA busy_timeout = 10000;")  # 10 seconds busy timeout
-        return conn
+        if not hasattr(self, '_conn') or self._conn is None:
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            self._conn.row_factory = sqlite3.Row
+            self._conn.execute("PRAGMA foreign_keys = ON;")
+            if self.db_path != ":memory:":
+                self._conn.execute("PRAGMA journal_mode=WAL;")
+            self._conn.execute("PRAGMA busy_timeout = 10000;")  # 10 seconds busy timeout
+        return self._conn
 
     def _init_db(self) -> None:
         """Runs migrations to initialize the schema."""
@@ -123,8 +133,38 @@ class DatabaseManager:
                             (2, datetime.datetime.now(datetime.UTC).isoformat())
                         )
 
+                # Migration 3: Gabriel Engine Task/Lease Kanban schema
+                if current_version < 3:
+                    with conn:
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS tasks (
+                                task_id TEXT PRIMARY KEY,
+                                payload TEXT,
+                                status TEXT,
+                                leased_by TEXT,
+                                lease_expires_at REAL
+                            )
+                        """)
+                        conn.execute(
+                            "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
+                            (3, datetime.datetime.now(datetime.UTC).isoformat())
+                        )
+
             finally:
-                conn.close()
+                pass # memory connections cached
+
+    def execute_read(self, query: str, params: tuple = ()) -> List[sqlite3.Row]:
+        with self._lock:
+            conn = self._get_connection()
+            cursor = conn.execute(query, params)
+            return cursor.fetchall()
+
+    def execute_write(self, query: str, params: tuple = ()) -> int:
+        with self._lock:
+            conn = self._get_connection()
+            cursor = conn.execute(query, params)
+            conn.commit()
+            return cursor.rowcount
 
     def store_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
         """Atomically inserts or updates a card and logs a revision."""
