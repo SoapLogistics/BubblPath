@@ -34,7 +34,8 @@
         "lesson_on_completed_packet",
         "failure_pattern_on_refusal_or_error"
       ],
-      "refusal_behavior": "Returns blocked status and requires human approval before execution."
+      "refusal_behavior": "Returns blocked status and requires human approval before execution.",
+      "runtime_tier": "T5_human_gate"
     },
     {
       "engine_id": "joe_blueprint_facade",
@@ -61,7 +62,8 @@
       "safe_default": "dry_run",
       "known_blockers": [],
       "output_contract": "solomon.joe.blueprint_queue.v1",
-      "memory_writeback": []
+      "memory_writeback": [],
+      "runtime_tier": "T1_deterministic_for_dry_run"
     },
     {
       "engine_id": "solomon_governance_approval_packet",
@@ -88,7 +90,8 @@
       "safe_default": "dry_run",
       "known_blockers": [],
       "output_contract": "solomon.governance.v1",
-      "memory_writeback": []
+      "memory_writeback": [],
+      "runtime_tier": "T3_governance_reviewed"
     },
     {
       "engine_id": "run_daily_scan",
@@ -113,7 +116,8 @@
       "safe_default": "dry_run",
       "known_blockers": [],
       "output_contract": "solomon.loki.v1",
-      "memory_writeback": []
+      "memory_writeback": [],
+      "runtime_tier": "T2_low_risk_auto_approved"
     },
     {
       "engine_id": "solomon_learning_writeback",
@@ -140,7 +144,8 @@
       "safe_default": "dry_run",
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
-      "memory_writeback": []
+      "memory_writeback": [],
+      "runtime_tier": "T2_low_risk_auto_approved"
     }
   ],
   "exclusions": [

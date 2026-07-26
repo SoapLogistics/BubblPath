@@ -78,3 +78,14 @@ def test_engine_registry_compliance():
         if status_class != 'generated_artifact':
             assert 'doc_path' in engine_metadata and engine_metadata['doc_path'], f"Engine {engine_metadata['engine_id']} is missing doc_path"
             assert 'test_paths' in engine_metadata and len(engine_metadata['test_paths']) > 0, f"Engine {engine_metadata['engine_id']} is missing test_paths"
+
+        # Validate runtime_tier is present and valid
+        assert 'runtime_tier' in engine_metadata, f"Engine {engine_metadata['engine_id']} is missing runtime_tier"
+        valid_tiers = [
+            'T1_deterministic_for_dry_run',
+            'T2_low_risk_auto_approved',
+            'T3_governance_reviewed',
+            'T4_human_in_the_loop',
+            'T5_human_gate'
+        ]
+        assert engine_metadata['runtime_tier'] in valid_tiers, f"Engine {engine_metadata['engine_id']} has invalid runtime_tier: {engine_metadata['runtime_tier']}"

@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 from solomon_quantized_memory import QuantizedBrainMap
+from core.solomon_quantized_efficiency import QuantizedEngineBudget, Tier, SizeClass
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
@@ -685,6 +686,46 @@ def dream_memory():
     unified_memory.dream_cycle(max_steps=steps)
     stats = unified_memory.get_stats()
     return jsonify({"status": "success", "message": "Dream cycle complete.", "stats": stats})
+
+@app.route("/api/joe/quantized-execute", methods=["POST"])
+def quantized_execute():
+    """JOE_PACKET_04_QUANTIZED_EFFICIENCY_RUNTIME route"""
+    data = request.json or {}
+    engine_id = data.get("engine_id")
+    target_tier_str = data.get("tier", "T1_deterministic_for_dry_run")
+
+    if not engine_id:
+        return jsonify({"status": "error", "message": "Missing engine_id"}), 400
+
+    try:
+        tier = Tier[target_tier_str]
+    except KeyError:
+        return jsonify({"status": "error", "message": f"Invalid tier {target_tier_str}"}), 400
+
+    # Mock budget index for now based on hash
+    budget_idx = hash(engine_id) % 1000
+
+    budget = QuantizedEngineBudget()
+    try:
+        cpu, mem = budget.get_usage(budget_idx)
+
+        # Simulate execution resource usage based on tier
+        tier_multiplier = tier.value
+        budget.update_usage(budget_idx, 0.1 * tier_multiplier, 5.0 * tier_multiplier)
+
+        new_cpu, new_mem = budget.get_usage(budget_idx)
+
+        return jsonify({
+            "status": "success",
+            "engine_id": engine_id,
+            "tier": tier.name,
+            "previous_cpu_s": cpu,
+            "previous_mem_mb": mem,
+            "new_cpu_s": new_cpu,
+            "new_mem_mb": new_mem
+        })
+    finally:
+        budget.close()
 
 @app.route("/god-eye")
 def god_eye():
