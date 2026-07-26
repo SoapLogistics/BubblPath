@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 
 app = Flask(__name__)
+from lab.solomon_q_engine import SolomonQEngine
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Instantiate Gabriel's perpetual absorption loop engine
@@ -628,5 +629,40 @@ def get_status():
     })
 
 
+
+def get_q_engine():
+    global _q_engine
+    if '_q_engine' not in globals():
+        _q_engine = SolomonQEngine()
+    return _q_engine
+
+@app.route('/api/q/intake', methods=['POST'])
+def q_intake():
+    data = request.json or {}
+    objective = data.get('objective', '')
+    user_language = data.get('user_language', '')
+    owner_family = data.get('owner_family', '')
+    risk = data.get('risk', 0)
+
+    if not objective or not user_language or not owner_family:
+        return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+    try:
+        q = get_q_engine()
+        result = q.intake(objective, user_language, owner_family, risk)
+        return jsonify({"status": "success", "packet": result}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/q/loop', methods=['POST'])
+def q_loop():
+    try:
+        q = get_q_engine()
+        results = q.run_perpetual_learning_loop()
+        return jsonify({"status": "success", "processed_packets": results}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=10000)
