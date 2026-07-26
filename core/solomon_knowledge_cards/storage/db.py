@@ -6,23 +6,17 @@ import threading
 from typing import List, Dict, Any, Optional
 from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
 
-class DatabaseManager:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
-        self._lock = threading.RLock()
-        self._init_db()
+from gabriel_engine.core.models import DatabaseManager as _SharedDatabaseManager
 
-    def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON;")
-        conn.execute("PRAGMA busy_timeout = 10000;")  # 10 seconds busy timeout
-        return conn
+class DatabaseManager(_SharedDatabaseManager):
+    def __init__(self, db_path: str = "solomon_soss.db"):
+        pass
 
     def _init_db(self) -> None:
         """Runs migrations to initialize the schema."""
+        super()._init_db()
         with self._lock:
-            conn = self._get_connection()
+            conn = self.get_connection()
             try:
                 # Migration tracking table
                 conn.execute("""
@@ -124,7 +118,8 @@ class DatabaseManager:
                         )
 
             finally:
-                conn.close()
+                if self._db_path != ':memory:':
+                            conn.close()
 
     def store_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
         """Atomically inserts or updates a card and logs a revision."""
@@ -132,7 +127,7 @@ class DatabaseManager:
         card.validate()
 
         with self._lock:
-            conn = self._get_connection()
+            conn = self.get_connection()
             try:
                 conn.execute("BEGIN TRANSACTION;")
 
@@ -216,12 +211,13 @@ class DatabaseManager:
                 conn.rollback()
                 raise e
             finally:
-                conn.close()
+                if self._db_path != ':memory:':
+                            conn.close()
 
     def get_card(self, card_id: str, include_deleted: bool = False) -> Optional[KnowledgeCard]:
         """Retrieves a card by ID."""
         with self._lock:
-            conn = self._get_connection()
+            conn = self.get_connection()
             try:
                 cursor = conn.cursor()
                 query = "SELECT * FROM cards WHERE card_id = ?"
@@ -258,12 +254,13 @@ class DatabaseManager:
 
                 return KnowledgeCard.from_dict(card_data)
             finally:
-                conn.close()
+                if self._db_path != ':memory:':
+                            conn.close()
 
     def get_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
         """Returns the complete list of revisions for a given card."""
         with self._lock:
-            conn = self._get_connection()
+            conn = self.get_connection()
             try:
                 cursor = conn.cursor()
                 cursor.execute("""
@@ -281,7 +278,8 @@ class DatabaseManager:
                     })
                 return revisions
             finally:
-                conn.close()
+                if self._db_path != ':memory:':
+                            conn.close()
 
     def soft_delete_card(self, card_id: str, updater: str = "system", reason: Optional[str] = None) -> bool:
         """Soft deletes (deprecates/marks as deleted) a card."""
@@ -293,7 +291,7 @@ class DatabaseManager:
             card.status = "DEPRECATED"
             card.updated_at = datetime.datetime.now(datetime.UTC).isoformat()
 
-            conn = self._get_connection()
+            conn = self.get_connection()
             try:
                 conn.execute("BEGIN TRANSACTION;")
                 conn.execute("UPDATE cards SET deleted = 1, status = 'DEPRECATED', updated_at = ? WHERE card_id = ?", (card.updated_at, card_id))
@@ -315,12 +313,13 @@ class DatabaseManager:
                 conn.rollback()
                 raise e
             finally:
-                conn.close()
+                if self._db_path != ':memory:':
+                            conn.close()
 
     def list_all_cards(self, include_deleted: bool = False) -> List[KnowledgeCard]:
         """Returns all non-deleted cards."""
         with self._lock:
-            conn = self._get_connection()
+            conn = self.get_connection()
             try:
                 cursor = conn.cursor()
                 query = "SELECT card_id FROM cards"
@@ -329,7 +328,8 @@ class DatabaseManager:
                 cursor.execute(query)
                 card_ids = [row[0] for row in cursor.fetchall()]
             finally:
-                conn.close()
+                if self._db_path != ':memory:':
+                            conn.close()
 
             cards = []
             for cid in card_ids:
@@ -346,14 +346,15 @@ class DatabaseManager:
                 for card in cards:
                     serialized = card.to_dict()
                     # Include a 'deleted' flag in the export so it can be restored exactly
-                    conn = self._get_connection()
+                    conn = self.get_connection()
                     try:
                         cursor = conn.cursor()
                         cursor.execute("SELECT deleted FROM cards WHERE card_id = ?", (card.card_id,))
                         row = cursor.fetchone()
                         serialized["_deleted"] = row[0] if row else 0
                     finally:
-                        conn.close()
+                        if self._db_path != ':memory:':
+                            conn.close()
                     f.write(json.dumps(serialized) + "\n")
 
     def import_from_jsonl(self, filepath: str, updater: str = "importer") -> None:

@@ -1,6 +1,7 @@
 import time
 import uuid
 import sqlite3
+from gabriel_engine.core.models import DatabaseManager
 from typing import Optional, Dict, Any
 
 class RenewableWorkerLease:
@@ -12,8 +13,8 @@ class RenewableWorkerLease:
     def __init__(self, db_path: str = ":memory:", lease_duration_sec: int = 10):
         self.db_path = db_path
         self.lease_duration_sec = lease_duration_sec
-        # Maintain a persistent connection to keep in-memory DB alive
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.db_manager = DatabaseManager(self.db_path)
+        self.conn = self.db_manager.get_connection()
         self._init_db()
 
     def _init_db(self):

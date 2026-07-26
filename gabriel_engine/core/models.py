@@ -135,3 +135,68 @@ class CrucibleReport:
             "decision": self.decision,
             "notes": self.notes
         }
+
+import sqlite3
+import threading
+
+class DatabaseManager:
+    _instances = {}
+    _lock = threading.RLock()
+
+    def __new__(cls, db_path: str = "solomon_soss.db"):
+        with cls._lock:
+            if (cls, db_path) not in cls._instances:
+                instance = super(DatabaseManager, cls).__new__(cls)
+                instance._db_path = db_path
+                # Keep memory connection alive
+                instance._memory_conn = None
+                if db_path == ":memory:":
+                    instance._memory_conn = sqlite3.connect(db_path, check_same_thread=False)
+                    instance._memory_conn.row_factory = sqlite3.Row
+                    instance._memory_conn.execute("PRAGMA foreign_keys = ON;")
+                cls._instances[(cls, db_path)] = instance
+                instance._init_db()
+            return cls._instances[(cls, db_path)]
+
+    def backup_database(self, backup_path: str):
+        if self._db_path == ":memory:":
+            return
+        import shutil
+        import os
+        if os.path.exists(self._db_path):
+            shutil.copy2(self._db_path, backup_path)
+
+    def _init_db(self):
+
+        conn = self.get_connection()
+        try:
+            if self._db_path != ":memory:":
+                conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA busy_timeout = 10000;")
+            # Set up version table for migrations
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS schema_version (
+                    version INTEGER PRIMARY KEY,
+                    applied_at TEXT NOT NULL
+                );
+            """)
+            conn.commit()
+
+            # Integrity check
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA integrity_check;")
+            result = cursor.fetchone()[0]
+            if result != "ok":
+                raise sqlite3.DatabaseError(f"Integrity check failed: {result}")
+        finally:
+            if self._db_path != ":memory:":
+                conn.close()
+
+    def get_connection(self) -> sqlite3.Connection:
+        if self._db_path == ":memory:" and self._memory_conn is not None:
+            return self._memory_conn
+        conn = sqlite3.connect(self._db_path, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA busy_timeout = 10000;")
+        return conn
