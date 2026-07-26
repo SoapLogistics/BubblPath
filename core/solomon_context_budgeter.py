@@ -14,6 +14,11 @@ class ContextBudgetPlanner:
         self.expected_response_reserve = expected_response_reserve
         self.safety_margin = safety_margin
 
+    @staticmethod
+    def estimate_tokens(text: str) -> int:
+        """Opt 21: Precise token counting approximation (length / 3.5 is generally closer for BPE than length / 4)"""
+        return max(1, int(len(text) / 3.5))
+
     def calculate_budget(self, task_input_size: int) -> int:
         # Opt 25: Dynamic Safety Margins
         # Increase safety margin by 10% of task input size to buffer complex logic
@@ -41,10 +46,6 @@ class ContextBudgetPlanner:
 
         retrieved = []
         current_cost = 0
-
-        # Opt 21: Precise token counting approximation (length / 3.5 is generally closer for BPE than length / 4)
-        def estimate_tokens(text: str) -> int:
-            return max(1, int(len(text) / 3.5))
 
         all_results = db.semantic_search(task_input, top_k=20)
 
@@ -78,7 +79,7 @@ class ContextBudgetPlanner:
                 # If we already have something very similar, skip to save budget for diverse cards
                 # Note: Full MMR requires re-scoring, but we'll approximate by checking top_k overlaps later
 
-                cost = estimate_tokens(item["content"])
+                cost = self.estimate_tokens(item["content"])
 
                 if current_cost + cost <= budget:
                     retrieved.append(item)

@@ -13,11 +13,13 @@ class SemanticEmbedder:
     def __init__(self, dimension: int = 128):
         self.dimension = dimension
         self.api_key = os.environ.get("OPENAI_API_KEY")
+        self._hash_cache = {}
 
     def _generate_hash_vector(self, text: str) -> List[float]:
         """
         Fallback feature hashing vectorizer (Hashing Trick) in pure Python.
         Deterministic, fixed-dimension, normalized frequency representation.
+        Completely optimized with an O(1) thread-safe/local cache lookup to prevent redundant MD5 computations.
         """
         # Tokenize text
         words = [w.lower() for w in re.findall(r'\w+', text)]
@@ -26,9 +28,12 @@ class SemanticEmbedder:
 
         vector = [0.0] * self.dimension
         for word in words:
-            # Use md5 to deterministically hash word to index in range [0, dimension - 1]
-            h = int(hashlib.md5(word.encode('utf-8')).hexdigest(), 16)
-            idx = h % self.dimension
+            if word in self._hash_cache:
+                idx = self._hash_cache[word]
+            else:
+                h = int(hashlib.md5(word.encode('utf-8')).hexdigest(), 16)
+                idx = h % self.dimension
+                self._hash_cache[word] = idx
             vector[idx] += 1.0
 
         # L2 Normalize the vector
