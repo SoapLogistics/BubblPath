@@ -4,3 +4,11 @@ __pycache__/
 *.pyd
 .pytest_cache/
 .DS_Store
+
+# Generated artifacts
+*.log
+odds_cache_*.json
+mlb_odds_cache.json
+odds_api_io_cache.json
+model_weights.json
+daily_90s_board.json
