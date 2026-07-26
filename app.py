@@ -2,6 +2,9 @@ import os
 import traceback
 import openai
 from flask import Flask, request, jsonify
+from lab.solomon_q_engine import q_engine
+
+
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 
@@ -627,6 +630,34 @@ def get_status():
         "mode": "aggressive_code_thief_enabled"
     })
 
+
+
+@app.route("/api/q/intake", methods=["POST"])
+def q_intake():
+    data = request.json or {}
+    try:
+        result = q_engine.intake(data)
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "status": "error",
+            "message": f"Q intake failed: {str(e)}",
+            "traceback": traceback.format_exc()
+        }), 500
+
+@app.route("/api/q/loop", methods=["POST"])
+def q_loop():
+    try:
+        result = q_engine.loop()
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "status": "error",
+            "message": f"Q loop failed: {str(e)}",
+            "traceback": traceback.format_exc()
+        }), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
