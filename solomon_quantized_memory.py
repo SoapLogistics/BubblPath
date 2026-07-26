@@ -162,6 +162,37 @@ class QuantizedBrainMap:
         RECORD_SIZE = 201
 
         try:
+            # 1. Primary: Ultra-efficient O(1) random-access direct seek
+            if 0 <= target_id_int < self.max_nodes:
+                with open("solomon_brain_map.bin", "rb") as f:
+                    offset = target_id_int * RECORD_SIZE
+                    f.seek(offset)
+                    record = f.read(RECORD_SIZE)
+                    if record and len(record) == RECORD_SIZE:
+                        metadata_bytes = record[:41]
+                        id_int = struct.unpack("!Q", metadata_bytes[:8])[0]
+                        if id_int == target_id_int:
+                            # Verify SHA-256 Merkle integrity
+                            stored_hash = record[169:201]
+                            calculated_hash = hashlib.sha256(record[:169]).digest()
+                            if stored_hash == calculated_hash:
+                                _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
+                                return {
+                                    "id": f"blob-recovered-{target_id_int}",
+                                    "type_idx": 0,
+                                    "content": "Recovered from binary blob",
+                                    "layer": layer,
+                                    "importance": imp,
+                                    "valence": val,
+                                    "arousal": aro,
+                                    "activation": 0.1,
+                                    "access_count": access_count
+                                }
+        except Exception:
+            pass
+
+        # 2. Secondary / Fallback: O(N) sequential search for maximum resilience and backwards compatibility
+        try:
             with open("solomon_brain_map.bin", "rb") as f:
                 while True:
                     record = f.read(RECORD_SIZE)
@@ -172,20 +203,22 @@ class QuantizedBrainMap:
                     id_int = struct.unpack("!Q", metadata_bytes[:8])[0]
 
                     if id_int == target_id_int:
-                        # Found it! Unpack the rest
-                        _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
-
-                        return {
-                            "id": "blob-recovered", # Note: real ID is deterministic hash, mock for now
-                            "type_idx": 0,
-                            "content": "Recovered from binary blob",
-                            "layer": layer,
-                            "importance": imp,
-                            "valence": val,
-                            "arousal": aro,
-                            "activation": 0.1,
-                            "access_count": access_count
-                        }
+                        # Verify SHA-256 Merkle integrity
+                        stored_hash = record[169:201]
+                        calculated_hash = hashlib.sha256(record[:169]).digest()
+                        if stored_hash == calculated_hash:
+                            _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
+                            return {
+                                "id": f"blob-recovered-{target_id_int}",
+                                "type_idx": 0,
+                                "content": "Recovered from binary blob",
+                                "layer": layer,
+                                "importance": imp,
+                                "valence": val,
+                                "arousal": aro,
+                                "activation": 0.1,
+                                "access_count": access_count
+                            }
         except Exception:
             pass
         return None
@@ -324,15 +357,44 @@ class QuantizedBrainMap:
 
         # Serialize Long Term to binary blob (1.3 Paged Swapping & 4.2 Merkle Hashing)
         if nodes_to_serialize:
-            with open("solomon_brain_map.bin", "ab") as f:
-                for n in nodes_to_serialize:
-                    b_data = n.serialize()
-                    # Append Merkle hash for immune system verification
-                    b_hash = hashlib.sha256(b_data).digest()
-                    f.write(b_data + b_hash)
+            try:
+                RECORD_SIZE = 201
+                expected_size = self.max_nodes * RECORD_SIZE
 
-                    # Remove from L1 RAM (Nodes dict)
-                    nodes_to_remove.append(n.id_int)
+                # Check if file exists or needs pre-allocation
+                if not os.path.exists("solomon_brain_map.bin"):
+                    with open("solomon_brain_map.bin", "wb") as f:
+                        f.write(b'\x00' * expected_size)
+                else:
+                    # Check size to ensure it is at least expected_size
+                    actual_size = os.path.getsize("solomon_brain_map.bin")
+                    if actual_size < expected_size:
+                        with open("solomon_brain_map.bin", "ab") as f:
+                            f.write(b'\x00' * (expected_size - actual_size))
+
+                with open("solomon_brain_map.bin", "r+b") as f:
+                    for n in nodes_to_serialize:
+                        b_data = n.serialize()
+                        # Append Merkle hash for immune system verification
+                        b_hash = hashlib.sha256(b_data).digest()
+                        record = b_data + b_hash
+
+                        f.seek(n.id_int * RECORD_SIZE)
+                        f.write(record)
+
+                        # Remove from L1 RAM (Nodes dict)
+                        nodes_to_remove.append(n.id_int)
+            except Exception:
+                # Direct fallback to sequential append if anything fails
+                try:
+                    with open("solomon_brain_map.bin", "ab") as f:
+                        for n in nodes_to_serialize:
+                            b_data = n.serialize()
+                            b_hash = hashlib.sha256(b_data).digest()
+                            f.write(b_data + b_hash)
+                            nodes_to_remove.append(n.id_int)
+                except Exception:
+                    pass
 
         with self.nodes_lock:
             for idx in nodes_to_remove:
