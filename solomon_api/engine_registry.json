@@ -141,6 +141,74 @@
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "futures_engine",
+      "display_name": "Futures Evaluator",
+      "source_path": "core/futures/futures_engine.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_readiness",
+      "entrypoint": "process_futures_data",
+      "route_paths": [],
+      "readiness_keys": [
+        "futures_engine_ready"
+      ],
+      "parent_surface": "templates/futures/dashboard.html",
+      "doc_path": "docs/architecture/futures_engine.md",
+      "test_paths": [
+        "tests/futures/test_threshold_logic.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.futures.evaluator.v1",
+      "memory_writeback": [
+        "fact_memory"
+      ],
+      "refusal_behavior": "None",
+      "version": "1.0.0",
+      "dependencies": [],
+      "ss_classification": "SS2",
+      "tier": "T1_deterministic_for_dry_run"
+    },
+    {
+      "engine_id": "futures_dashboard_facade",
+      "display_name": "Futures Dashboard Facade",
+      "source_path": "backend/services/futures/futures_dashboard_facade.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_route",
+      "entrypoint": "FuturesDashboardFacade",
+      "route_paths": [
+        "/api/futures/dashboard"
+      ],
+      "readiness_keys": [],
+      "parent_surface": "templates/futures/dashboard.html",
+      "doc_path": "docs/architecture/futures_engine.md",
+      "test_paths": [
+        "tests/futures/test_futures_dashboard_facade.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.futures.dashboard.v1",
+      "memory_writeback": [],
+      "refusal_behavior": "None",
+      "version": "1.0.0",
+      "dependencies": [
+        "futures_engine"
+      ],
+      "ss_classification": "SS2",
+      "tier": "T2_stateless_aggregation"
     }
   ],
   "exclusions": [

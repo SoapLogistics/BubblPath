@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Dashboard</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; color: #0f0; font-family: monospace; }
+        #hud { position: absolute; top: 10px; left: 10px; z-index: 100; background: rgba(0, 20, 0, 0.8); padding: 15px; border: 1px solid #0f0; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); max-width: 400px; }
+        h1 { margin-top: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
+        .stat { margin: 5px 0; font-size: 0.9rem; }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        .valence-80 { color: #00f; text-shadow: 0 0 5px #00f; }
+        .valence-90 { color: #f00; text-shadow: 0 0 5px #f00; }
+        .refusal { color: #f00; background: rgba(255, 0, 0, 0.2); padding: 10px; border: 1px solid #f00; margin-top: 10px; display: none; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <h1>Solomon Futures Control</h1>
+        <div class="stat">Status: <span class="blink">ACTIVATED_SUPERVISED</span></div>
+        <div id="data-container"></div>
+        <div id="refusal-ui" class="refusal">Governance Refusal: <span id="refusal-id"></span></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ThreeJS Background (Raw Math Aesthetic)
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        for ( let i = 0; i < 10000; i ++ ) {
+            vertices.push( THREE.MathUtils.randFloatSpread( 2000 ) ); // x
+            vertices.push( THREE.MathUtils.randFloatSpread( 2000 ) ); // y
+            vertices.push( THREE.MathUtils.randFloatSpread( 2000 ) ); // z
+        }
+        geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+        const material = new THREE.PointsMaterial( { color: 0x00ff00, size: 2 } );
+        const points = new THREE.Points( geometry, material );
+        scene.add( points );
+        camera.position.z = 1000;
+
+        let targetColor = 0x00ff00;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            points.rotation.x += 0.001;
+            points.rotation.y += 0.002;
+
+            // Smoothly interpolate color
+            material.color.lerp(new THREE.Color(targetColor), 0.05);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Data Binding Logic (Zero-Drift)
+        function updateDashboard(data) {
+            const container = document.getElementById('data-container');
+            container.innerHTML = '';
+
+            let maxThreshold = 0;
+
+            data.forEach(item => {
+                const metrics = item.data_health.metrics;
+                let cssClass = '';
+
+                if (metrics.breached_90) {
+                    cssClass = 'valence-90 blink';
+                    maxThreshold = Math.max(maxThreshold, 90);
+                } else if (metrics.breached_80) {
+                    cssClass = 'valence-80 blink';
+                    maxThreshold = Math.max(maxThreshold, 80);
+                }
+
+                container.innerHTML += `
+                    <div class="stat ${cssClass}">
+                        ID: ${item.data_health.id} | Conf: ${metrics.confidence.toFixed(2)} | Prob: ${metrics.probability.toFixed(2)} | Perf: ${metrics.performance_score.toFixed(2)}
+                    </div>
+                `;
+            });
+
+            // Visual indicators (Red/Blue valence flashing)
+            if (maxThreshold === 90) {
+                targetColor = 0xff0000;
+            } else if (maxThreshold === 80) {
+                targetColor = 0x0000ff;
+            } else {
+                targetColor = 0x00ff00;
+            }
+        }
+
+        function handleGovernanceRefusal(refusalId) {
+            const refusalUi = document.getElementById('refusal-ui');
+            const refusalIdSpan = document.getElementById('refusal-id');
+            refusalIdSpan.textContent = refusalId;
+            refusalUi.style.display = 'block';
+            setTimeout(() => { refusalUi.style.display = 'none'; }, 5000);
+        }
+
+        // Example binding
+        // updateDashboard([{ data_health: { id: "game_1", metrics: { confidence: 85, probability: 70, performance_score: 60, breached_80: true, breached_90: false } } }]);
+    </script>
+</body>
+</html>
