@@ -1,4 +1,10 @@
 import os
+# JOE - Guardian & Jules Integration
+from core.swarm.resident_framework import global_lifecycle
+import services.solomon_guardian_resident
+import services.solomon_jules_resident
+from backend.services.resident_dashboard import resident_blueprint
+
 import traceback
 import openai
 from flask import Flask, request, jsonify
@@ -6,6 +12,8 @@ from flask import Flask, request, jsonify
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 
 app = Flask(__name__)
+app.register_blueprint(resident_blueprint)
+
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Instantiate Gabriel's perpetual absorption loop engine
@@ -628,5 +636,13 @@ def get_status():
     })
 
 
+
+# Start permanent residents if not in testing or CLI routes mode
+if not app.config.get("TESTING") and not os.environ.get("FLASK_RUN_FROM_CLI"):
+    # Avoid duplicate starts in werkzeug dev server reloader process
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or "WERKZEUG_RUN_MAIN" not in os.environ:
+        global_lifecycle.start_all()
+
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=10000)

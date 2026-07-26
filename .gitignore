@@ -4,3 +4,6 @@ __pycache__/
 *.pyd
 .pytest_cache/
 .DS_Store
+
+# Runtime Checkpoints
+resident_checkpoints.bin
