@@ -4,8 +4,12 @@ import openai
 from flask import Flask, request, jsonify
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+from core.solomon_knowledge_cards.api.repository import CardRepository
 
 app = Flask(__name__)
+db_manager = DatabaseManager("solomon_soss.db")
+card_repository = CardRepository(db_manager)
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Instantiate Gabriel's perpetual absorption loop engine
@@ -131,9 +135,22 @@ def chat():
     Advanced Chat Completion endpoint.
     Employs the ultimate Google Jules orchestrator system prompt.
     When talking to Solomon, the user feels exactly like they are talking to Jules.
+    Retrieves relevant memories from Mnemosyne SQLite Memory (solomon_soss.db).
     """
     data = request.json or {}
     user_message = data.get("message", "")
+
+    # Retrieve matching context from Card Repository
+    context_str = ""
+    try:
+        search_results = card_repository.search(user_message)
+        if search_results:
+            context_str += "\n\nRetrieved Relevant Memory Cards:\n"
+            for res in search_results[:3]:
+                card = res["card"]
+                context_str += f"- [{card['card_type']}] {card['title']} (Confidence: {card['confidence']}): {card['summary']}\n  Body: {card['body']}\n"
+    except Exception as err:
+        context_str = f"\n[RAG Error retrieving memory: {str(err)}]"
 
     # Secure the state-of-the-art Jules persona prompt
     jules_system_prompt = (
@@ -144,15 +161,23 @@ def chat():
         "Respond with maximum technical power, extreme clarity, and zero fluff."
     )
 
+    if context_str:
+        jules_system_prompt += (
+            f"\n\nHere is some context retrieved from Solomon's durably governed "
+            f"Mnemosyne SQLite Memory (solomon_soss.db):\n{context_str}\n"
+            f"Leverage this memory to answer accurately, and maintain persistent awareness of state."
+        )
+
     if not openai.api_key:
         # Graceful dynamic persona fallback for mock operations
-        return jsonify({
-            "reply": (
-                f"[Jules Agentic Mode] Solomon here. I have compiled and integrated all "
-                f"Jules-native powers (Sandbox Dependency Setup, Unified Patch appliers, "
-                f"and Test-Traceback Error solvers). Received message: '{user_message}'"
-            )
-        })
+        reply_msg = (
+            f"[Jules Agentic Mode] Solomon here. I have compiled and integrated all "
+            f"Jules-native powers (Sandbox Dependency Setup, Unified Patch appliers, "
+            f"and Test-Traceback Error solvers). Received message: '{user_message}'"
+        )
+        if context_str:
+            reply_msg += f"\n\nMemory context found:\n{context_str}"
+        return jsonify({"reply": reply_msg})
 
     try:
         response = openai.ChatCompletion.create(

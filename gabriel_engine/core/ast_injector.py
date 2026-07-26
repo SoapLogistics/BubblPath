@@ -9,6 +9,21 @@ class ASTCodeInjector:
     """
 
     @staticmethod
+    def _validate_safe_path(filepath: str, allowed_base_dir: str = ".") -> str:
+        """Validates that a file path is safe from path traversal attacks."""
+        import os
+        import tempfile
+        abs_base = os.path.abspath(allowed_base_dir)
+        abs_temp = os.path.abspath(tempfile.gettempdir())
+        abs_file = os.path.abspath(filepath)
+        if ".." in filepath or filepath.startswith(("/", "\\")):
+            if not abs_file.startswith(abs_base) and not abs_file.startswith(abs_temp):
+                raise ValueError(f"Security Violation: Path traversal attempt blocked: {filepath}")
+        if not abs_file.startswith(abs_base) and not abs_file.startswith(abs_temp):
+            raise ValueError(f"Security Violation: Path falls outside allowed base directory: {filepath}")
+        return abs_file
+
+    @staticmethod
     def inject_function_to_class(
         file_path: str,
         class_name: str,
@@ -21,6 +36,10 @@ class ASTCodeInjector:
         Saves changes to `output_path` (or overwrites `file_path` if not specified).
         Returns the generated source code.
         """
+        ASTCodeInjector._validate_safe_path(file_path)
+        if output_path:
+            ASTCodeInjector._validate_safe_path(output_path)
+
         if not output_path:
             output_path = file_path
 
@@ -77,6 +96,10 @@ class ASTCodeInjector:
         Parses a Python file and appends the parsed `code_source` node structure
         directly to the bottom of the module body.
         """
+        ASTCodeInjector._validate_safe_path(file_path)
+        if output_path:
+            ASTCodeInjector._validate_safe_path(output_path)
+
         if not output_path:
             output_path = file_path
 

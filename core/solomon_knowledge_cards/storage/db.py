@@ -4,7 +4,7 @@ import os
 import datetime
 import threading
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
+from core.solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
 
 class DatabaseManager:
     def __init__(self, db_path: str):

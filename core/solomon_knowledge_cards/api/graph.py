@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Set, Tuple, Optional
-from solomon_knowledge_cards.api.repository import CardRepository
-from solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.api.repository import CardRepository
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
 
 class RelationGraph:
     def __init__(self, repository: CardRepository, max_recursion_depth: int = 50):

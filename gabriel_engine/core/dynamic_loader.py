@@ -33,11 +33,18 @@ class DynamicCapabilityRegistry:
         # Thread safety locks
         self._lock = threading.RLock()
 
+    def _validate_capability_name(self, capability_name: str) -> None:
+        """Strict regex validation to prevent path traversal or injection."""
+        import re
+        if not isinstance(capability_name, str) or not re.match(r"^[a-zA-Z0-9_]+$", capability_name):
+            raise ValueError(f"Security Violation: Invalid or malicious capability name: {capability_name}")
+
     def register_and_save(self, capability_name: str, code_content: str) -> str:
         """
         Saves the compiled Python code to a file in the assimilated capabilities directory.
         Returns the absolute filepath. Protected by reentrant locks.
         """
+        self._validate_capability_name(capability_name)
         with self._lock:
             filename = f"{capability_name}.py"
             filepath = os.path.join(self.target_dir, filename)
@@ -52,6 +59,7 @@ class DynamicCapabilityRegistry:
         Dynamically imports the capability module from disk and returns it.
         Employs threading locks for safety, and an LRU eviction strategy to prevent memory leaks.
         """
+        self._validate_capability_name(capability_name)
         with self._lock:
             module_name = f"gabriel_engine.assimilated_capabilities.{capability_name}"
             filepath = os.path.join(self.target_dir, f"{capability_name}.py")

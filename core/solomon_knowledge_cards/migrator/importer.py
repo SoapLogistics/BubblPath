@@ -2,8 +2,8 @@ import os
 import re
 import datetime
 from typing import List, Dict, Any
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
 
 def validate_safe_path(filepath: str, allowed_base_dir: str = ".") -> str:
     """
