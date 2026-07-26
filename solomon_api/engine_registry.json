@@ -62,6 +62,33 @@
       "known_blockers": [],
       "output_contract": "solomon.joe.blueprint_queue.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_capability_registry",
+      "display_name": "Solomon Capability Registry",
+      "source_path": "services/solomon_capability_registry.py",
+      "owner_family": "jules",
+      "status_class": "active_readiness",
+      "entrypoint": "CapabilityRegistry",
+      "route_paths": [],
+      "readiness_keys": [
+        "solomon_capability_registry"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_capability_registry.md",
+      "test_paths": [
+        "tests/test_capability_registry.py"
+      ],
+      "approval_required": false,
+      "mutates_state": true,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "enabled",
+      "known_blockers": [],
+      "output_contract": "solomon.capability_registry.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [
