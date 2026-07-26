@@ -141,6 +141,35 @@
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_validation_framework",
+      "display_name": "Validation Framework Engine",
+      "source_path": "services/solomon_validation_framework.py",
+      "owner_family": "governance",
+      "status_class": "active_route",
+      "entrypoint": "ValidationFrameworkEngine",
+      "route_paths": [
+        "/api/validation/job"
+      ],
+      "readiness_keys": [],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_validation_framework.md",
+      "test_paths": [
+        "tests/test_validation_framework.py"
+      ],
+      "approval_required": false,
+      "mutates_state": true,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.validation.v1",
+      "memory_writeback": [
+        "Store lessons learned"
+      ]
     }
   ],
   "exclusions": [
