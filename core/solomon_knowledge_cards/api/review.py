@@ -1,8 +1,8 @@
 import datetime
 import re
 from typing import Optional, Dict, Any
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
 
 class ReviewGate:
     def __init__(self, db_manager: DatabaseManager):

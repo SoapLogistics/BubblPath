@@ -1,8 +1,8 @@
 import datetime
 import uuid
 from typing import List, Dict, Any, Tuple
-from solomon_knowledge_cards.api.repository import CardRepository
-from solomon_knowledge_cards.planner.models import TaskPlan
+from core.solomon_knowledge_cards.api.repository import CardRepository
+from core.solomon_knowledge_cards.planner.models import TaskPlan
 
 class DynamicPlanner:
     def __init__(self, repository: CardRepository):

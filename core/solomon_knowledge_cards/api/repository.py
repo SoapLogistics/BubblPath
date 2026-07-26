@@ -1,8 +1,8 @@
 import re
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
-from solomon_knowledge_cards.api.embeddings import SemanticEmbedder
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.api.embeddings import SemanticEmbedder
 
 class CardRepository:
     def __init__(self, db_manager: DatabaseManager, embedder: Optional[SemanticEmbedder] = None):
@@ -50,7 +50,7 @@ class CardRepository:
 
         # Accept newly extended semantic link types
         # Validate that link_type is a valid link relation
-        supported_links = {"PARENT", "RELATED", "SUPERSEDES", "DEPENDS_ON", "PREVENTS", "ENHANCES", "PROPOSES_UPDATE_TO"}
+        supported_links = {"PARENT", "RELATED", "SUPERSEDES", "DEPENDS_ON", "PREVENTS", "ENHANCES", "PROPOSES_UPDATE_TO", "DERIVED_FROM", "RELATED_TO", "REPLACES", "CONFLICTS_WITH", "IMPLEMENTS", "VALIDATES"}
         if link_type not in supported_links:
             raise ValueError(f"Unsupported link type: {link_type}")
 
@@ -157,6 +157,11 @@ class CardRepository:
         # Generate query embedding
         query_vector = self.embedder.get_embedding(query) if query else None
 
+
+        import math
+        from datetime import datetime, timezone
+        now_utc = datetime.now(timezone.utc)
+
         for card in all_cards:
             if card_type and card.card_type.upper() != card_type.upper():
                 continue
@@ -232,11 +237,22 @@ class CardRepository:
                 base_score = (lexical_score * 0.4) + (semantic_score * 60.0)
             else:
                 base_score = card.confidence * 10.0
-                explanations.append(f"Default confidence rank (+{base_score:.1f} pts)")
+                explanations.append(f"Default confidence rank (+{base_score:.1f} pts)")            # Recency weighting
+            try:
+                updated = datetime.fromisoformat(card.updated_at.replace("Z", "+00:00"))
+                days_old = max(0.0, (now_utc - updated).total_seconds() / 86400.0)
+                # Exponential decay based on days old (half-life of ~90 days)
+                recency_multiplier = 0.8 + (0.2 * math.exp(-days_old / 90.0))
+            except Exception:
+                recency_multiplier = 1.0
 
             # Factor confidence as a multiplier
             confidence_multiplier = 0.5 + (card.confidence * 0.5)
-            final_score = base_score * confidence_multiplier
+            final_score = base_score * confidence_multiplier * recency_multiplier
+
+            if recency_multiplier != 1.0:
+                explanations.append(f"Recency Multiplier: {recency_multiplier:.2f}")
+
 
             if query and final_score == 0.0:
                 continue

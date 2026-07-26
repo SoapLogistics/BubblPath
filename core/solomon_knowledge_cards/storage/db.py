@@ -4,7 +4,7 @@ import os
 import datetime
 import threading
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
+from core.solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
 
 class DatabaseManager:
     def __init__(self, db_path: str):
@@ -196,13 +196,19 @@ class DatabaseManager:
                     conn.execute("INSERT OR IGNORE INTO card_sources (card_id, source_id) VALUES (?, ?)", (card.card_id, s_id))
 
                 # Manage card links
-                conn.execute("DELETE FROM card_links WHERE source_id = ? AND link_type IN ('PARENT', 'RELATED')", (card.card_id,))
+                conn.execute("DELETE FROM card_links WHERE source_id = ?", (card.card_id,))
                 for p_id in card.parent_card_ids:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'PARENT')", (card.card_id, p_id))
                 for r_id in card.related_card_ids:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'RELATED')", (card.card_id, r_id))
                 if card.supersedes:
                     conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, 'SUPERSEDES')", (card.card_id, card.supersedes))
+
+                # Also store custom links from extra_metadata
+                if card.extra_metadata and "links" in card.extra_metadata:
+                    for link in card.extra_metadata["links"]:
+                        if isinstance(link, dict) and "target_id" in link and "link_type" in link:
+                            conn.execute("INSERT OR IGNORE INTO card_links (source_id, target_id, link_type) VALUES (?, ?, ?)", (card.card_id, link["target_id"], link["link_type"]))
 
                 # Write full revision log
                 serialized = json.dumps(card.to_dict())
@@ -250,7 +256,14 @@ class DatabaseManager:
                 cursor.execute("SELECT target_id FROM card_links WHERE source_id = ? AND link_type = 'RELATED'", (card_id,))
                 card_data["related_card_ids"] = [r[0] for r in cursor.fetchall()]
 
+                # Fetch custom links
+                cursor.execute("SELECT target_id, link_type FROM card_links WHERE source_id = ? AND link_type NOT IN ('PARENT', 'RELATED', 'SUPERSEDES')", (card_id,))
+                custom_links = [{"target_id": r[0], "link_type": r[1]} for r in cursor.fetchall()]
+
                 card_data["extra_metadata"] = json.loads(card_data["extra_metadata"]) if card_data.get("extra_metadata") else {}
+
+                if custom_links:
+                    card_data["extra_metadata"]["links"] = custom_links
 
                 # Retrieve embedding column if present and populate in extra_metadata
                 if "embedding" in card_data and card_data["embedding"]:
