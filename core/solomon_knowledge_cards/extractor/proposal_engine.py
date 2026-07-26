@@ -86,7 +86,7 @@ class ProposalEngine:
             f"```markdown\n"
             f"## [PROPOSED] Self-Healing Protocol\n"
             f"- Before executing tool deployments, execute port diagnostics and resolve binding conflicts as detailed in {repair_card_id}:\n"
-            f"  > {remediation_actions.replace('\n', '\n  > ')}\n"
+            "  > " + remediation_actions.replace('\n', '\n  > ') + "\n"
             f"```\n"
         )
 
