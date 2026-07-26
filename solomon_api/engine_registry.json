@@ -62,6 +62,85 @@
       "known_blockers": [],
       "output_contract": "solomon.joe.blueprint_queue.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_governance_approval_packet",
+      "display_name": "Governance Approval Lane",
+      "source_path": "services/solomon_governance_approval_packet.py",
+      "owner_family": "governance",
+      "status_class": "active_route",
+      "entrypoint": "GovernanceApprovalLane",
+      "route_paths": [
+        "/api/governance/review"
+      ],
+      "readiness_keys": [],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_governance_approval_packet.md",
+      "test_paths": [
+        "tests/test_governance_approval.py"
+      ],
+      "approval_required": true,
+      "mutates_state": true,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.governance.v1",
+      "memory_writeback": []
+    },
+    {
+      "engine_id": "run_daily_scan",
+      "display_name": "Daily Scan",
+      "source_path": "scripts/run_daily_scan.py",
+      "owner_family": "loki",
+      "status_class": "generated_artifact",
+      "entrypoint": "run_scan",
+      "route_paths": [],
+      "readiness_keys": [],
+      "parent_surface": null,
+      "doc_path": null,
+      "test_paths": [
+        "tests/test_run_daily_scan.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.loki.v1",
+      "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_learning_writeback",
+      "display_name": "Learning Writeback",
+      "source_path": "services/solomon_learning_writeback.py",
+      "owner_family": "learning",
+      "status_class": "active_route",
+      "entrypoint": "LearningWriteback",
+      "route_paths": [
+        "/api/learning/writeback"
+      ],
+      "readiness_keys": [],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_learning_writeback.md",
+      "test_paths": [
+        "tests/test_learning_writeback.py"
+      ],
+      "approval_required": false,
+      "mutates_state": true,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.learning.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [
