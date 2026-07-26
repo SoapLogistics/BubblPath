@@ -4,3 +4,7 @@ __pycache__/
 *.pyd
 .pytest_cache/
 .DS_Store
+logs/
+*_cache.json
+model_weights.json
+daily_board.json
