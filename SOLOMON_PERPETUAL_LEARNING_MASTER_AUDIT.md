@@ -698,3 +698,71 @@ The destination is not an AI that knows everything. It is an AI that:
 - and continually improves the learning process itself.
 
 That is the perpetual learning machine Solomon is becoming.
+
+
+---
+
+## APPENDIX: SYSTEM-WIDE ACTIVE INVENTORY REPORT (July 26, 2026)
+
+### 1. File-by-File Codebase Inventory
+Below is a full list of every active module and component currently wired in the Solomon Perpetual Learning Machine repository:
+
+#### Core Engine / Gateway
+- `app.py`: Standardized API gateway running on Port 18789. Manages all REST endpoints for Jules dependencies, patch-applying loops, Codex worktrees, task boards, MCP tools, and Gabriel's dynamic capability registry.
+
+#### Backend Proxy & Facades
+- `backend/services/joe_blueprint_facade.py`: Protected gateway interface representing the J.O.E (Jules Omega Engine) facade. Proxies requests securely to root execution engines behind safety default dry-run rules.
+- `services/solomon_joe_bridge.py`: Control-plane engine acting as the root J.O.E execution substrate.
+
+#### Project Mnemosyne (Governed Long-Term Memory)
+- `core/solomon_knowledge_cards/models/card.py`: Structured definitions for KnowledgeCard types, including factual, episodic, procedural, repair, and warning memory schemas.
+- `core/solomon_knowledge_cards/storage/db.py`: Central thread-safe DatabaseManager managing sqlite connections to `solomon_soss.db`.
+- `core/solomon_knowledge_cards/api/repository.py`: Interface managing long-term memory operations: card retrievals, status modifications, revision histories, and transaction locks.
+- `core/solomon_knowledge_cards/api/embeddings.py`: Semantic embedding extraction interface.
+- `core/solomon_knowledge_cards/api/graph.py`: Entity-relationship and link analysis builder mapping card connections.
+- `core/solomon_knowledge_cards/api/review.py`: Security and clearance filter layer guarding memory status changes.
+- `core/solomon_knowledge_cards/extractor/extractor.py`: Automated parsing of incoming worker logs and reports into structured card drafts.
+- `core/solomon_knowledge_cards/extractor/proposal_engine.py`: Scans memories to draft action/rebuild proposals.
+- `core/solomon_knowledge_cards/extractor/reflection.py`: Post-execution analyzer comparing outcomes against expectations.
+
+#### Project Prometheus (Planning & Curiosity)
+- `core/solomon_knowledge_cards/planner/engine.py`: Dynamic planner that adjusts step sequences after consulting long-term memory cards.
+- `core/solomon_knowledge_cards/planner/arbiter.py`: Core tool arbiter deciding when to delegate capabilities based on confidence.
+- `core/solomon_knowledge_cards/planner/models.py`: Structural data models for step plans and priorities.
+
+#### Gabriel Assimilation Subsystem
+- `gabriel_engine/core/perpetual_loop.py`: Master learning daemon running continuous capability discovery and crucible validation loops.
+- `gabriel_engine/core/acquisition.py`: Targets external projects for capability intake.
+- `gabriel_engine/core/structural_comprehension.py`: Performs AST parsing on target code to trace files and import paths.
+- `gabriel_engine/core/behavioral_experimentation.py`: Exercises acquired capabilities in sandboxes.
+- `gabriel_engine/core/assimilation_decision.py`: Computes utility ratios to propose code assimilation.
+- `gabriel_engine/core/independent_construction.py`: Clean-room compiler rebuilding target modules.
+- `gabriel_engine/core/crucible.py`: Isolated testing harness compiling benchmark outputs.
+- `gabriel_engine/core/recursive_optimizer.py`: Iterative optimizer correcting and patching slow routines.
+- `gabriel_engine/core/dynamic_loader.py`: Registers and imports promoted code at runtime.
+- `gabriel_engine/core/ast_injector.py`: Mutates in-memory structures using program AST injections.
+- `gabriel_engine/core/permission_gate.py`: Access security checks before allowing mutations.
+
+#### The Invention Lab
+- `lab/zero_copy_memory.py`: Ultra-efficient zero-copy memory substrate using numpy and mmap alignment.
+- `lab/solomon_sple_unified_engine.py`: Unified control framework orchestrating SPLE subsystems.
+- `lab/kernel.py`: High-speed capability routing layer.
+- `lab/vector_reasoning.py`: Multi-dimensional tensor reasoning framework.
+- `lab/solomon_meta_learner.py`: Optimization agent tracking and refining curiosity pipelines.
+
+---
+
+### 2. Key Achievements & Advancements (Last 24 Hours)
+Over the last 24 hours, our integration sweeps accomplished:
+- **Registry Wiring standard completed (`JOE_PACKET_02`):** Documented and locked all available HTTP routes into the official registry schema.
+- **Perpetual Learning Loop & Memory Core established (`JOE_PACKET_03`):** Unified storage connections with a lock-guarded SQLite instance and implemented transition rules from draft-to-promoted card states.
+- **Zero-Copy Memory-Mapped Store:** Developed numpy-backed binary similarity indices for O(1) query speeds under low-resource environments.
+- **Super Blueprint Gating (`SS123`):** Gated production state transitions, blocking dynamic capability promotions without designated authorization.
+- **Fast-Track CI pipelines:** Set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` to resolve workflow deprecation errors and ensured all unit test files are 100% green.
+
+---
+
+### 3. Immediate Staging Targets (Next 24 Hours)
+- **Centralize sqlite backends:** Completely align Project Mnemosyne, Project Prometheus, and Gabriel under WAL mode database connections within `solomon_soss.db`.
+- **RAG Prompts:** Inject the database lookup into `/chat` to search SOSS memory cards dynamically during conversations.
+- **Dynamic Imports Isolation:** Package dynamic execution inside a safe subprocess container environment to isolate main thread execution.
