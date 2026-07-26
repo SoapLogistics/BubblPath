@@ -1,0 +1,74 @@
+{
+  "engines": [
+    {
+      "engine_id": "solomon_joe_bridge",
+      "display_name": "J.O.E. Blueprint Queue",
+      "source_path": "services/solomon_joe_bridge.py",
+      "owner_family": "joe_jules",
+      "status_class": "approval_blocked",
+      "entrypoint": "JoeOmegaEngine",
+      "route_paths": [
+        "/api/joe/status",
+        "/api/joe/queue-blueprint"
+      ],
+      "readiness_keys": [],
+      "parent_surface": "templates/joe_chat.html",
+      "doc_path": "docs/solomon_joe_bridge.md",
+      "test_paths": [
+        "tests/integration/solomon_joe_bridge_smoke.py"
+      ],
+      "approval_required": true,
+      "mutates_state": true,
+      "execution_capable": true,
+      "network_capable": true,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [
+        "duplicate backend/services import collision",
+        "subprocess launches jules CLI",
+        "repo allowlist missing"
+      ],
+      "output_contract": "solomon.joe.blueprint_queue.v1",
+      "memory_writeback": [
+        "lesson_on_completed_packet",
+        "failure_pattern_on_refusal_or_error"
+      ],
+      "refusal_behavior": "Returns blocked status and requires human approval before execution."
+    },
+    {
+      "engine_id": "joe_blueprint_facade",
+      "display_name": "J.O.E. Blueprint Facade",
+      "source_path": "backend/services/joe_blueprint_facade.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_route",
+      "entrypoint": "JoeBlueprintFacade",
+      "route_paths": [
+        "/api/joe/queue-blueprint"
+      ],
+      "readiness_keys": [],
+      "parent_surface": null,
+      "doc_path": "docs/joe_blueprint_facade.md",
+      "test_paths": [
+        "tests/test_joe_blueprint_facade.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.joe.blueprint_queue.v1",
+      "memory_writeback": []
+    }
+  ],
+  "exclusions": [
+    "solomon_api/gpt_readiness_snapshot.py",
+    "solomon_api/gpt_route_index.py",
+    "solomon_api/capabilities_manifest.py",
+    "services/soss_workspace_status.py",
+    "backend/main.py"
+  ]
+}

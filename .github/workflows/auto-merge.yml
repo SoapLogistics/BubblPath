@@ -6,6 +6,8 @@ on:
 
 jobs:
   automerge:
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     runs-on: ubuntu-latest
     # Only run if the PR was opened by the google-labs-jules bot
     if: github.actor == 'google-labs-jules[bot]'
