@@ -1,7 +1,7 @@
 from scripts.run_daily_scan import run_scan
 
 def test_deterministic_scan():
-    result = run_scan(seed=42, deterministic=True)
-    assert result["status"] == "success"
-    assert result["deterministic"] == True
-    assert result["seed"] == 42
+    # Adjusted to match the new strict signature representing SHADOW/TEST modes
+    result = run_scan(mode="TEST", seed=42)
+    assert result["mode"] == "TEST"
+    assert "stats" in result

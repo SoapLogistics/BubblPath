@@ -21,42 +21,34 @@
 - Update context pack.
 - Propose next safe step.
 
-
-## Futures Daily Scan Output
+<!-- FUTURES_DAILY_START:2026-07-26_6eb0c282-ac44-40e7-8f9d-d25244556093 -->
+### Futures Run 6eb0c282-ac44-40e7-8f9d-d25244556093
 ```json
-[
-  {
-    "target_id": "match_001",
-    "confidence": 91.5,
-    "threshold_80_met": true,
-    "threshold_90_met": true,
-    "data_health": "verified",
-    "payload": {
-      "type": "daily_scan"
-    },
-    "timestamp": 1785084503.5989246
-  },
-  {
-    "target_id": "match_002",
-    "confidence": 80.1,
-    "threshold_80_met": true,
-    "threshold_90_met": false,
-    "data_health": "verified",
-    "payload": {
-      "type": "daily_scan"
-    },
-    "timestamp": 1785084503.598962
-  },
-  {
-    "target_id": "match_003",
-    "confidence": 75.0,
-    "threshold_80_met": false,
-    "threshold_90_met": false,
-    "data_health": "marginal",
-    "payload": {
-      "type": "daily_scan"
-    },
-    "timestamp": 1785084503.5989645
+{
+  "run_id": "6eb0c282-ac44-40e7-8f9d-d25244556093",
+  "mode": "SHADOW",
+  "stats": {
+    "received": 3,
+    "simulated": 1,
+    "confirmed_90": 0,
+    "skipped": 1
   }
-]
+}
 ```
+<!-- FUTURES_DAILY_END:2026-07-26_6eb0c282-ac44-40e7-8f9d-d25244556093 -->
+
+<!-- FUTURES_DAILY_START:2026-07-26_90754dc9-5e4e-42d1-b5b9-f7e86fd2edaa -->
+### Futures Run 90754dc9-5e4e-42d1-b5b9-f7e86fd2edaa
+```json
+{
+  "run_id": "90754dc9-5e4e-42d1-b5b9-f7e86fd2edaa",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 1,
+    "confirmed_90": 0,
+    "skipped": 1
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-07-26_90754dc9-5e4e-42d1-b5b9-f7e86fd2edaa -->

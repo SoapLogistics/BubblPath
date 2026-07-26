@@ -1,55 +1,89 @@
 import os
 import sys
+import uuid
+import time
+import json
+import logging
 
-# Required to load the modules from the root path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from services.solomon_futures_engine import FuturesEngine
+from services.solomon_futures_engine import FuturesEngine, Candidate, FuturesRepository
 
-def inject_context_pack(content):
-    """
-    Injects output into the daily codex context pack.
-    """
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [FUTURES_SCAN] %(message)s")
+logger = logging.getLogger("futures_scan")
+
+def inject_daily_report(run_id, output_summary):
     codex_path = "docs/solomon_daily_codex_context.md"
+    date_str = time.strftime("%Y-%m-%d")
+    report = f"""
+<!-- FUTURES_DAILY_START:{date_str}_{run_id} -->
+### Futures Run {run_id}
+```json
+{json.dumps(output_summary, indent=2)}
+```
+<!-- FUTURES_DAILY_END:{date_str}_{run_id} -->
+"""
     try:
         with open(codex_path, "a") as f:
-            f.write(f"\n\n## Futures Daily Scan Output\n```json\n{content}\n```\n")
+            f.write(report)
     except Exception as e:
-        print(f"Failed to inject context pack: {e}")
+        logger.error(f"Failed to append to context pack: {e}")
 
-def run_scan(seed=None, deterministic=False, mode="default"):
-    if mode == "futures":
-        print("Running futures scan...")
-        engine = FuturesEngine()
+def run_scan(mode="TEST", seed=42):
+    logger.info(f"Starting futures scan. Mode: {mode}")
 
-        # Simulate ingest & assessment
-        targets = [
-            {"id": "match_001", "confidence": 91.5},
-            {"id": "match_002", "confidence": 80.1},
-            {"id": "match_003", "confidence": 75.0}
-        ]
+    engine = FuturesEngine()
+    repo = FuturesRepository()
+    run_id = str(uuid.uuid4())
 
-        projections = []
-        for t in targets:
-            proj = engine.generate_projection(t["id"], t["confidence"], {"type": "daily_scan"})
-            projections.append(proj)
+    # Mocking real input retrieval for Loki scans
+    raw_candidates = [
+        {"id": "tgt_A", "conf": 93.0, "win_prob": 0.94},
+        {"id": "tgt_B", "conf": 91.0, "win_prob": 0.91},
+        {"id": "tgt_C", "conf": 85.0, "win_prob": 0.85},
+    ]
 
-        import json
-        output = json.dumps(projections, indent=2)
-        inject_context_pack(output)
+    results = []
+    stats = {"received": len(raw_candidates), "simulated": 0, "confirmed_90": 0, "skipped": 0}
 
-        print("Futures output generated and injected into context pack.")
-        return {"status": "success", "mode": "futures", "projections": projections}
+    for raw in raw_candidates:
+        if repo.check_idempotency(raw["id"], mode):
+            logger.info(f"Skipping {raw['id']} - already executed in {mode}")
+            stats["skipped"] += 1
+            continue
 
-    if deterministic and seed is not None:
-        print(f"Running deterministic scan with seed {seed}")
-        return {"status": "success", "deterministic": True, "seed": seed}
+        c = Candidate(
+            candidate_id=raw["id"], event_id=f"evt_{raw['id']}", domain="sports",
+            source_name="daily_scan", source_record_id=f"rec_{raw['id']}",
+            source_mode=mode, source_timestamp=str(time.time()), ingested_at=str(time.time()),
+            pre_simulation_confidence=raw["conf"], data_quality_score=95.0,
+            features={"win_prob": raw["win_prob"]}
+        )
 
-    print("Running random scan")
-    return {"status": "success", "deterministic": False}
+        res = engine.process_candidate(c, seed=seed)
+        repo.save_run(res)
+
+        if res.status != "PRE_SIM_NOT_QUALIFIED":
+            stats["simulated"] += 1
+        if res.status == "CONFIRMED_90_PLUS":
+            stats["confirmed_90"] += 1
+
+        results.append(res)
+        logger.info(f"Processed {raw['id']} -> {res.status}")
+
+    summary = {"run_id": run_id, "mode": mode, "stats": stats}
+    inject_daily_report(run_id, summary)
+
+    # Use nonzero exit code if catastrophic failure occurred (skipped here for happy path simulation)
+    return summary
 
 if __name__ == "__main__":
-    mode = "default"
+    mode_arg = "TEST"
     for arg in sys.argv:
         if arg.startswith("--mode="):
-            mode = arg.split("=")[1]
-    run_scan(mode=mode)
+            mode_arg = arg.split("=")[1]
+
+    if mode_arg == "LIVE" and not os.environ.get("FUTURES_LIVE_AUTHORIZATION"):
+        logger.error("LIVE mode requested without governance authorization.")
+        sys.exit(1)
+
+    run_scan(mode=mode_arg)

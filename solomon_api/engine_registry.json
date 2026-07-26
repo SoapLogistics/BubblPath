@@ -168,7 +168,7 @@
       "known_blockers": [],
       "output_contract": "solomon.futures.v1",
       "memory_writeback": [
-        "fact_memory"
+        "futures_memory_outbox"
       ]
     },
     {
@@ -179,8 +179,7 @@
       "status_class": "active_route",
       "entrypoint": "FuturesDashboardBackend",
       "route_paths": [
-        "/api/futures/projections",
-        "/api/futures/execute"
+        "/api/futures/dashboard"
       ],
       "readiness_keys": [],
       "parent_surface": "templates/futures_dashboard.html",
@@ -188,15 +187,42 @@
       "test_paths": [
         "tests/futures/test_threshold_logic.py"
       ],
-      "approval_required": true,
-      "mutates_state": true,
-      "execution_capable": true,
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
       "network_capable": false,
       "ss1_touching": false,
       "human_approval_authority": "Mark",
       "safe_default": "dry_run",
       "known_blockers": [],
       "output_contract": "solomon.futures.dashboard.v1",
+      "memory_writeback": []
+    },
+    {
+      "engine_id": "futures_memory_outbox",
+      "display_name": "Futures Memory Reconciler",
+      "source_path": "services/solomon_futures_memory.py",
+      "owner_family": "loki",
+      "status_class": "active_readiness",
+      "entrypoint": "FuturesOutcomeReconciler",
+      "route_paths": [],
+      "readiness_keys": [
+        "futures_memory_ready"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_futures_engine.md",
+      "test_paths": [
+        "tests/futures/test_threshold_logic.py"
+      ],
+      "approval_required": true,
+      "mutates_state": true,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.futures.memory.v1",
       "memory_writeback": []
     }
   ],
