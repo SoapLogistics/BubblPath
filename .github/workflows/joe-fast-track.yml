@@ -1,0 +1,61 @@
+name: J.O.E. Fast-Track Pipeline
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  fast-track:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if only J.O.E. files are changed
+        id: check_files
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files.[].path')
+          
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changed files found."
+            echo "is_joe_only=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Check if every file contains 'joe' (case-insensitive)
+          for file in $CHANGED_FILES; do
+            if ! echo "$file" | grep -iq "joe"; then
+              echo "Error: Non-J.O.E. file found: $file"
+              echo "Fast-track requires all changed files to be related to J.O.E."
+              echo "is_joe_only=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          done
+          
+          echo "All changed files are J.O.E. related."
+          echo "is_joe_only=true" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-approve PR
+        if: steps.check_files.outputs.is_joe_only == 'true'
+        run: |
+          gh pr review ${{ github.event.pull_request.number }} --approve -b "Auto-approved by J.O.E. Fast-Track Pipeline."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-merge (Deploy) PR
+        if: steps.check_files.outputs.is_joe_only == 'true'
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} --merge --admin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
