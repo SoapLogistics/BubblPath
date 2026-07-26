@@ -3,6 +3,7 @@ import sys
 import threading
 import importlib.util
 from typing import Dict, Any, Optional
+from core.solomon_hyper_registry import HyperRegistryManager
 
 class DynamicCapabilityRegistry:
     """
@@ -33,6 +34,10 @@ class DynamicCapabilityRegistry:
         # Thread safety locks
         self._lock = threading.RLock()
 
+        # Hyper Registry for governing dynamic capabilities
+        self.hyper_registry = HyperRegistryManager()
+
+
     def register_and_save(self, capability_name: str, code_content: str) -> str:
         """
         Saves the compiled Python code to a file in the assimilated capabilities directory.
@@ -47,12 +52,17 @@ class DynamicCapabilityRegistry:
 
             return filepath
 
+
     def load_capability(self, capability_name: str) -> Any:
         """
         Dynamically imports the capability module from disk and returns it.
         Employs threading locks for safety, and an LRU eviction strategy to prevent memory leaks.
         """
         with self._lock:
+            # Policy Enforcement: Check if capability is registered and allowed to execute
+            if not self.hyper_registry.is_load_permitted(capability_name):
+                raise PermissionError(f"Execution of anonymous or blocked capability '{capability_name}' is prohibited by Solomon Governance.")
+
             module_name = f"gabriel_engine.assimilated_capabilities.{capability_name}"
             filepath = os.path.join(self.target_dir, f"{capability_name}.py")
 
