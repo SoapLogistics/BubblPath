@@ -15,7 +15,7 @@ class JoeBlueprintFacade:
         """
         # Always defaults to dry-run
         is_execute = payload.get("execute", False)
-
-        # Facade enforce dry run for unapproved mutations
-        # Here we hardcode dry run to True unless explicitly handled by governance later
+        # Even if True is passed in a standard facade route, we override for safety until governance kicks in
         return self.engine.queue_blueprint(payload.get("blueprint"), run_execute=False)
+
+# Added as part of Phase 2 runbook
