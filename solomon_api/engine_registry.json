@@ -1,0 +1,38 @@
+{
+  "engines": [
+    {
+      "file_path": "services/solomon_joe_bridge.py",
+      "status_class": "active",
+      "owner_family": "joe",
+      "route_paths": [],
+      "runtime_tier": "T1_deterministic",
+      "engine_id": "joe_root_engine",
+      "execution_capable": true,
+      "safe_default": "dry_run"
+    },
+    {
+      "file_path": "backend/services/solomon_joe_bridge.py",
+      "status_class": "active",
+      "owner_family": "joe",
+      "route_paths": [],
+      "runtime_tier": "T0_registry"
+    },
+    {
+      "file_path": "backend/services/joe_blueprint_facade.py",
+      "status_class": "active",
+      "owner_family": "joe",
+      "route_paths": ["/api/joe/queue-blueprint"],
+      "runtime_tier": "T1_deterministic_for_dry_run"
+    },
+    {
+      "file_path": "backend/services/model_weight_supervisor.py",
+      "status_class": "active",
+      "owner_family": "model_weights",
+      "route_paths": [],
+      "runtime_tier": "T1_deterministic"
+    }
+  ],
+  "exclusions": [
+      "backend/main.py"
+  ]
+}

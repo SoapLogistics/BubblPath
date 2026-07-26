@@ -4,3 +4,16 @@ __pycache__/
 *.pyd
 .pytest_cache/
 .DS_Store
+*.db
+*.db-shm
+*.db-wal
+runtime_cache/
+local_log/
+evidence_artifact/
+solomon_brain_map.bin
+solomon_metrics.bin
+governance_log.bin
+signal_log.bin
+gabriel_knowledge_base.bin
+solomon_q_store.bin
+*.log
