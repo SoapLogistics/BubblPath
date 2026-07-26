@@ -18,7 +18,7 @@ def after_request_telemetry(response):
         path += "?" + request.query_string.decode('utf-8')
 
     # Generate quick correlation hash based on IP and time if no header
-    corr_id = request.headers.get("X-Correlation-ID", str(time.time()) + request.remote_addr)
+    corr_id = request.headers.get("X-Correlation-ID", str(time.time()) + str(request.remote_addr))
 
     # Context could just be the endpoint and method
     context = f"{request.method} {path}"

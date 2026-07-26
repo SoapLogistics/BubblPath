@@ -685,6 +685,9 @@ def get_memory_blob():
         return data, 200, {'Content-Type': 'application/octet-stream'}
     return jsonify({"status": "empty"}), 404
 
+from backend.services.god_eye_bridge import god_eye_blueprint
+app.register_blueprint(god_eye_blueprint)
+
 @app.route("/api/memory/dream", methods=["POST"])
 def dream_memory():
     data = request.json or {}

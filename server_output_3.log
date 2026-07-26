@@ -1,0 +1,11 @@
+ * Serving Flask app 'app'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:10000
+ * Running on http://192.168.0.2:10000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [26/Jul/2026 17:05:05] "POST /api/memory/ingest HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 17:05:06] "POST /api/memory/ingest HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 17:10:11] "POST /api/memory/ingest HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jul/2026 17:10:12] "POST /api/memory/ingest HTTP/1.1" 200 -

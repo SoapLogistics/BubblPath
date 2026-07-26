@@ -170,6 +170,33 @@
       "known_blockers": [],
       "output_contract": "solomon.telemetry.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "god_eye_bridge",
+      "display_name": "God Eye Real-Time Bridge",
+      "source_path": "backend/services/god_eye_bridge.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_route",
+      "entrypoint": "god_eye_blueprint",
+      "route_paths": [
+        "/api/memory/graph.json"
+      ],
+      "readiness_keys": [],
+      "parent_surface": "templates/god_eye.html",
+      "doc_path": "docs/architecture/md7_quantized_efficiency_doctrine.md",
+      "test_paths": [
+        "tests/test_god_eye_bridge.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.godeye.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [
