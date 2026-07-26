@@ -141,6 +141,31 @@
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "futures_threshold_logic",
+      "display_name": "Futures Threshold Logic",
+      "source_path": "services/futures/threshold_logic.py",
+      "owner_family": "loki",
+      "status_class": "generated_artifact",
+      "entrypoint": "evaluate_threshold",
+      "route_paths": [],
+      "readiness_keys": [],
+      "parent_surface": "templates/futures/dashboard.html",
+      "doc_path": "docs/JOE_PACKET_06_FUTURES_ENGINE_STABILIZATION.md",
+      "test_paths": [
+        "tests/futures/test_threshold_logic.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.futures.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [

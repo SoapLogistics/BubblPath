@@ -20,3 +20,7 @@
 - Write memory.
 - Update context pack.
 - Propose next safe step.
+
+## Futures Engine Update
+- Daily futures scan output board injected deterministically on evaluation.
+- Threshold logic math locked for 80/90 metrics.

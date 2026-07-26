@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+        }
+        .container {
+            padding: 20px;
+        }
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 10px;
+        }
+        .threshold-indicator {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #0f0;
+            transition: all 0.3s ease;
+        }
+        .threshold-80 {
+            background-color: rgba(255, 0, 0, 0.2);
+            border-color: #ff0000;
+            animation: pulse-red 2s infinite;
+        }
+        .threshold-90 {
+            background-color: rgba(0, 0, 255, 0.2);
+            border-color: #0000ff;
+            animation: pulse-blue 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(0, 0, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 0, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 0, 255, 0); }
+        }
+        .refusal-ui {
+            display: none;
+            color: #ff0000;
+            border: 1px solid #ff0000;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Futures Engine Dashboard</h1>
+        <div id="data-container">
+            <!-- Data will be bound here -->
+        </div>
+        <div id="refusal-ui" class="refusal-ui">
+            Governance Refusal: <span id="refusal-id"></span>
+        </div>
+    </div>
+    <script>
+        // Bind data from backend (No inline math)
+        async function fetchFuturesData() {
+            try {
+                // Fetching from approved solomon_api route
+                const response = await fetch('/solomon_api/futures/data');
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        const errorData = await response.json();
+                        showRefusal(errorData.audit_id);
+                        return;
+                    }
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                renderData(data);
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            }
+        }
+
+        function showRefusal(auditId) {
+            const refusalUi = document.getElementById('refusal-ui');
+            const refusalId = document.getElementById('refusal-id');
+            refusalId.textContent = auditId;
+            refusalUi.style.display = 'block';
+        }
+
+        function renderData(data) {
+            const container = document.getElementById('data-container');
+            container.innerHTML = ''; // Clear existing
+
+            data.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'threshold-indicator';
+
+                // Server-provided classification
+                if (item.threshold_class === '80') {
+                    el.classList.add('threshold-80');
+                } else if (item.threshold_class === '90') {
+                    el.classList.add('threshold-90');
+                }
+
+                el.innerHTML = `
+                    <strong>Target:</strong> ${item.target} <br>
+                    <strong>Confidence:</strong> ${item.confidence} <br>
+                    <strong>Status:</strong> ${item.status}
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // Initial fetch and polling
+        fetchFuturesData();
+        setInterval(fetchFuturesData, 5000);
+    </script>
+</body>
+</html>
