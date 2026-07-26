@@ -1,0 +1,14 @@
+{
+  "schema": "1.0",
+  "authority": "supervised_learning",
+  "resolver_input": "deterministic_score",
+  "resolver_output": "candidate_adjustment",
+  "rollback_policy": "revert_to_last_approved",
+  "test_fixture_mode": true,
+  "state_bucket": "fixture",
+  "weights": {
+    "urgency": 1.0,
+    "frustration": 1.0,
+    "complexity": 1.0
+  }
+}

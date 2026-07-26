@@ -1,0 +1,29 @@
+[
+  {
+    "engine_id": "joe_blueprint_queue",
+    "runtime_tier": "T1_deterministic_for_dry_run",
+    "execution_capable": true,
+    "safe_default": "dry_run",
+    "approval_required": "true_for_subprocess",
+    "forbidden_without_approval": [
+      "subprocess.Popen",
+      "jules new",
+      "git push",
+      "ss1 mutation"
+    ]
+  },
+  {
+    "engine_id": "soss_loki_picks",
+    "runtime_tier": "T1_deterministic",
+    "network_use": "scoreboard_feeds",
+    "cache_policy": "short_ttl",
+    "model_use": "none",
+    "advisory_required": true,
+    "failure_fallback": "sample_payload_with_reason",
+    "approval_required": "false_for_research_only",
+    "forbidden_actions": [
+      "wager.submit",
+      "trade.submit"
+    ]
+  }
+]
