@@ -62,6 +62,33 @@
       "known_blockers": [],
       "output_contract": "solomon.joe.blueprint_queue.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_runtime_nervous_system",
+      "display_name": "Solomon Runtime Nervous System",
+      "source_path": "services/solomon_runtime_nervous_system.py",
+      "owner_family": "solomon_core",
+      "status_class": "active_readiness",
+      "entrypoint": "RuntimeNervousSystem",
+      "route_paths": [],
+      "readiness_keys": [
+        "runtime"
+      ],
+      "parent_surface": null,
+      "doc_path": "docs/solomon_runtime_nervous_system.md",
+      "test_paths": [
+        "tests/test_runtime_nervous_system.py"
+      ],
+      "approval_required": false,
+      "mutates_state": true,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.runtime.eventbus.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [
