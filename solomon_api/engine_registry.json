@@ -62,6 +62,44 @@
       "known_blockers": [],
       "output_contract": "solomon.joe.blueprint_queue.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "solomon_guardian",
+      "display_name": "Guardian Resident",
+      "source_path": "services/solomon_guardian.py",
+      "owner_family": "joe_jules",
+      "status_class": "internal_helper",
+      "parent_surface": "core/solomon_resident_framework.py",
+      "doc_path": "docs/solomon_guardian.md",
+      "test_paths": [
+        "tests/test_residents.py"
+      ]
+    },
+    {
+      "engine_id": "solomon_jules_resident",
+      "display_name": "Jules Resident",
+      "source_path": "services/solomon_jules_resident.py",
+      "owner_family": "joe_jules",
+      "status_class": "internal_helper",
+      "parent_surface": "core/solomon_resident_framework.py",
+      "doc_path": "docs/solomon_jules_resident.md",
+      "test_paths": [
+        "tests/test_residents.py"
+      ]
+    },
+    {
+      "engine_id": "resident_dashboard",
+      "display_name": "Resident Dashboard",
+      "source_path": "backend/services/resident_dashboard.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_route",
+      "route_paths": [
+        "/api/residents/dashboard"
+      ],
+      "doc_path": "docs/resident_dashboard.md",
+      "test_paths": [
+        "tests/test_residents.py"
+      ]
     }
   ],
   "exclusions": [
