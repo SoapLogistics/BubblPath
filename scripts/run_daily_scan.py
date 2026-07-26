@@ -37,9 +37,9 @@ def run_scan(mode="TEST", seed=42):
 
     # Mocking real input retrieval for Loki scans
     raw_candidates = [
-        {"id": "tgt_A", "conf": 93.0, "win_prob": 0.94},
-        {"id": "tgt_B", "conf": 91.0, "win_prob": 0.91},
-        {"id": "tgt_C", "conf": 85.0, "win_prob": 0.85},
+        {"id": "tgt_A", "event": "Lakers vs Celtics", "pick": "Lakers -5.5", "market": "DraftKings", "odds": "-110", "adapter": "draftkings", "conf": 93.0, "base_prob": 0.94},
+        {"id": "tgt_B", "event": "FED Rate Cut", "pick": "Yes", "market": "Kalshi", "odds": "88c", "adapter": "kalshi", "conf": 91.0, "base_prob": 0.91},
+        {"id": "tgt_C", "event": "FED Rate Cut", "pick": "No", "market": "Kalshi", "odds": "12c", "adapter": "kalshi", "conf": 95.0, "base_prob": 0.95}, # Should trigger contradiction resolver!
     ]
 
     results = []
@@ -52,14 +52,15 @@ def run_scan(mode="TEST", seed=42):
             continue
 
         c = Candidate(
-            candidate_id=raw["id"], event_id=f"evt_{raw['id']}", domain="sports",
+            candidate_id=raw["id"], event_id=raw["event"], domain="sports",
             source_name="daily_scan", source_record_id=f"rec_{raw['id']}",
             source_mode=mode, source_timestamp=str(time.time()), ingested_at=str(time.time()),
             pre_simulation_confidence=raw["conf"], data_quality_score=95.0,
-            features={"win_prob": raw["win_prob"]}
+            features={"historical_cover_rate": raw["base_prob"], "economic_indicator_prob": raw["base_prob"]},
+            event_name=raw["event"], pick=raw["pick"], market=raw["market"], live_odds=raw["odds"]
         )
 
-        res = engine.process_candidate(c, seed=seed)
+        res = engine.process_candidate(c, adapter_name=raw["adapter"], seed=seed)
         repo.save_run(res)
 
         if res.status != "PRE_SIM_NOT_QUALIFIED":

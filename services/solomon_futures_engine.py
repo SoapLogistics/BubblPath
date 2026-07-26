@@ -3,7 +3,10 @@ import hashlib
 import json
 import math
 import time
+
 from typing import Any, Dict, List, Optional, Tuple, Protocol
+from services.market_adapters import PolymarketAdapter, DraftKingsAdapter, KalshiAdapter
+
 
 route_key = "solomon_futures_engine"
 
@@ -24,7 +27,10 @@ class Candidate:
     pre_simulation_confidence: float
     data_quality_score: float
     features: Dict[str, Any]
-
+    event_name: str = "Unknown Event"
+    pick: str = "Unknown Pick"
+    market: str = "Unknown Market"
+    live_odds: str = "N/A"
     def validate(self) -> List[str]:
         errors = []
         if self.source_mode not in ["TEST", "SIMULATION", "SHADOW", "LIVE"]:
@@ -111,7 +117,12 @@ class SimpleSportsAdapter:
 class FuturesEngine:
     def __init__(self, config: Optional[SimulationConfig] = None):
         self.config = config or SimulationConfig()
-        self.adapters = {"simple_sports": SimpleSportsAdapter()}
+        self.adapters = {
+            "simple_sports": SimpleSportsAdapter(),
+            "polymarket": PolymarketAdapter(),
+            "draftkings": DraftKingsAdapter(),
+            "kalshi": KalshiAdapter()
+        }
 
     def _evaluate_gate_a(self, candidate: Candidate) -> QualificationResult:
         errors = candidate.validate()
@@ -132,6 +143,25 @@ class FuturesEngine:
         return QualificationResult(True, reasons)
 
     def process_candidate(self, candidate: Candidate, adapter_name: str = "simple_sports", run_id: str = "auto", seed: int = 42) -> SimulationResult:
+        repo = FuturesRepository()
+        if repo.check_contradiction(candidate.event_id, candidate.pick, candidate.source_mode):
+            return SimulationResult(
+                run_id=run_id,
+                candidate_id=candidate.candidate_id,
+                status="CONTRADICTION_REJECTED",
+                source_mode=candidate.source_mode,
+                qualification=QualificationResult(False, ["CONTRADICTION_DETECTED"]),
+                simulation={
+                    "event_id": candidate.event_id,
+                    "event_name": candidate.event_name,
+                    "pick": candidate.pick,
+                    "market": candidate.market,
+                    "live_odds": candidate.live_odds
+                },
+                audit={},
+                created_at=str(time.time())
+            )
+
         qual = self._evaluate_gate_a(candidate)
 
         if not qual.pre_simulation_qualified:
@@ -193,7 +223,12 @@ class FuturesEngine:
                 "simulation_probability": prob,
                 "interval_lower": lower,
                 "interval_upper": upper,
-                "sensitivity_floor": min_variant_prob
+                "sensitivity_floor": min_variant_prob,
+                "event_id": candidate.event_id,
+                "event_name": candidate.event_name,
+                "pick": candidate.pick,
+                "market": candidate.market,
+                "live_odds": candidate.live_odds
             },
             audit={},
             created_at=str(time.time())
@@ -224,9 +259,29 @@ class FuturesRepository:
                         simulation_probability REAL,
                         interval_lower REAL,
                         interval_upper REAL,
-                        created_at TEXT
+                        created_at TEXT,
+                        event_id TEXT,
+                        event_name TEXT,
+                        pick TEXT,
+                        market TEXT,
+                        live_odds TEXT
                     )
                 """)
+
+
+    def check_contradiction(self, event_id: str, pick: str, source_mode: str) -> bool:
+        """Prevent opposing sides on the same event."""
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT pick FROM futures_simulation_runs
+                WHERE event_id = ? AND status = 'CONFIRMED_90_PLUS' AND source_mode = ?
+            """, (event_id, source_mode))
+            rows = cur.fetchall()
+            for row in rows:
+                if row[0] != pick:
+                    return True # Found a conflicting confirmed pick for this event
+            return False
 
     def check_idempotency(self, candidate_id: str, source_mode: str) -> bool:
         """Prevent same candidate/mode execution logic."""
@@ -245,10 +300,15 @@ class FuturesRepository:
                 sim = result.simulation
                 conn.execute("""
                     INSERT OR IGNORE INTO futures_simulation_runs
-                    (run_id, candidate_id, status, source_mode, simulation_probability, interval_lower, interval_upper, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (run_id, candidate_id, status, source_mode, simulation_probability, interval_lower, interval_upper, created_at, event_id, event_name, pick, market, live_odds)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     f'{result.run_id}_{result.candidate_id}', result.candidate_id, result.status, result.source_mode,
                     sim.get("simulation_probability", 0.0), sim.get("interval_lower", 0.0),
-                    sim.get("interval_upper", 0.0), result.created_at
+                    sim.get("interval_upper", 0.0), result.created_at,
+                    result.simulation.get("event_id", "Unknown"),
+                    result.simulation.get("event_name", "Unknown"),
+                    result.simulation.get("pick", "Unknown"),
+                    result.simulation.get("market", "Unknown"),
+                    result.simulation.get("live_odds", "N/A")
                 ))

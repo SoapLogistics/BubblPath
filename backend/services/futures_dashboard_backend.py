@@ -32,7 +32,11 @@ class FuturesDashboardBackend:
                         "source_mode": row["source_mode"],
                         "simulation_probability": row["simulation_probability"],
                         "interval_lower": row["interval_lower"],
-                        "created_at": row["created_at"]
+                        "created_at": row["created_at"],
+                        "event_name": row["event_name"],
+                        "pick": row["pick"],
+                        "market": row["market"],
+                        "live_odds": row["live_odds"]
                     })
 
                 return {

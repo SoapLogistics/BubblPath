@@ -77,11 +77,12 @@
             <table id="resultsTable">
                 <thead>
                     <tr>
-                        <th>Candidate ID</th>
+                        <th>Event Name</th>
+                        <th>Pick</th>
+                        <th>Market</th>
+                        <th>Live Odds</th>
                         <th>Status</th>
-                        <th>Mode</th>
-                        <th>Probability</th>
-                        <th>Lower Bound</th>
+                        <th>Probability (95% CI)</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -159,16 +160,17 @@
 
                     // Securely construct cells
                     const cells = [
-                        escapeHtml(proj.candidate_id),
+                        escapeHtml(proj.event_name),
+                        escapeHtml(proj.pick),
+                        escapeHtml(proj.market),
+                        escapeHtml(proj.live_odds),
                         `<span class="${statusClass}">${escapeHtml(proj.status)}</span>`,
-                        escapeHtml(proj.source_mode),
-                        proj.simulation_probability ? (proj.simulation_probability * 100).toFixed(2) + '%' : 'N/A',
-                        proj.interval_lower ? (proj.interval_lower * 100).toFixed(2) + '%' : 'N/A'
+                        proj.simulation_probability ? `${(proj.simulation_probability * 100).toFixed(2)}% (≥${(proj.interval_lower * 100).toFixed(2)}%)` : 'N/A'
                     ];
 
                     cells.forEach((htmlContent, i) => {
                         const td = document.createElement('td');
-                        if (i === 1) td.innerHTML = htmlContent; // Safe because statusClass/escapeHtml ensures integrity
+                        if (i === 4) td.innerHTML = htmlContent; // Safe because statusClass/escapeHtml ensures integrity
                         else td.textContent = htmlContent;
                         tr.appendChild(td);
                     });
