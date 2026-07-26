@@ -7,6 +7,10 @@ from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 from solomon_quantized_memory import QuantizedBrainMap
 
 app = Flask(__name__)
+
+from backend.middleware_telemetry import register_telemetry_middleware
+register_telemetry_middleware(app)
+
 unified_memory = QuantizedBrainMap()
 unified_memory.start_ans()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -127,6 +131,9 @@ def handle_unexpected_error(error):
     }
     return jsonify(response), 500
 
+
+from backend.services.health_dashboard import health_blueprint
+app.register_blueprint(health_blueprint)
 
 @app.route("/chat", methods=["POST"])
 def chat():

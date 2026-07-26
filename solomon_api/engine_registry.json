@@ -141,6 +141,35 @@
       "known_blockers": [],
       "output_contract": "solomon.learning.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "telemetry_health_dashboard",
+      "display_name": "Telemetry Dashboard",
+      "source_path": "backend/services/health_dashboard.py",
+      "owner_family": "governance",
+      "status_class": "active_route",
+      "entrypoint": "health_blueprint",
+      "route_paths": [
+        "/api/health",
+        "/api/telemetry/dashboard",
+        "/api/telemetry/alerts"
+      ],
+      "readiness_keys": [],
+      "parent_surface": null,
+      "doc_path": "docs/architecture/md9_observability_telemetry.md",
+      "test_paths": [
+        "tests/test_health_dashboard.py"
+      ],
+      "approval_required": false,
+      "mutates_state": false,
+      "execution_capable": false,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.telemetry.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [
