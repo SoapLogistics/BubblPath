@@ -85,7 +85,7 @@ class QuantizedBrainMap:
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
-        self.nodes_lock = threading.Lock()
+        self.nodes_lock = threading.RLock()
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
@@ -145,7 +145,8 @@ class QuantizedBrainMap:
                 continue
 
             # Simulated bitwise XNOR (dot product on ternary is equivalent and fast)
-            similarity = np.dot(new_node.ternary_vector, existing_node.ternary_vector) / 128.0
+            # Cast to int32 to prevent signed 8-bit integer overflow during summation
+            similarity = np.dot(new_node.ternary_vector.astype(np.int32), existing_node.ternary_vector.astype(np.int32)) / 128.0
 
             if similarity > 0.3:
                 self.adj_matrix[idx, existing_idx] = similarity
@@ -168,7 +169,14 @@ class QuantizedBrainMap:
                     if not record or len(record) < RECORD_SIZE:
                         break
 
-                    metadata_bytes = record[:41]
+                    b_data = record[:169]
+                    b_hash = record[169:]
+
+                    # Immune system Merkle verification to detect and block corrupted records
+                    if hashlib.sha256(b_data).digest() != b_hash:
+                        continue
+
+                    metadata_bytes = b_data[:41]
                     id_int = struct.unpack("!Q", metadata_bytes[:8])[0]
 
                     if id_int == target_id_int:
@@ -176,7 +184,7 @@ class QuantizedBrainMap:
                         _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
 
                         return {
-                            "id": "blob-recovered", # Note: real ID is deterministic hash, mock for now
+                            "id": f"blob-recovered-{id_int}",
                             "type_idx": 0,
                             "content": "Recovered from binary blob",
                             "layer": layer,
