@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+plugins: anyio-4.14.2
+collected 25 items
+
+tests/futures/test_threshold_logic.py .....                              [ 20%]
+tests/test_engine_registry.py .                                          [ 24%]
+tests/test_gabriel.py ..........                                         [ 64%]
+tests/test_gabriel_evolution.py ....                                     [ 80%]
+tests/test_governance_approval.py ..                                     [ 88%]
+tests/test_joe_blueprint_facade.py .                                     [ 92%]
+tests/test_learning_writeback.py .                                       [ 96%]
+tests/test_run_daily_scan.py .                                           [100%]
+
+=============================== warnings summary ===============================
+tests/test_gabriel.py::test_models
+tests/test_gabriel.py::test_acquisition_and_permission_gate
+tests/test_gabriel.py::test_acquisition_and_permission_gate
+tests/test_gabriel.py::test_crucible_and_perpetual_loop
+tests/test_gabriel.py::test_flask_endpoints
+  /app/gabriel_engine/core/models.py:25: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.timestamp = timestamp or datetime.datetime.utcnow().isoformat()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 25 passed, 5 warnings in 2.88s ========================

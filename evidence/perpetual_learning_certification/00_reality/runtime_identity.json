@@ -1,0 +1,16 @@
+{
+  "captured_at_utc": "2026-07-27T07:53:03Z",
+  "hostname": "devbox",
+  "os": "Ubuntu 24.04.4 LTS",
+  "kernel": "Linux devbox 6.8.0 #1 SMP PREEMPT_DYNAMIC Fri Feb 20 20:38:43 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+  "repository_path": "/app",
+  "git_remote": "https://github.com/SoapLogistics/BubblPath",
+  "git_branch": "jules-13384773238309533918-912b2a35",
+  "git_commit": "a138dfff0c09d23397dafa46eeac261aca74994d",
+  "git_status": "M SOLOMON_PERPETUAL_LEARNING_MASTER_AUDIT.md, M fact_memory.log, M governance_log.bin, M memory_atoms.db",
+  "python_version": "Python 3.12.13",
+  "environment_path": "/home/jules/.pyenv/shims/python",
+  "service_manager": "none (docker/sandbox container)",
+  "deployment_environment": "SANDBOX_DEV",
+  "operator": "jules"
+}
