@@ -1,55 +1,46 @@
 import pytest
-import os
-from services.solomon_futures_engine import FuturesEngine
+from services.solomon_futures_engine import Candidate, FuturesEngine, WilsonInterval, SimulationConfig
 
-def test_threshold_logic_80():
+def test_wilson_interval():
+    lower, upper = WilsonInterval.calculate(900, 1000, 0.95)
+    assert 0.87 < lower < 0.89
+    assert 0.91 < upper < 0.93
+
+def test_candidate_gate_a_qualification():
     engine = FuturesEngine()
 
-    # Boundary tests
-    assert engine.evaluate_threshold(79.99, 80.0) is False
-    assert engine.evaluate_threshold(80.00, 80.0) is True
-    assert engine.evaluate_threshold(80.01, 80.0) is True
+    # Valid candidate
+    valid_c = Candidate(
+        candidate_id="c1", event_id="e1", domain="sports", source_name="src",
+        source_record_id="rec1", source_mode="SHADOW", source_timestamp="2026-07-26",
+        ingested_at="2026-07-26", pre_simulation_confidence=92.0, data_quality_score=95.0,
+        features={"win_prob": 0.92}
+    )
+    qual = engine._evaluate_gate_a(valid_c)
+    assert qual.pre_simulation_qualified is True
 
-def test_threshold_logic_90():
+    # Invalid confidence
+    invalid_c = Candidate(
+        candidate_id="c2", event_id="e2", domain="sports", source_name="src",
+        source_record_id="rec2", source_mode="SHADOW", source_timestamp="2026-07-26",
+        ingested_at="2026-07-26", pre_simulation_confidence=85.0, data_quality_score=95.0,
+        features={"win_prob": 0.85}
+    )
+    qual2 = engine._evaluate_gate_a(invalid_c)
+    assert qual2.pre_simulation_qualified is False
+    assert "PRE_SIMULATION_SCORE_BELOW_90" in qual2.reasons
+
+def test_full_simulation_gate_b_confirmation():
+    # We set seed so that out of 1000 trials, the success count hits roughly the probability
     engine = FuturesEngine()
+    c = Candidate(
+        candidate_id="c3", event_id="e3", domain="sports", source_name="src",
+        source_record_id="rec3", source_mode="SHADOW", source_timestamp="2026-07-26",
+        ingested_at="2026-07-26", pre_simulation_confidence=95.0, data_quality_score=95.0,
+        features={"win_prob": 0.95} # High probability ensuring Wilson lower bound > 0.90
+    )
 
-    # Boundary tests
-    assert engine.evaluate_threshold(89.99, 90.0) is False
-    assert engine.evaluate_threshold(90.00, 90.0) is True
-    assert engine.evaluate_threshold(90.01, 90.0) is True
-
-def test_invalid_threshold():
-    engine = FuturesEngine()
-    with pytest.raises(ValueError):
-        engine.evaluate_threshold(85.0, 85.0)
-
-def test_projection_shape():
-    engine = FuturesEngine()
-    proj = engine.generate_projection("game_1", 90.0, {"team": "A"})
-
-    assert "target_id" in proj
-    assert "confidence" in proj
-    assert "threshold_80_met" in proj
-    assert "threshold_90_met" in proj
-    assert "data_health" in proj
-    assert proj["data_health"] == "verified"
-    assert proj["threshold_90_met"] is True
-    assert proj["threshold_80_met"] is True
-
-    proj_marginal = engine.generate_projection("game_2", 79.99, {"team": "B"})
-    assert proj_marginal["data_health"] == "marginal"
-    assert proj_marginal["threshold_80_met"] is False
-    assert proj_marginal["threshold_90_met"] is False
-
-def test_fact_memory_logging():
-    log_file = "fact_memory.log"
-    if os.path.exists(log_file):
-        os.remove(log_file)
-
-    engine = FuturesEngine()
-    engine.evaluate_threshold(90.5, 90.0)
-
-    assert os.path.exists(log_file)
-    with open(log_file, "r") as f:
-        content = f.read()
-        assert "Threshold 90.0 crossed" in content
+    result = engine.process_candidate(c, seed=42)
+    assert result.status == "CONFIRMED_90_PLUS"
+    assert result.simulation["simulation_probability"] >= 0.90
+    assert result.simulation["interval_lower"] >= 0.90

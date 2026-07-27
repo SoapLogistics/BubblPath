@@ -1,47 +1,49 @@
 import json
-import os
-from services.solomon_futures_engine import FuturesEngine
-from services.solomon_governance_approval_packet import GovernanceApprovalLane
+import sqlite3
+from typing import Dict, Any
 
-route_key = "solomon_futures_dashboard"
+route_key = "futures_dashboard_backend"
 
 class FuturesDashboardBackend:
-    def __init__(self):
-        self.engine = FuturesEngine()
-        self.governance = GovernanceApprovalLane()
+    def __init__(self, db_path="solomon_soss.db"):
+        self.db_path = db_path
 
-    def get_projections(self):
+    def get_dashboard_data(self) -> Dict[str, Any]:
         """
-        Mock retrieval of actual futures projections to feed the dashboard.
-        In a real scenario, this reads from the output of the daily scan.
+        GET /api/futures/dashboard logic
         """
-        # Read from daily scan context if available, otherwise mock
-        projections = []
-
         try:
-            # Simulate processing of mock targets for UI display
-            targets = [
-                {"id": "tgt_alpha", "conf": 92.5},
-                {"id": "tgt_beta", "conf": 81.2},
-                {"id": "tgt_gamma", "conf": 75.0}
-            ]
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                # Use a try block in case table doesn't exist yet on fresh spin up
+                try:
+                    cur.execute("SELECT * FROM futures_simulation_runs ORDER BY created_at DESC LIMIT 50")
+                    rows = cur.fetchall()
+                except sqlite3.OperationalError:
+                    rows = []
 
-            for t in targets:
-                proj = self.engine.generate_projection(t["id"], t["conf"], {"raw": "data"})
-                projections.append(proj)
+                projections = []
+                for row in rows:
+                    projections.append({
+                        "run_id": row["run_id"],
+                        "candidate_id": row["candidate_id"],
+                        "status": row["status"],
+                        "source_mode": row["source_mode"],
+                        "simulation_probability": row["simulation_probability"],
+                        "interval_lower": row["interval_lower"],
+                        "created_at": row["created_at"]
+                    })
 
-            return {"status": "success", "projections": projections}
+                return {
+                    "status": "success",
+                    "projections": projections,
+                    "service_status": "ONLINE",
+                    "degraded": False
+                }
         except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-    def execute_action(self, packet):
-        """
-        Gated by the Governance Lane.
-        """
-        # Send through governance approval
-        gov_result = self.governance.review_packet(packet)
-
-        if gov_result.get("status") == "refused":
-            return gov_result
-
-        return {"status": "success", "audit_id": gov_result.get("audit_id", "aud_auto")}
+            return {
+                "status": "error",
+                "message": str(e),
+                "degraded": True
+            }

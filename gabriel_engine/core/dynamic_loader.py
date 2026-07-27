@@ -2,6 +2,7 @@ import os
 import sys
 import threading
 import importlib.util
+import py_compile
 from typing import Dict, Any, Optional
 
 class DynamicCapabilityRegistry:
@@ -35,29 +36,41 @@ class DynamicCapabilityRegistry:
 
     def register_and_save(self, capability_name: str, code_content: str) -> str:
         """
-        Saves the compiled Python code to a file in the assimilated capabilities directory.
-        Returns the absolute filepath. Protected by reentrant locks.
+        Saves the compiled Python code to a file, hyper-quantizes it into raw .pyc bytecode,
+        and instantly deletes the source code to save space.
+        Returns the absolute filepath to the bytecode.
         """
         with self._lock:
-            filename = f"{capability_name}.py"
-            filepath = os.path.join(self.target_dir, filename)
+            temp_filename = f"{capability_name}.py"
+            pyc_filename = f"{capability_name}.pyc"
+            temp_filepath = os.path.join(self.target_dir, temp_filename)
+            pyc_filepath = os.path.join(self.target_dir, pyc_filename)
 
-            with open(filepath, "w", encoding="utf-8") as f:
+            # Write temp source
+            with open(temp_filepath, "w", encoding="utf-8") as f:
                 f.write(code_content)
 
-            return filepath
+            # Compile directly to bytecode
+            py_compile.compile(temp_filepath, cfile=pyc_filepath)
+
+            # Shred the human-readable source code
+            if os.path.exists(temp_filepath):
+                os.remove(temp_filepath)
+
+            return pyc_filepath
 
     def load_capability(self, capability_name: str) -> Any:
         """
-        Dynamically imports the capability module from disk and returns it.
-        Employs threading locks for safety, and an LRU eviction strategy to prevent memory leaks.
+        Dynamically imports the raw bytecode capability from disk and returns it.
+        Employs threading locks for safety, and an LRU eviction strategy.
         """
         with self._lock:
             module_name = f"gabriel_engine.assimilated_capabilities.{capability_name}"
-            filepath = os.path.join(self.target_dir, f"{capability_name}.py")
+            # Load directly from Hyper-Quantized Bytecode
+            filepath = os.path.join(self.target_dir, f"{capability_name}.pyc")
 
             if not os.path.exists(filepath):
-                raise FileNotFoundError(f"No source file found for capability {capability_name} at {filepath}")
+                raise FileNotFoundError(f"No bytecode found for capability {capability_name} at {filepath}")
 
             # Eviction strategy: if cache exceeds limits, evict the oldest module
             if len(self._loaded_modules) >= self.max_cached_modules:

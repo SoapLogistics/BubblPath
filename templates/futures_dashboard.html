@@ -3,182 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Futures Dashboard</title>
+    <title>Futures 90+ Analysis Dashboard</title>
     <style>
+        :root {
+            --bg-color: #000;
+            --text-color: #0f0;
+            --border-color: #0f0;
+            --alert-red: #ff0000;
+            --alert-blue: #0088ff;
+            --dim-color: #004400;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .blink { animation: none !important; opacity: 1 !important; }
+        }
         body {
             margin: 0;
             padding: 20px;
-            background-color: #000;
-            color: #0f0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: monospace;
+            box-sizing: border-box;
         }
-        #hud {
-            background: rgba(0, 20, 0, 0.8);
-            padding: 15px;
-            border: 1px solid #0f0;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-            max-width: 600px;
+        .container {
+            max-width: 900px;
             margin: 0 auto;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            background: rgba(0, 20, 0, 0.9);
         }
-        h1 { margin-top: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
-        .stat { margin: 5px 0; font-size: 0.9rem; }
+        h1 { margin-top: 0; font-size: 1.4rem; text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        .controls { margin-bottom: 15px; display: flex; justify-content: space-between; }
+        button { background: var(--dim-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; }
+        button:hover { background: #006600; }
+
+        .status-panel { margin-bottom: 15px; padding: 10px; border: 1px dashed var(--border-color); }
         .blink { animation: blinker 1s linear infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #0f0; padding: 8px; text-align: left; }
-        th { background-color: #002200; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
+        th { background-color: var(--dim-color); }
 
-        .valence-blue { color: #0088ff; font-weight: bold; animation: pulse-blue 2s infinite; }
-        .valence-red { color: #ff0000; font-weight: bold; animation: pulse-red 2s infinite; }
+        .state-loading, .state-error, .state-stale { display: none; padding: 15px; text-align: center; border: 1px solid; margin-bottom: 15px;}
+        .state-error { border-color: var(--alert-red); color: var(--alert-red); }
+        .state-stale { border-color: #ffaa00; color: #ffaa00; }
 
-        @keyframes pulse-blue { 50% { text-shadow: 0 0 10px #0088ff; } }
-        @keyframes pulse-red { 50% { text-shadow: 0 0 10px #ff0000; } }
-
-        .refusal-alert {
-            display: none;
-            background-color: #330000;
-            color: #ff0000;
-            border: 1px solid #ff0000;
-            padding: 10px;
-            margin-top: 15px;
-            text-align: center;
-        }
+        .val-90 { color: var(--alert-blue); font-weight: bold; }
+        .val-not-90 { color: #888; }
+        .val-failed { color: var(--alert-red); }
     </style>
 </head>
 <body>
-    <div id="hud">
-        <h1>Solomon Futures Engine</h1>
-        <div class="stat">Status: <span class="blink">ACTIVATED_SUPERVISED</span></div>
-        <div class="stat">Data Health: <span id="overallHealth">UNKNOWN</span></div>
+    <div class="container">
+        <h1>Solomon Loki: 90+ Futures</h1>
 
-        <div id="refusalAlert" class="refusal-alert">
-            <strong>GOVERNANCE REFUSAL</strong><br>
-            Audit ID: <span id="refusalAuditId"></span><br>
-            Reason: <span id="refusalReason"></span>
+        <div class="controls">
+            <div>
+                <strong>UI State: </strong> <span id="uiStateIndicator">INITIALIZING</span>
+            </div>
+            <button id="refreshBtn">Refresh Data</button>
         </div>
 
-        <table id="projectionsTable">
-            <thead>
-                <tr>
-                    <th>Target ID</th>
-                    <th>Confidence</th>
-                    <th>Threshold Met</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Populated via API -->
-            </tbody>
-        </table>
+        <div id="loadingState" class="state-loading" style="display:block;">LOADING DATA...</div>
+        <div id="errorState" class="state-error">BACKEND_ERROR: <span id="errorMsg"></span></div>
+        <div id="staleState" class="state-stale">WARNING: DATA IS STALE</div>
 
-        <button id="refreshBtn" style="margin-top:15px; padding: 8px 16px; background:#002200; color:#0f0; border:1px solid #0f0; cursor:pointer;">Refresh Projections</button>
-        <button id="forceRunBtn" style="margin-top:15px; margin-left:10px; padding: 8px 16px; background:#330000; color:#ff0000; border:1px solid #ff0000; cursor:pointer;">Trigger Target Execution (Governed)</button>
+        <div id="dataContainer" style="display:none;">
+            <div class="status-panel">
+                <div>Service: <span id="svcStatus" class="blink">UNKNOWN</span></div>
+                <div>Last Update: <span id="lastUpdate">Never</span></div>
+            </div>
+
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Candidate ID</th>
+                        <th>Status</th>
+                        <th>Mode</th>
+                        <th>Probability</th>
+                        <th>Lower Bound</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        async function fetchProjections() {
-            try {
-                const response = await fetch('/api/futures/projections');
-                const data = await response.json();
+        const uiState = document.getElementById('uiStateIndicator');
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const staleState = document.getElementById('staleState');
+        const dataContainer = document.getElementById('dataContainer');
+        const tbody = document.querySelector('#resultsTable tbody');
 
-                if (data.status === 'refused') {
-                    showRefusal(data);
+        function setState(state, msg = '') {
+            uiState.textContent = state;
+            loadingState.style.display = 'none';
+            errorState.style.display = 'none';
+            staleState.style.display = 'none';
+            dataContainer.style.display = 'none';
+
+            if (state === 'LOADING') loadingState.style.display = 'block';
+            if (state === 'BACKEND_ERROR') {
+                errorState.style.display = 'block';
+                document.getElementById('errorMsg').textContent = msg;
+            }
+            if (state === 'READY_WITH_RESULTS' || state === 'READY_EMPTY') {
+                dataContainer.style.display = 'block';
+            }
+        }
+
+        function escapeHtml(unsafe) {
+            return (unsafe || '').toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        async function fetchDashboard() {
+            setState('LOADING');
+            try {
+                const res = await fetch('/api/futures/dashboard');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                if (data.status === 'error') {
+                    setState('BACKEND_ERROR', data.message);
                     return;
                 }
 
-                hideRefusal();
-                renderProjections(data.projections || []);
-            } catch (e) {
-                console.error("Failed to fetch futures data", e);
-            }
-        }
+                document.getElementById('svcStatus').textContent = data.service_status || 'ONLINE';
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
 
-        function renderProjections(projections) {
-            const tbody = document.querySelector('#projectionsTable tbody');
-            tbody.innerHTML = '';
-
-            let allVerified = projections.length > 0;
-
-            projections.forEach(proj => {
-                const tr = document.createElement('tr');
-
-                let thresholdClass = '';
-                let thresholdText = 'NONE';
-
-                if (proj.threshold_90_met) {
-                    thresholdClass = 'valence-blue';
-                    thresholdText = '90.0 MET';
-                } else if (proj.threshold_80_met) {
-                    thresholdClass = 'valence-red';
-                    thresholdText = '80.0 MET';
+                tbody.innerHTML = ''; // Clear table
+                if (!data.projections || data.projections.length === 0) {
+                    setState('READY_EMPTY');
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 5;
+                    td.textContent = 'NO RECENT RUNS';
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+                    return;
                 }
 
-                if (proj.data_health !== 'verified') {
-                    allVerified = false;
-                }
+                data.projections.forEach(proj => {
+                    const tr = document.createElement('tr');
 
-                tr.innerHTML = `
-                    <td>${proj.target_id}</td>
-                    <td>${proj.confidence.toFixed(2)}%</td>
-                    <td class="${thresholdClass}">${thresholdText}</td>
-                    <td>${proj.data_health.toUpperCase()}</td>
-                `;
+                    let statusClass = 'val-not-90';
+                    if (proj.status === 'CONFIRMED_90_PLUS') statusClass = 'val-90';
+                    else if (proj.status.includes('FAILED')) statusClass = 'val-failed';
 
-                tbody.appendChild(tr);
-            });
+                    // Securely construct cells
+                    const cells = [
+                        escapeHtml(proj.candidate_id),
+                        `<span class="${statusClass}">${escapeHtml(proj.status)}</span>`,
+                        escapeHtml(proj.source_mode),
+                        proj.simulation_probability ? (proj.simulation_probability * 100).toFixed(2) + '%' : 'N/A',
+                        proj.interval_lower ? (proj.interval_lower * 100).toFixed(2) + '%' : 'N/A'
+                    ];
 
-            const healthSpan = document.getElementById('overallHealth');
-            if (projections.length === 0) {
-                healthSpan.textContent = 'NO DATA';
-                healthSpan.style.color = '#0f0';
-            } else if (allVerified) {
-                healthSpan.textContent = 'VERIFIED';
-                healthSpan.style.color = '#0088ff';
-            } else {
-                healthSpan.textContent = 'MARGINAL';
-                healthSpan.style.color = '#ff9900';
-            }
-        }
+                    cells.forEach((htmlContent, i) => {
+                        const td = document.createElement('td');
+                        if (i === 1) td.innerHTML = htmlContent; // Safe because statusClass/escapeHtml ensures integrity
+                        else td.textContent = htmlContent;
+                        tr.appendChild(td);
+                    });
 
-        async function triggerExecution() {
-            try {
-                const response = await fetch('/api/futures/execute', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: "mutate_target" })
+                    tbody.appendChild(tr);
                 });
 
-                const data = await response.json();
-                if (data.status === 'refused') {
-                    showRefusal(data);
-                } else {
-                    hideRefusal();
-                    alert("Execution Approved: " + (data.audit_id || 'OK'));
-                    fetchProjections();
-                }
-            } catch(e) {
-                console.error("Execution failed", e);
+                setState('READY_WITH_RESULTS');
+            } catch (err) {
+                setState('BACKEND_ERROR', err.message);
             }
         }
 
-        function showRefusal(data) {
-            const alert = document.getElementById('refusalAlert');
-            document.getElementById('refusalAuditId').textContent = data.audit_id || 'UNKNOWN';
-            document.getElementById('refusalReason').textContent = data.reason || 'Unauthorized operation';
-            alert.style.display = 'block';
-        }
-
-        function hideRefusal() {
-            document.getElementById('refusalAlert').style.display = 'none';
-        }
-
-        document.getElementById('refreshBtn').addEventListener('click', fetchProjections);
-        document.getElementById('forceRunBtn').addEventListener('click', triggerExecution);
-
-        // Initial fetch
-        fetchProjections();
+        document.getElementById('refreshBtn').addEventListener('click', fetchDashboard);
+        fetchDashboard();
     </script>
 </body>
 </html>

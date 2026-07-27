@@ -1,0 +1,24 @@
+{
+    "sports": [
+        "https://sports.yahoo.com/wnba/rss/",
+        "https://sports.yahoo.com/soccer/rss/",
+        "https://sports.yahoo.com/nba/rss/",
+        "https://sports.yahoo.com/nfl/rss/",
+        "https://sports.yahoo.com/mlb/rss/",
+        "https://sports.yahoo.com/nhl/rss/"
+    ],
+    "finance": [
+        "https://finance.yahoo.com/news/rssindex",
+        "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664"
+    ],
+    "ai": [
+        "http://export.arxiv.org/rss/cs.AI",
+        "http://export.arxiv.org/rss/cs.AR",
+        "http://export.arxiv.org/rss/cs.LG",
+        "http://export.arxiv.org/rss/cs.NE"
+    ],
+    "geopolitics": [
+        "http://feeds.bbci.co.uk/news/world/rss.xml",
+        "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+    ]
+}
