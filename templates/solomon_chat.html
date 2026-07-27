@@ -4,112 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solomon Native Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-dark: #0a0c10;
+            --panel-bg: rgba(20, 25, 35, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-blue: #58a6ff;
+            --user-bubble: #1f2937;
+            --ai-bubble: rgba(88, 166, 255, 0.05);
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+        }
+
         body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at center top, #1a2035 0%, var(--bg-dark) 100%);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
+
         .header {
-            background-color: #161b22;
-            padding: 15px 20px;
-            border-bottom: 1px solid #30363d;
+            background: rgba(10, 12, 16, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            z-index: 10;
         }
+
         .header h1 {
             margin: 0;
-            font-size: 1.2rem;
-            color: #58a6ff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
         }
+
         .status-indicator {
             display: flex;
             align-items: center;
-            font-size: 0.9rem;
-            color: #3fb950;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.03);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
         }
+
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background-color: #3fb950;
             border-radius: 50%;
             margin-right: 8px;
-            box-shadow: 0 0 8px #3fb950;
+            box-shadow: 0 0 10px #3fb950;
+            animation: pulse 2s infinite;
         }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
         .chat-container {
             flex-grow: 1;
-            padding: 20px;
+            padding: 40px 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
         }
+
         .message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 6px;
-            line-height: 1.5;
+            max-width: 85%;
+            padding: 18px 24px;
+            border-radius: 16px;
+            line-height: 1.6;
             white-space: pre-wrap;
+            font-size: 1.05rem;
+            font-weight: 300;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
         }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .user-message {
             align-self: flex-end;
-            background-color: #21262d;
-            border: 1px solid #30363d;
-            color: #c9d1d9;
+            background-color: var(--user-bubble);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-bottom-right-radius: 4px;
         }
+
         .solomon-message {
             align-self: flex-start;
-            background-color: #0d1117;
-            border-left: 3px solid #58a6ff;
-            color: #8b949e;
+            background-color: var(--ai-bubble);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--accent-blue);
+            border-bottom-left-radius: 4px;
         }
+
         .solomon-message strong {
-            color: #58a6ff;
+            color: var(--accent-blue);
+            font-weight: 500;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
+        .input-wrapper {
+            background: linear-gradient(to top, var(--bg-dark) 60%, transparent);
+            padding: 30px 20px 40px 20px;
+        }
+
         .input-container {
-            padding: 20px;
-            background-color: #161b22;
-            border-top: 1px solid #30363d;
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transition: border-color 0.3s ease;
         }
+
+        .input-container:focus-within {
+            border-color: rgba(88, 166, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(88,166,255,0.1);
+        }
+
         input[type="text"] {
             flex-grow: 1;
-            background-color: #0d1117;
-            border: 1px solid #30363d;
-            color: #c9d1d9;
-            padding: 12px;
-            border-radius: 4px;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 12px 20px;
             font-family: inherit;
-            font-size: 1rem;
+            font-size: 1.05rem;
+            font-weight: 300;
             outline: none;
         }
-        input[type="text"]:focus {
-            border-color: #58a6ff;
+
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
         }
+
         button {
-            background-color: #238636;
-            color: #ffffff;
+            background: var(--accent-blue);
+            color: #000;
             border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
+            padding: 12px 28px;
+            border-radius: 18px;
             font-family: inherit;
             font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
         }
+
         button:hover {
-            background-color: #2ea043;
+            background: #79c0ff;
+            transform: scale(1.02);
         }
+        
+        button:disabled {
+            background: #30363d;
+            color: #8b949e;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
@@ -123,31 +215,42 @@
 
     <div class="chat-container" id="chatContainer">
         <div class="message solomon-message">
-            <strong>[SYSTEM]</strong> Connection established to local synthesizer.<br>What are your coordinates?
+            <strong>[SYSTEM]</strong>
+            Connection established to local synthesizer. What are your coordinates?
         </div>
     </div>
 
-    <div class="input-container">
-        <input type="text" id="userInput" placeholder="Enter command sequence..." onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()">TRANSMIT</button>
+    <div class="input-wrapper">
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Message Solomon..." onkeypress="handleKeyPress(event)" autocomplete="off">
+            <button id="sendBtn" onclick="sendMessage()">Transmit</button>
+        </div>
     </div>
 
     <script>
         const chatContainer = document.getElementById('chatContainer');
         const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
 
         function appendMessage(sender, text, isSolomon = false) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${isSolomon ? 'solomon-message' : 'user-message'}`;
             
             if (isSolomon) {
-                msgDiv.innerHTML = `<strong>[SOLOMON]</strong><br>${text}`;
+                msgDiv.innerHTML = `<strong>[SOLOMON]</strong>${text}`;
             } else {
-                msgDiv.innerHTML = `<strong>[USER]</strong><br>${text}`;
+                msgDiv.innerHTML = text; // Cleaner look for user messages
             }
             
             chatContainer.appendChild(msgDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Smooth scroll to bottom
+            setTimeout(() => {
+                chatContainer.scrollTo({
+                    top: chatContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 50);
         }
 
         async function sendMessage() {
@@ -156,7 +259,11 @@
 
             appendMessage('USER', text, false);
             userInput.value = '';
+            
+            // Disable input while processing
             userInput.disabled = true;
+            sendBtn.disabled = true;
+            sendBtn.textContent = '...';
 
             try {
                 const response = await fetch('/chat', {
@@ -168,13 +275,13 @@
                 const data = await response.json();
                 appendMessage('SOLOMON', data.reply, true);
                 
-                // Also log the raw internal state to the browser console for debugging
                 console.log("RAW SYSTEM STATE:\\n", data.native_state);
-                
             } catch (err) {
-                appendMessage('SYSTEM', `[ERROR] Connection to core severed: ${err.message}`, true);
+                appendMessage('SYSTEM', `Error: Connection to core severed (${err.message})`, true);
             } finally {
                 userInput.disabled = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Transmit';
                 userInput.focus();
             }
         }
