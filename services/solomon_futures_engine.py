@@ -4,8 +4,8 @@ import time
 route_key = "solomon_futures_engine"
 
 class FuturesEngine:
-    def __init__(self):
-        self.log_file = "fact_memory.log"
+    def __init__(self, log_file="fact_memory.log"):
+        self.log_file = log_file
 
     def evaluate_threshold(self, value, threshold):
         """

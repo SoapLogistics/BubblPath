@@ -1,0 +1,20 @@
+{
+  "memory_atoms.db": {
+    "path": "./memory_atoms.db",
+    "exists": true,
+    "sha256": "e6ecb3b82c99148573116093017d0d6f1168ad57d0443aca4db0e1f0b9743e89",
+    "size": 12288
+  },
+  "governance_log.bin": {
+    "path": "./governance_log.bin",
+    "exists": true,
+    "sha256": "05527ac2279de62caa8c47e1c97ee92a77215d76ff4687b5fd160ab272620a3a",
+    "size": 65536
+  },
+  "fact_memory.log": {
+    "path": "./fact_memory.log",
+    "exists": true,
+    "sha256": "eb521522786a3f50484eeb3e424bd14729f9d25c528c7a29667dc8b82ff4efa6",
+    "size": 59
+  }
+}

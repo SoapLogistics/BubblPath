@@ -1,0 +1,13 @@
+{"stage": "first_task", "data": {"task_id": "task_failed_normalization", "status": "failed", "error": "Lookup failed for key '  ALPHA  ' due to untrimmed whitespace"}}
+{"stage": "failure_event", "data": {"event_id": "evt_001", "type": "task_failure", "payload": {"task_id": "task_failed_normalization", "status": "failed", "error": "Lookup failed for key '  ALPHA  ' due to untrimmed whitespace"}}}
+{"stage": "candidate_writeback", "data": {"recorded": true, "packet_id": "p1", "memory_type": "lesson", "result": "failed", "duplicate": false}}
+{"stage": "validation", "data": {"status": "passed", "checks": ["non_empty", "no_status_words", "idempotency_passed"]}}
+{"stage": "governance", "data": {"status": "approved", "audit_id": "aud_003"}}
+{"stage": "active_memory", "data": {"node_id": "42cab349-ed1f-4857-ad97-0a0ebc1f0125", "content": "Always strip whitespace and case-fold lookup keys before database query execution.", "indexed": true}}
+{"stage": "retrieval_trace", "data": {"query": "how to do database key normalization", "results": [{"id": "42cab349-ed1f-4857-ad97-0a0ebc1f0125", "type_idx": 36, "content": "Always strip whitespace and case-fold lookup keys before database query execution.", "layer": 0, "importance": 0.9, "valence": 0.5, "arousal": 0.8, "activation": 0.1666666716337204, "access_count": 2}]}}
+{"stage": "plan_trace", "data": {"action": "execute_with_normalized_keys", "derived_from_memory": true}}
+{"stage": "second_task", "data": {"task_id": "task_success_normalization", "status": "success", "normalization_applied": true}}
+{"stage": "outcome", "data": {"task_id": "task_success_normalization", "success": true, "improvement": "Lookup succeeded with whitespace-trimmed normalized key"}}
+{"stage": "memory_update", "data": {"lesson": "Always strip whitespace and case-fold lookup keys before database query execution.", "new_confidence": 1.15, "new_utility": 1.15}}
+{"stage": "next_target", "next_target": "Implement unicode-based key normalization"}
+{"stage": "checkpoint", "data": {"last_task_completed": "task_success_normalization", "next_target_selected": "Implement unicode-based key normalization", "governance_verified": true}}

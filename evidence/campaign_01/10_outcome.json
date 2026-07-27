@@ -1,0 +1,5 @@
+{
+  "task_id": "task_success_normalization",
+  "success": true,
+  "improvement": "Lookup succeeded with whitespace-trimmed normalized key"
+}

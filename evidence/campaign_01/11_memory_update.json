@@ -1,0 +1,5 @@
+{
+  "lesson": "Always strip whitespace and case-fold lookup keys before database query execution.",
+  "new_confidence": 1.15,
+  "new_utility": 1.15
+}

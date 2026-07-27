@@ -1,0 +1,5 @@
+{
+  "task_id": "task_failed_normalization",
+  "status": "failed",
+  "error": "Lookup failed for key '  ALPHA  ' due to untrimmed whitespace"
+}

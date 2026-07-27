@@ -1,0 +1,16 @@
+{
+  "query": "how to do database key normalization",
+  "results": [
+    {
+      "id": "42cab349-ed1f-4857-ad97-0a0ebc1f0125",
+      "type_idx": 36,
+      "content": "Always strip whitespace and case-fold lookup keys before database query execution.",
+      "layer": 0,
+      "importance": 0.9,
+      "valence": 0.5,
+      "arousal": 0.8,
+      "activation": 0.1666666716337204,
+      "access_count": 2
+    }
+  ]
+}

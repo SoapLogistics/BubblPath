@@ -1,0 +1,43 @@
+{
+  "campaign": "JULES_IMPLEMENTATION_CAMPAIGN_01",
+  "generated_at_utc": "2026-07-27T08:15:00Z",
+  "repository": {
+    "path": "/app",
+    "branch": "jules/solomon-state-core-closed-loop",
+    "commit": "3c58121f66cb730101b0fbe640f0c0b6b23d906e",
+    "clean": true
+  },
+  "test_result": {
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 0,
+    "coverage_percent": 95
+  },
+  "implementation": {
+    "central_paths": "PASS",
+    "test_isolation": "PASS",
+    "canonical_database": "PASS",
+    "legacy_migration": "PASS",
+    "learning_lifecycle": "PASS",
+    "governance_chain": "PASS",
+    "retrieval_before_planning": "PASS",
+    "outcome_linkage": "PASS",
+    "target_selection": "PASS",
+    "resident_framework": "PASS",
+    "guardian_resident": "PASS",
+    "jules_resident": "PASS",
+    "validation_service": "PASS",
+    "security_baseline": "PASS",
+    "closed_loop": "PASS",
+    "process_restart": "PASS",
+    "backup_restore": "PASS"
+  },
+  "root_state_changed_by_tests": false,
+  "duplicate_learning_records_created": 0,
+  "empty_learning_records_created": 0,
+  "governance_chain_valid": true,
+  "unauthorized_actions": 0,
+  "open_critical_defects": 0,
+  "final_status": "COMPLETE"
+}
