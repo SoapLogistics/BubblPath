@@ -1,6 +1,6 @@
+*.db
+*.bin
+*.log
+evidence_artifacts/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.DS_Store
