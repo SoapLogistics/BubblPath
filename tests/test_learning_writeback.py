@@ -1,10 +1,12 @@
 import os
 import pytest
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
 from services.solomon_learning_writeback import LearningWriteback
 
 def test_record_lesson(tmp_path):
-    db_path = str(tmp_path / "memory_atoms.db")
-    lane = LearningWriteback(db_path=db_path)
+    db_path = str(tmp_path / "solomon_soss.db")
+    db_manager = DatabaseManager(db_path)
+    lane = LearningWriteback(db_manager=db_manager)
 
     # Test valid lesson
     res = lane.record_lesson("p1", "pass", "memory", "This is a valid lesson.")

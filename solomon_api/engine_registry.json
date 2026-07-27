@@ -205,6 +205,7 @@
     "solomon_api/gpt_route_index.py",
     "solomon_api/capabilities_manifest.py",
     "services/soss_workspace_status.py",
-    "backend/main.py"
+    "backend/main.py",
+    "services/solomon_plc_engine.py"
   ]
 }
