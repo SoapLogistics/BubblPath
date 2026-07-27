@@ -4,7 +4,7 @@ import os
 import datetime
 import threading
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
+from core.solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
 
 class DatabaseManager:
     def __init__(self, db_path: str):
@@ -111,6 +111,7 @@ class DatabaseManager:
                         )
 
                 # Re-query current version to apply sequential migrations
+                cursor = conn.cursor()
                 cursor.execute("SELECT MAX(version) FROM schema_version")
                 current_version = cursor.fetchone()[0]
 
@@ -121,6 +122,92 @@ class DatabaseManager:
                         conn.execute(
                             "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
                             (2, datetime.datetime.now(datetime.UTC).isoformat())
+                        )
+
+                # Re-query current version to apply sequential migrations
+                cursor.execute("SELECT MAX(version) FROM schema_version")
+                current_version = cursor.fetchone()[0]
+
+                # Migration 3: Perpetual Learning Cycle (PLC) tables
+                if current_version < 3:
+                    with conn:
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS events (
+                                id TEXT PRIMARY KEY,
+                                type TEXT NOT NULL,
+                                data TEXT NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS candidates (
+                                id TEXT PRIMARY KEY,
+                                event_id TEXT NOT NULL,
+                                content TEXT NOT NULL,
+                                status TEXT NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS memories (
+                                id TEXT PRIMARY KEY,
+                                candidate_id TEXT,
+                                content TEXT NOT NULL,
+                                status TEXT NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS retrieval_traces (
+                                id TEXT PRIMARY KEY,
+                                query TEXT NOT NULL,
+                                memory_id TEXT NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS uses (
+                                id TEXT PRIMARY KEY,
+                                trace_id TEXT NOT NULL,
+                                task_id TEXT NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS outcomes (
+                                id TEXT PRIMARY KEY,
+                                use_id TEXT NOT NULL,
+                                score REAL NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS governance (
+                                id TEXT PRIMARY KEY,
+                                candidate_id TEXT NOT NULL,
+                                status TEXT NOT NULL,
+                                approver TEXT NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS checkpoints (
+                                id TEXT PRIMARY KEY,
+                                data TEXT NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS learning_targets (
+                                id TEXT PRIMARY KEY,
+                                description TEXT NOT NULL,
+                                priority INTEGER NOT NULL,
+                                timestamp TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute(
+                            "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
+                            (3, datetime.datetime.now(datetime.UTC).isoformat())
                         )
 
             finally:

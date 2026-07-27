@@ -6,8 +6,8 @@ import os
 route_key = "solomon_governance_approval_packet"
 
 class GovernanceApprovalLane:
-    def __init__(self):
-        self.log_file = "governance_log.bin"
+    def __init__(self, log_file="governance_log.bin"):
+        self.log_file = log_file
         self._ensure_log_exists()
 
     def _ensure_log_exists(self):
