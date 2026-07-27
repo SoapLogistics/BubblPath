@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+plugins: anyio-4.14.2
+collected 25 items
+
+tests/futures/test_threshold_logic.py .....                              [ 20%]
+tests/test_engine_registry.py .                                          [ 24%]
+tests/test_gabriel.py ..........                                         [ 64%]
+tests/test_gabriel_evolution.py ....                                     [ 80%]
+tests/test_governance_approval.py ..                                     [ 88%]
+tests/test_joe_blueprint_facade.py .                                     [ 92%]
+tests/test_learning_writeback.py .                                       [ 96%]
+tests/test_run_daily_scan.py .                                           [100%]
+
+============================== 25 passed in 3.12s ==============================
