@@ -27,13 +27,16 @@ class FinanceAPIIngestor(LiveAPIIngestor):
         if self.use_simulation:
             crawler = SolomonWebCrawler()
             res = crawler.search_and_extract("live stock market breaking news volatility", max_results=1)
-            # Create a real candidate from the scraped data
+            # Dynamic base probability using hash of the scraped context to simulate real variance
+            context_hash_val = int(hashlib.md5(res.encode()).hexdigest(), 16) % 100
+            dynamic_base_prob = 0.50 + (context_hash_val / 200.0) # Range 0.50 to 0.99
+            
             return [
                 {
                     "id": f"fin_web_{uuid.uuid4().hex[:6]}", 
                     "domain": "finance", 
                     "conf": 92.0, 
-                    "base_prob": 0.55, 
+                    "base_prob": dynamic_base_prob, 
                     "volatility": 0.6 if "volatile" in res.lower() or "crash" in res.lower() else 0.3, 
                     "support": 0.6, 
                     "geopolitical_risk": 0.1,
@@ -51,12 +54,15 @@ class GeopoliticsAPIIngestor(LiveAPIIngestor):
         if self.use_simulation:
             crawler = SolomonWebCrawler()
             res = crawler.search_and_extract("geopolitical crisis news today", max_results=1)
+            context_hash_val = int(hashlib.md5(res.encode()).hexdigest(), 16) % 100
+            dynamic_base_prob = 0.30 + (context_hash_val / 150.0) # Range 0.30 to 0.96
+
             return [
                 {
                     "id": f"geo_web_{uuid.uuid4().hex[:6]}", 
                     "domain": "geopolitics", 
                     "conf": 94.0, 
-                    "base_prob": 0.40, 
+                    "base_prob": dynamic_base_prob, 
                     "volatility": 0.8, 
                     "support": 0.2, 
                     "geopolitical_risk": 0.9 if "war" in res.lower() or "crisis" in res.lower() else 0.4,
@@ -74,12 +80,15 @@ class SportsAPIIngestor(LiveAPIIngestor):
         if self.use_simulation:
             crawler = SolomonWebCrawler()
             res = crawler.search_and_extract("live sports betting odds today", max_results=1)
+            context_hash_val = int(hashlib.md5(res.encode()).hexdigest(), 16) % 100
+            dynamic_base_prob = 0.40 + (context_hash_val / 160.0) # Range 0.40 to 1.0
+
             return [
                 {
                     "id": f"sports_web_{uuid.uuid4().hex[:6]}", 
                     "domain": "sports", 
                     "conf": 96.0, 
-                    "base_prob": 0.50, 
+                    "base_prob": dynamic_base_prob, 
                     "volatility": 0.2, 
                     "support": 0.5, 
                     "geopolitical_risk": 0.0,

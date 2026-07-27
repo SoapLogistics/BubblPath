@@ -103,6 +103,7 @@ class UniversalFuturesAdapter:
         chaos_risk = candidate.features.get("geopolitical_risk", 0.05)
         
         return {
+            "candidate_id": candidate.candidate_id,
             "base_prob": base,
             "volatility": volatility,
             "support": support,
@@ -114,10 +115,10 @@ class UniversalFuturesAdapter:
         Multi-Dimensional Monte Carlo Step.
         Calculates a highly complex probabilistic outcome rather than a simple coin flip.
         """
-        # We use a deterministic hash chain to simulate multiple random variables from one seed
-        h1 = int(hashlib.md5(f"{rng_seed}_A".encode()).hexdigest(), 16) % 10000 / 10000.0
-        h2 = int(hashlib.md5(f"{rng_seed}_B".encode()).hexdigest(), 16) % 10000 / 10000.0
-        h3 = int(hashlib.md5(f"{rng_seed}_C".encode()).hexdigest(), 16) % 10000 / 10000.0
+        cid = scenario.get("candidate_id", "default")
+        h1 = int(hashlib.md5(f"{cid}_{rng_seed}_A".encode()).hexdigest(), 16) % 10000 / 10000.0
+        h2 = int(hashlib.md5(f"{cid}_{rng_seed}_B".encode()).hexdigest(), 16) % 10000 / 10000.0
+        h3 = int(hashlib.md5(f"{cid}_{rng_seed}_C".encode()).hexdigest(), 16) % 10000 / 10000.0
 
         # Base event roll
         event_roll = h1
@@ -143,6 +144,7 @@ class UniversalFuturesAdapter:
         """Stress-tests the scenario by increasing chaos and volatility."""
         return [
             {
+                "candidate_id": scenario.get("candidate_id", "default"),
                 "base_prob": scenario["base_prob"],
                 "volatility": min(1.0, scenario["volatility"] * 1.5), # 50% spike in volatility
                 "support": max(0.0, scenario["support"] * 0.8),       # 20% drop in support
