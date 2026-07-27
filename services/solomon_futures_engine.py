@@ -87,31 +87,73 @@ class SimulationAdapter(Protocol):
     def simulate_trial(self, scenario: Dict[str, Any], rng_seed: int) -> bool: ...
     def sensitivity_variants(self, scenario: Dict[str, Any]) -> List[Dict[str, Any]]: ...
 
-class SimpleSportsAdapter:
-    name = "simple_sports"
-    version = "1.0.0"
+class UniversalFuturesAdapter:
+    name = "universal_omni"
+    version = "2.0.0"
 
     def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
-        return {"base_prob": candidate.features.get("win_prob", 0.5)}
+        """Extracts multidimensional global metrics from the candidate features."""
+        # Baseline probability of the event occurring (e.g. historical average)
+        base = candidate.features.get("base_prob", 0.5)
+        # Market/Domain volatility (0.0 to 1.0) - how wildly things swing
+        volatility = candidate.features.get("volatility_index", 0.1)
+        # Structural support (0.0 to 1.0) - resistance to crashing
+        support = candidate.features.get("historical_support", 0.5)
+        # Chaos multiplier (0.0 to 1.0) - unexpected external shocks (geopolitical, weather)
+        chaos_risk = candidate.features.get("geopolitical_risk", 0.05)
+        
+        return {
+            "base_prob": base,
+            "volatility": volatility,
+            "support": support,
+            "chaos_risk": chaos_risk
+        }
 
     def simulate_trial(self, scenario: Dict[str, Any], rng_seed: int) -> bool:
-        # Extremely simplified deterministic rng step based on seed and base probability
-        # In reality, this would use a proper Randomizer class instance.
-        hash_val = int(hashlib.md5(f"{rng_seed}".encode()).hexdigest(), 16)
-        normalized_rand = (hash_val % 10000) / 10000.0
-        return normalized_rand < scenario["base_prob"]
+        """
+        Multi-Dimensional Monte Carlo Step.
+        Calculates a highly complex probabilistic outcome rather than a simple coin flip.
+        """
+        # We use a deterministic hash chain to simulate multiple random variables from one seed
+        h1 = int(hashlib.md5(f"{rng_seed}_A".encode()).hexdigest(), 16) % 10000 / 10000.0
+        h2 = int(hashlib.md5(f"{rng_seed}_B".encode()).hexdigest(), 16) % 10000 / 10000.0
+        h3 = int(hashlib.md5(f"{rng_seed}_C".encode()).hexdigest(), 16) % 10000 / 10000.0
+
+        # Base event roll
+        event_roll = h1
+        
+        # Volatility swing (can push the roll up or down)
+        swing = (h2 - 0.5) * scenario["volatility"]
+        
+        # Chaos injection (fat-tail risk)
+        if h3 < scenario["chaos_risk"]:
+            # A black swan event occurred in this simulation trial, heavily shifting the outcome
+            swing -= 0.4
+            
+        # Support buffer (mitigates negative swings)
+        if swing < 0:
+            swing *= (1.0 - scenario["support"])
+            
+        final_outcome_value = event_roll + swing
+        
+        # If the final calculated value is below the base probability threshold, the event "fails" to trigger/win
+        return final_outcome_value < scenario["base_prob"]
 
     def sensitivity_variants(self, scenario: Dict[str, Any]) -> List[Dict[str, Any]]:
-        base = scenario["base_prob"]
+        """Stress-tests the scenario by increasing chaos and volatility."""
         return [
-            {"base_prob": base * 0.95}, # -5% variant
-            {"base_prob": min(1.0, base * 1.05)} # +5% variant
+            {
+                "base_prob": scenario["base_prob"],
+                "volatility": min(1.0, scenario["volatility"] * 1.5), # 50% spike in volatility
+                "support": max(0.0, scenario["support"] * 0.8),       # 20% drop in support
+                "chaos_risk": min(1.0, scenario["chaos_risk"] * 2.0)  # 2x black swan risk
+            }
         ]
 
 class FuturesEngine:
     def __init__(self, config: Optional[SimulationConfig] = None):
         self.config = config or SimulationConfig()
-        self.adapters = {"simple_sports": SimpleSportsAdapter()}
+        self.adapters = {"universal_omni": UniversalFuturesAdapter()}
 
     def _evaluate_gate_a(self, candidate: Candidate) -> QualificationResult:
         errors = candidate.validate()
@@ -131,7 +173,7 @@ class FuturesEngine:
 
         return QualificationResult(True, reasons)
 
-    def process_candidate(self, candidate: Candidate, adapter_name: str = "simple_sports", run_id: str = "auto", seed: int = 42) -> SimulationResult:
+    def process_candidate(self, candidate: Candidate, adapter_name: str = "universal_omni", run_id: str = "auto", seed: int = 42) -> SimulationResult:
         qual = self._evaluate_gate_a(candidate)
 
         if not qual.pre_simulation_qualified:

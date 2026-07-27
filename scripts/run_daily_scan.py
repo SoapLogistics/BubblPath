@@ -7,6 +7,7 @@ import logging
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.solomon_futures_engine import FuturesEngine, Candidate, FuturesRepository
+from services.live_data_ingestion import OmniDataRouter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [FUTURES_SCAN] %(message)s")
 logger = logging.getLogger("futures_scan")
@@ -35,31 +36,37 @@ def run_scan(mode="TEST", seed=42):
     repo = FuturesRepository()
     run_id = str(uuid.uuid4())
 
-    # Mocking real input retrieval for Loki scans
-    raw_candidates = [
-        {"id": "tgt_A", "conf": 93.0, "win_prob": 0.94},
-        {"id": "tgt_B", "conf": 91.0, "win_prob": 0.91},
-        {"id": "tgt_C", "conf": 85.0, "win_prob": 0.85},
-    ]
+    # Hyper-Quantization: Generator Stream for candidates to keep RAM near 0
+    def yield_candidates():
+        router = OmniDataRouter()
+        for candidate in router.stream_global_events():
+            yield candidate
 
-    results = []
-    stats = {"received": len(raw_candidates), "simulated": 0, "confirmed_90": 0, "skipped": 0}
+    stats = {"received": 0, "simulated": 0, "confirmed_90": 0, "skipped": 0}
 
-    for raw in raw_candidates:
+    for raw in yield_candidates():
+        stats["received"] += 1
         if repo.check_idempotency(raw["id"], mode):
             logger.info(f"Skipping {raw['id']} - already executed in {mode}")
             stats["skipped"] += 1
             continue
 
         c = Candidate(
-            candidate_id=raw["id"], event_id=f"evt_{raw['id']}", domain="sports",
-            source_name="daily_scan", source_record_id=f"rec_{raw['id']}",
+            candidate_id=raw["id"], event_id=f"evt_{raw['id']}", domain=raw["domain"],
+            source_name="global_omni_scan", source_record_id=f"rec_{raw['id']}",
             source_mode=mode, source_timestamp=str(time.time()), ingested_at=str(time.time()),
             pre_simulation_confidence=raw["conf"], data_quality_score=95.0,
-            features={"win_prob": raw["win_prob"]}
+            features={
+                "base_prob": raw["base_prob"],
+                "volatility_index": raw["volatility"],
+                "historical_support": raw["support"],
+                "geopolitical_risk": raw["geopolitical_risk"]
+            }
         )
 
         res = engine.process_candidate(c, seed=seed)
+        
+        # Stream result straight to SQLite without holding it in a Python array
         repo.save_run(res)
 
         if res.status != "PRE_SIM_NOT_QUALIFIED":
@@ -67,8 +74,11 @@ def run_scan(mode="TEST", seed=42):
         if res.status == "CONFIRMED_90_PLUS":
             stats["confirmed_90"] += 1
 
-        results.append(res)
         logger.info(f"Processed {raw['id']} -> {res.status}")
+        
+        # Trigger GC implicitly by not holding `res` reference
+        del res
+        del c
 
     summary = {"run_id": run_id, "mode": mode, "stats": stats}
     inject_daily_report(run_id, summary)

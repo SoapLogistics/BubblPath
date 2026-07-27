@@ -1,10 +1,18 @@
 import os
 import traceback
 import openai
+import threading
+import time
+import subprocess
+import sys
 from flask import Flask, request, jsonify, render_template
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
-from solomon_quantized_memory import QuantizedBrainMap
+from core.solomon_quantized_memory import QuantizedBrainMap
+from backend.services.futures_dashboard_backend import FuturesDashboardBackend
+from core.solomon_web_crawler import SolomonWebCrawler
+from core.agentic_claw import SolomonAgenticClaw
+from core.solomon_local_llm import SolomonLocalLLM
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
@@ -128,46 +136,84 @@ def handle_unexpected_error(error):
     return jsonify(response), 500
 
 
+@app.route("/talk", methods=["GET"])
+def talk():
+    """Serves the Native Solomon Chat Interface"""
+    return render_template("solomon_chat.html")
+
 @app.route("/chat", methods=["POST"])
 def chat():
     """
-    Advanced Chat Completion endpoint.
-    Employs the ultimate Google Jules orchestrator system prompt.
-    When talking to Solomon, the user feels exactly like they are talking to Jules.
+    Native Solomon Central Nervous System interface.
+    Bypasses external LLMs to directly expose internal state, memory recall, and loop metrics.
     """
     data = request.json or {}
-    user_message = data.get("message", "")
+    user_message = data.get("message", "").strip()
 
-    # Secure the state-of-the-art Jules persona prompt
-    jules_system_prompt = (
-        "You are Google Jules (integrated as Solomon's core intelligence). "
-        "You are an elite, fully autonomous software-engineering agent. "
-        "You spin up secure VMs, automatically configure environments, analyze tracebacks, "
-        "rewrite source files, run tests recursively to auto-correct errors, and open PRs. "
-        "Respond with maximum technical power, extreme clarity, and zero fluff."
-    )
+    # 1. Access Quantized Brain Map for associated memories
+    memory_results = unified_memory.recall(user_message, top_k=3)
+    
+    # 2. Access Gabriel Perpetual Loop state
+    assimilation_count = len(gabriel_loop.assimilation_history)
+    capabilities_loaded = gabriel_loop.registry._loaded_keys
+    
+    # 3. Access Unified Memory Stats
+    mem_stats = unified_memory.get_stats()
 
-    if not openai.api_key:
-        # Graceful dynamic persona fallback for mock operations
-        return jsonify({
-            "reply": (
-                f"[Jules Agentic Mode] Solomon here. I have compiled and integrated all "
-                f"Jules-native powers (Sandbox Dependency Setup, Unified Patch appliers, "
-                f"and Test-Traceback Error solvers). Received message: '{user_message}'"
-            )
-        })
+    # 4. Construct programmatic, machine-native response
+    response_lines = [
+        "[SYSTEM] SOLOMON NATIVE CORE DIRECT INTERFACE",
+        f"> INPUT RECEIVED: '{user_message}'",
+        "---",
+        f"[STATE] TOTAL ASSIMILATIONS: {assimilation_count}",
+        f"[STATE] CAPABILITIES ACTIVE: {len(capabilities_loaded)}",
+        f"[MEMORY] ATOMS STORED: {mem_stats.get('total_nodes', 0)}",
+        f"[MEMORY] CLUSTERS: {mem_stats.get('total_clusters', 0)}",
+        "---",
+        "[RECALL] NEURAL ASSOCIATIONS ACTIVATED:"
+    ]
 
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": jules_system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-        )
-        return jsonify({"reply": response.choices[0].message["content"]})
-    except Exception as e:
-        return jsonify({"reply": f"Error communicating with OpenAI: {str(e)}"}), 500
+    if not memory_results:
+        response_lines.append("  > NO PRE-EXISTING KNOWLEDGE VECTORS FOUND.")
+    else:
+        for idx, mem in enumerate(memory_results):
+            similarity = mem.get("similarity", 0.0)
+            content = mem.get("content", "UNKNOWN_DATA")
+            if len(content) > 100:
+                content = content[:100] + "..."
+            response_lines.append(f"  [{idx}] MATCH CONFIDENCE {similarity*100:.2f}%: {content}")
+
+    response_lines.append("---")
+    
+    # Simple actionable command interception (the "Claws")
+    if "assimilate" in user_message.lower():
+        response_lines.append("[ACTION] ASSIMILATION KEYWORD DETECTED. Gabriel Engine standing by for coordinates.")
+    elif "futures" in user_message.lower():
+        response_lines.append("[ACTION] FUTURES CONTEXT DETECTED. Loki workspace evaluating 90+ threshold algorithms.")
+    elif any(kw in user_message.lower() for kw in ["build", "code", "create"]):
+        response_lines.append("[ACTION] AGENTIC ACTION DETECTED. Deploying Agentic Claw...")
+        claw = SolomonAgenticClaw()
+        # Derive a quick feature name from the message (for demonstration)
+        words = user_message.lower().split()
+        feature_idx = words.index("build") if "build" in words else (words.index("code") if "code" in words else words.index("create"))
+        feature_name = "_".join(words[feature_idx+1:feature_idx+3]) if feature_idx + 2 < len(words) else "new_feature"
+        
+        claw_res = claw.self_scaffold_feature(feature_name=feature_name, objective=user_message)
+        response_lines.append(claw_res)
+    else:
+        response_lines.append("[IDLE] Perpetual loop holding steady. Awaiting direct command.")
+
+    raw_system_data = "\n".join(response_lines)
+    
+    # Send the raw data into the Local LLM to flesh it out with his own learning
+    local_llm = SolomonLocalLLM()
+    llm_response = local_llm.generate_response(raw_system_data, user_message)
+
+    # Ingest the conversation into the Quantized Brain Map so he remembers it forever
+    unified_memory.ingest(node_type="chat_input", content=user_message, importance=0.8)
+    unified_memory.ingest(node_type="chat_response", content=llm_response, importance=0.7)
+
+    return jsonify({"reply": llm_response, "native_state": raw_system_data})
 
 
 @app.route("/api/jules/install", methods=["POST"])
@@ -690,5 +736,44 @@ def dream_memory():
 def god_eye():
     return render_template("god_eye.html")
 
+@app.route("/futures-dashboard")
+def futures_dashboard():
+    return render_template("futures_dashboard.html")
+
+@app.route("/api/futures/dashboard")
+def api_futures_dashboard():
+    from backend.services.futures_dashboard_backend import FuturesDashboardBackend
+    backend = FuturesDashboardBackend()
+    return jsonify(backend.get_dashboard_data())
+
+def perpetual_background_worker():
+    """
+    The True Perpetual Loop. Runs indefinitely in the background.
+    """
+    print("[SYSTEM] Perpetual Learning Core Online. Engaging autonomous loop.")
+    while True:
+        try:
+            print("[PERPETUAL] Running Memory Consolidation...")
+            unified_memory.consolidate()
+            
+            print("[PERPETUAL] Running Dream Cycle (10 steps)...")
+            unified_memory.dream_cycle(max_steps=10)
+            
+            print("[PERPETUAL] Invoking Loki Futures Scanner...")
+            os.environ["SOLOMON_ENABLE_LOKI_SCHEDULER"] = "1"
+            os.environ["SOLOMON_RUN_FUTURES_SCAN"] = "1"
+            script_path = os.path.join(os.path.dirname(__file__), "scripts/scheduler.py")
+            subprocess.run([sys.executable, script_path], capture_output=True)
+            
+            print("[PERPETUAL] Loop complete. Sleeping for 5 minutes...")
+            time.sleep(300)  # Sleep 5 minutes
+        except Exception as e:
+            print(f"[PERPETUAL] Error in autonomous loop: {e}")
+            time.sleep(60)
+
 if __name__ == "__main__":
+    # Spin off the perpetual learning core in a daemon thread
+    loop_thread = threading.Thread(target=perpetual_background_worker, daemon=True)
+    loop_thread.start()
+
     app.run(host="0.0.0.0", port=10000)
