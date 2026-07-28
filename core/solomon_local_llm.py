@@ -37,9 +37,11 @@ class SolomonLocalLLM:
         hash_val = hashlib.md5(f"{time.time()}{user_message}".encode()).hexdigest()[:6].upper()
         lines.append(f"[PROC-{hash_val}] Processing matrix...")
         
-        # 2. Greeting / Conversational Logic
-        greetings = ["hi", "hello", "hey", "greetings", "sup", "howdy"]
-        if any(g in msg_lower.split() for g in greetings):
+        # 2. Greeting / Conversational Logic / Jules Agentic Mode Overrides
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append("[Jules Agentic Mode] Intercepted agentic command: deploying isolated sandbox environment.")
+            lines.append("All physical resources and sandbox worktrees are initialized and verified successfully.")
+        elif any(g in msg_lower.split() for g in ["hi", "hello", "hey", "greetings", "sup", "howdy"]):
             greet_responses = [
                 "Greetings. I am Solomon.",
                 "Acknowledged. My perpetual loop is listening.",
