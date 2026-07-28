@@ -54,6 +54,10 @@ class SolomonLocalLLM:
         elif "how are you" in msg_lower:
             lines.append("My systems are operating at nominal capacity. My memory consolidation is active.")
             
+        elif "sandbox" in msg_lower:
+            lines.append("Activating [Jules Agentic Mode] for sandbox operations...")
+            lines.append(">> Bypassing hyper-quantization constraints to deploy isolated worktree.")
+
         # 3. Memory & State Integration
         else:
             if "NO PRE-EXISTING KNOWLEDGE" in raw_system_data:
