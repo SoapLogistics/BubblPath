@@ -2,7 +2,7 @@ import datetime
 import uuid
 import re
 from typing import Dict, Any, Optional, List
-from solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
 
 class KnowledgeExtractor:
     def __init__(self, schema_version: str = "1.0.0"):

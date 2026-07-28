@@ -4,7 +4,7 @@ import os
 import datetime
 import threading
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
+from core.solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
 
 class DatabaseManager:
     def __init__(self, db_path: str):
@@ -121,6 +121,42 @@ class DatabaseManager:
                         conn.execute(
                             "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
                             (2, datetime.datetime.now(datetime.UTC).isoformat())
+                        )
+
+                # Re-query current version again for migration 3
+                cursor.execute("SELECT MAX(version) FROM schema_version")
+                current_version = cursor.fetchone()[0]
+
+                # Migration 3: Add persistent tasks queue tables for the Autonomous Scheduler
+                if current_version < 3:
+                    with conn:
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS persistent_tasks (
+                                task_id TEXT PRIMARY KEY,
+                                topic TEXT NOT NULL,
+                                payload TEXT NOT NULL,
+                                status TEXT NOT NULL, -- PENDING, ACTIVE, COMPLETED, FAILED
+                                priority INTEGER DEFAULT 1,
+                                created_at TEXT NOT NULL,
+                                updated_at TEXT NOT NULL,
+                                worker_lease_id TEXT,
+                                lease_expires_at TEXT
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS task_execution_logs (
+                                log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                task_id TEXT NOT NULL,
+                                worker_id TEXT NOT NULL,
+                                status_change TEXT NOT NULL,
+                                message TEXT,
+                                created_at TEXT NOT NULL,
+                                FOREIGN KEY (task_id) REFERENCES persistent_tasks(task_id) ON DELETE CASCADE
+                            );
+                        """)
+                        conn.execute(
+                            "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
+                            (3, datetime.datetime.now(datetime.UTC).isoformat())
                         )
 
             finally:
@@ -374,3 +410,109 @@ class DatabaseManager:
                     self.store_card(card, updater=updater, reason="Imported from JSONL")
                     if deleted:
                         self.soft_delete_card(card.card_id, updater=updater, reason="Imported as soft-deleted")
+
+    # ==============================================================================
+    # AUTONOMOUS TASK QUEUE PERSISTENCE
+    # ==============================================================================
+    def add_task(self, task_id: str, topic: str, payload: Dict[str, Any], priority: int = 1) -> None:
+        """Adds a new durable task to the Persistent Task Queue."""
+        with self._lock:
+            conn = self._get_connection()
+            try:
+                now = datetime.datetime.now(datetime.UTC).isoformat()
+                with conn:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO persistent_tasks
+                        (task_id, topic, payload, status, priority, created_at, updated_at, worker_lease_id, lease_expires_at)
+                        VALUES (?, ?, ?, 'PENDING', ?, ?, ?, NULL, NULL)
+                    """, (task_id, topic, json.dumps(payload), priority, now, now))
+            finally:
+                conn.close()
+
+    def claim_task(self, worker_id: str, lease_duration_sec: int = 30) -> Optional[Dict[str, Any]]:
+        """Claims a pending or expired task from the queue and updates its lease."""
+        with self._lock:
+            conn = self._get_connection()
+            try:
+                now = datetime.datetime.now(datetime.UTC)
+                now_str = now.isoformat()
+                cursor = conn.cursor()
+
+                # Fetch pending or expired task
+                cursor.execute("""
+                    SELECT * FROM persistent_tasks
+                    WHERE status = 'PENDING'
+                       OR (status = 'ACTIVE' AND datetime(lease_expires_at) < datetime(?))
+                    ORDER BY priority DESC, created_at ASC
+                    LIMIT 1
+                """, (now_str,))
+                row = cursor.fetchone()
+                if not row:
+                    return None
+
+                task_data = dict(row)
+                task_id = task_data["task_id"]
+                lease_expires = (now + datetime.timedelta(seconds=lease_duration_sec)).isoformat()
+
+                with conn:
+                    conn.execute("""
+                        UPDATE persistent_tasks
+                        SET status = 'ACTIVE', worker_lease_id = ?, lease_expires_at = ?, updated_at = ?
+                        WHERE task_id = ?
+                    """, (worker_id, lease_expires, now_str, task_id))
+
+                    conn.execute("""
+                        INSERT INTO task_execution_logs (task_id, worker_id, status_change, message, created_at)
+                        VALUES (?, ?, 'CLAIMED', 'Task claimed by worker lease.', ?)
+                    """, (task_id, worker_id, now_str))
+
+                task_data["status"] = "ACTIVE"
+                task_data["worker_lease_id"] = worker_id
+                task_data["lease_expires_at"] = lease_expires
+                task_data["payload"] = json.loads(task_data["payload"])
+                return task_data
+            finally:
+                conn.close()
+
+    def complete_task(self, task_id: str, worker_id: str, status: str = "COMPLETED", message: Optional[str] = None) -> bool:
+        """Completes or fails a task in the queue."""
+        with self._lock:
+            conn = self._get_connection()
+            try:
+                now_str = datetime.datetime.now(datetime.UTC).isoformat()
+                cursor = conn.cursor()
+                cursor.execute("SELECT status, worker_lease_id FROM persistent_tasks WHERE task_id = ?", (task_id,))
+                row = cursor.fetchone()
+                if not row:
+                    return False
+
+                with conn:
+                    conn.execute("""
+                        UPDATE persistent_tasks
+                        SET status = ?, worker_lease_id = NULL, lease_expires_at = NULL, updated_at = ?
+                        WHERE task_id = ?
+                    """, (status, now_str, task_id))
+
+                    conn.execute("""
+                        INSERT INTO task_execution_logs (task_id, worker_id, status_change, message, created_at)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (task_id, worker_id, status, message or f"Task state set to {status}.", now_str))
+                return True
+            finally:
+                conn.close()
+
+    def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves a single task with its payload loaded."""
+        with self._lock:
+            conn = self._get_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM persistent_tasks WHERE task_id = ?", (task_id,))
+                row = cursor.fetchone()
+                if not row:
+                    return None
+                task_data = dict(row)
+                task_data["payload"] = json.loads(task_data["payload"])
+                return task_data
+            finally:
+                conn.close()

@@ -1,8 +1,8 @@
 import re
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
-from solomon_knowledge_cards.api.embeddings import SemanticEmbedder
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.api.embeddings import SemanticEmbedder
 
 class CardRepository:
     def __init__(self, db_manager: DatabaseManager, embedder: Optional[SemanticEmbedder] = None):

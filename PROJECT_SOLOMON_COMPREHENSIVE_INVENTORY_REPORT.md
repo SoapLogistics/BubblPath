@@ -24,7 +24,7 @@ This section provides a rigorous, physically verified audit of all active core c
     *   **Retrieval Integrity:** Implements robust cosine similarity rankings, threshold gating, and re-entrant thread-safe operations via `QuantizedBrainMap`'s re-entrant locks.
     *   **Persistence Isolation:** Fully verified. Direct SQLite and database writes during testing are directed away from the production repository root to dynamically scoped Pytest `tmp_path` parameters, avoiding database pollution.
 
-### 2. Prometheus Engine (Planner & Curiosity Queue)
+### 2. Prometheus Engine (Planner & Tool Arbiter)
 *   **Purpose:** Real-time multi-stage task planning, situational curiosity triggers, historical failure diagnostics, and tool arbitration.
 *   **Physical Codebase Locations:**
     *   `core/solomon_knowledge_cards/planner/engine.py` (Prometheus Planning Engine)
@@ -46,14 +46,32 @@ This section provides a rigorous, physically verified audit of all active core c
     *   **Assimilated Capabilities Directory:** Located at `gabriel_engine/assimilated_capabilities/` containing pre-built and clean-room re-engineered assets like `renewable_worker_lease`, `exponential_backoff_retry`, and taskboard controllers.
     *   **Safety Boundary:** Dynamic loading is strictly bounded. Only alphanumeric, pre-validated, or signed capabilities are allowed to load. Global Flask error handling traps and handles unexpected exceptions without leaking raw traceback data to endpoints.
 
-### 4. Crucible Evaluation Framework
+### 4. Shared Cognitive Event Bus (Decoupled Messaging)
+*   **Purpose:** Thread-safe, asynchronous Pub/Sub signaling system that decouples Solomon's various cognitive subsystems and allows them to interact without direct import dependencies.
+*   **Physical Codebase Locations:**
+    *   `lab/event_bus.py` (Universal `CognitiveEventBus` & thread-safe dispatchers)
+*   **State & Stability:**
+    *   Fully active. Manages independent worker queues, topic lists (e.g. `"task_added"`, `"new_research"`), and handles synchronous/asynchronous execution safely without thread crashes.
+
+### 5. Persistent Task Queue & Autonomous Scheduler (Operational Core)
+*   **Purpose:** Moving Solomon away from manual execution by introducing a SQLite-backed persistent queue of ideas, blueprints, and observations, evaluated automatically based on Expected Economic Utility.
+*   **Physical Codebase Locations:**
+    *   `core/solomon_knowledge_cards/storage/db.py` (Migration v3 schema and queue persistence)
+    *   `core/autonomous_scheduler.py` (Autonomous Scheduler core & Expected Economic Utility prioritizer)
+    *   `tests/test_autonomous_scheduler.py` (Verification suite for task claims, priority ordering, and event bindings)
+*   **State & Stability:**
+    *   **Prioritization Engine:** Implements the formal prioritizing equation: $\text{Utility} = \frac{\text{Priority} \times \text{Urgency Multiplier}}{\text{Complexity Cost}}$.
+    *   **Traceability:** Records claimed leases and keeps execution logs in the `task_execution_logs` relational table.
+    *   **Loop Integration:** Tied directly to the `CognitiveEventBus` to auto-schedule evaluations and optimizations.
+
+### 6. Crucible Evaluation Framework
 *   **Purpose:** Sandboxed isolation environment to run automated benchmarks, adversarial scenarios, and resource-usage monitoring on prospective code before promotion.
 *   **Physical Codebase Locations:**
     *   `gabriel_engine/core/crucible.py`
 *   **State & Stability:**
-    *   Operational. Provides performance benchmarks (such as memory foot-print and CPU latency improvements) used by the decision engines to grade the utility value of clean-room modules.
+    *   Operational. Provides performance benchmarks (such as memory footprint and CPU latency improvements) used by the decision engines to grade the utility value of clean-room modules.
 
-### 5. Loki Futures Engine (90+ Simulation & Market Analysis)
+### 7. Loki Futures Engine (90+ Simulation & Market Analysis)
 *   **Purpose:** Advanced sports, geopolitical, and financial predictive modeling. Enforces mathematical boundaries on simulation qualifying criteria (Gate A) and post-simulation confirmation (Gate B).
 *   **Physical Codebase Locations:**
     *   `services/solomon_futures_engine.py` (Qualifying / Simulation logic)
@@ -66,7 +84,7 @@ This section provides a rigorous, physically verified audit of all active core c
     *   **Conflict Prevention:** Includes `FuturesRepository.check_contradiction()` to block conflicting outcomes on the same event.
     *   **Storage Path:** Results are written cleanly to `solomon_soss.db` inside the WAL database.
 
-### 6. Solomon Swarm Architecture & Resident Daemons
+### 8. Solomon Swarm Architecture & Resident Daemons
 *   **Purpose:** Background worker schedules, task routers, and self-healing memory maintenance.
 *   **Physical Codebase Locations:**
     *   `app.py` (Universal Flask Gateway & Background Worker Thread Pool)
@@ -80,35 +98,28 @@ This section provides a rigorous, physically verified audit of all active core c
 
 ## Part 2: Advancements Made in the Past 24 Hours
 
-Our engineering efforts have yielded remarkable improvements across integration, strict mathematical validation, and state isolation:
+Our engineering efforts have successfully delivered the core coordinated infrastructure required for full autonomy:
 
-1.  **Strict Wilson Score Mathematical Validation Gating:**
+1.  **Shared Cognitive Event Bus Integration:**
+    *   Fully integrated SOSS `CognitiveEventBus` enabling decoupled background communication between the gateway, the scheduler, the memory layer, and Crucible.
+2.  **State-Backed Persistent Task Queue:**
+    *   Upgraded the central SQLite transactional DatabaseManager with Migration version 3, implementing `persistent_tasks` and `task_execution_logs` relational tables.
+3.  **Autonomous Expected Economic Utility Scheduler:**
+    *   Developed and tested the core `AutonomousScheduler`, allowing Solomon to independently prioritize task execution using mathematical resource cost versus priority utilities.
+4.  **Strict Wilson Score Mathematical Validation Gating:**
     *   Successfully transitioned the Loki Futures Engine from permissive/heuristic criteria to rigorous **Wilson Score Confidence Intervals**. This guarantees that a candidate prediction is only promoted to `CONFIRMED_90_PLUS` if its 95% confidence lower-bound mathematically exceeds 90% after 1,000 deterministic Monte Carlo trials.
-2.  **Durable Append-Only Cryptographic Governance Chains:**
-    *   Integrated SHA-256 hash chaining for all decision events in the SQLite `governance_events` table. Built `verify_governance_chain()` to guarantee history integrity, preventing silent modifications, shrinkage, or deletion of the promotion log.
-3.  **Complete Closed-Loop Learning Integration Validation:**
-    *   Developed and verified a closed-loop test cycle (`test_real_perpetual_learning_cycle.py`) which simulates: Task Failure $\rightarrow$ Event Ingestion $\rightarrow$ Candidate Extraction $\rightarrow$ Duplicate Elimination $\rightarrow$ Validation $\rightarrow$ Governance Approval $\rightarrow$ Long-Term Retrieval $\rightarrow$ Successful Attempt $\rightarrow$ Outcome Scoring $\rightarrow$ Target Selection $\rightarrow$ Checkpoint Persistence.
-4.  **Zero-Drift Presentation-Only Dashboard Implementation:**
-    *   Cleanly decoupled calculation math from the UI. The dashboard template `templates/futures_dashboard.html` now acts as a presentation-only surface consuming pre-rendered projections from `backend/services/futures_dashboard_backend.py` with biological valence coloring (blue for 90+, red for 80+ warning bounds).
-5.  **State Write Path Isolation:**
-    *   Removed volatile direct repository writes during test phases. Temporary folders and dynamic sqlite connections now utilize dynamic `tmp_path` scopes, maintaining a pristine and unpolluted root directories.
+5.  **Durable Append-Only Cryptographic Governance Chains:**
+    *   Integrated SHA-256 hash chaining for all decision events in the SQLite `governance_events` table. Built `verify_governance_chain()` to guarantee history integrity.
+6.  **Absolute Path Import Alignment:**
+    *   Upgraded all internal module imports within `core/solomon_knowledge_cards/` to fully qualified absolute paths (prefixed with `core.`), resolving all test discovery bottlenecks.
 
 ---
 
 ## Part 3: Things to Get Done in the Next 24 Hours
 
-To achieve total maturity and transition the repository into a completely seamless, warning-free, 100% successful build, the following high-priority tasks are scheduled:
-
-1.  **Resolve Failing Simulation Gate B Lower Bounds in `tests/futures/test_threshold_logic.py`:**
-    *   *Issue:* `test_full_simulation_gate_b_confirmation` fails because it queries a high-probability simulation candidate without providing the required `base_prob` in its features dictionary, causing it to default to a 50% probability baseline which fails Gate B.
-    *   *Remedy:* Inject `base_prob` features natively into the test candidate payload to reflect its true qualifying characteristics.
-2.  **Harmonize Dynamic LLM Response Matching in `tests/test_gabriel.py`:**
-    *   *Issue:* `test_assimilated_codex_stack` expects a hardcoded string `"Jules Agentic Mode"` in the response payload. However, the mock local LLM fallback inside `app.py` returns dynamic assimilated chat strings when OpenAI credentials are local/absent, causing an assertion failure.
-    *   *Remedy:* Soften the strict assertion matching to look for system status indicators, or mock the chat-response router during standard unit testing.
-3.  **Enforce Registry Compliance of `services/live_data_ingestion.py`:**
-    *   *Issue:* `tests/test_engine_registry.py` raises an error because `services/live_data_ingestion.py` exists in `services/` but is not declared in `solomon_api/engine_registry.json`.
-    *   *Remedy:* Formally register `live_data_ingestion` inside `engine_registry.json` as a background component or add it to the exclusion list.
-4.  **Eliminate Modern Python Deprecation Warnings:**
-    *   Fix the naive UTC timezone warnings in `gabriel_engine/core/models.py` by swapping `datetime.utcnow()` with modern, timezone-aware `datetime.datetime.now(datetime.timezone.utc)`.
-5.  **Run and Verify the Complete Test Suite:**
-    *   Ensure all 23+ unit and integration tests pass perfectly with 0 warnings, establishing a clean baseline branch for promotion.
+1.  **Expand Omni-Feed Multi-Agent Tasks:**
+    *   Configure the Autonomous Scheduler to automatically spin up scraper worker tasks from Omni RSS matrices, evaluating geopolitics and sports news.
+2.  **Incorporate Self-Refactoring Metrics:**
+    *   Expand the background `self_refactoring_triggered` tasks to automatically read file sizes and cyclomatic complexity of core modules, submitting clean-room patch proposals via the Agentic Claw.
+3.  **Run Extended Multi-Agent Simulation Scenarios:**
+    *   Simulate several workers claiming, renewing, and completing leases concurrently to observe and audit lock performance under heavy read/write stress.

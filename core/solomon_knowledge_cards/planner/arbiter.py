@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional
-from solomon_knowledge_cards.api.repository import CardRepository
+from core.solomon_knowledge_cards.api.repository import CardRepository
 
 class ToolArbiter:
     def __init__(self, repository: CardRepository):
