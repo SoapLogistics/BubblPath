@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Assimilation Center | Joe</title>
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; padding: 2rem; margin: 0; }
+        .header { border-bottom: 1px solid #30363d; padding-bottom: 1rem; margin-bottom: 2rem; }
+        .drop-zone {
+            border: 2px dashed #30363d;
+            border-radius: 8px;
+            padding: 4rem 2rem;
+            text-align: center;
+            background: #161b22;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #58a6ff; }
+        .format-tags { margin-top: 1rem; color: #8b949e; }
+        .format-tags span { display: inline-block; background: #21262d; padding: 2px 8px; border-radius: 4px; margin: 0 4px; font-size: 0.85em; }
+
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; }
+        .queue-item {
+            background: #21262d; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .progress-bar {
+            width: 100%; background: #30363d; border-radius: 4px; height: 8px; margin-top: 10px; overflow: hidden;
+        }
+        .progress-fill { background: #58a6ff; height: 100%; width: 0%; transition: width 0.3s; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .stat-box { padding: 1rem; background: #21262d; border-radius: 6px; text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: #58a6ff; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Knowledge Assimilation Center</h1>
+        <p style="color: #8b949e;">Transforming files into Solomon's cognitive architecture.</p>
+    </div>
+
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <h2>Drag Books Here</h2>
+        <p style="color: #8b949e;">or click to browse</p>
+        <div class="format-tags">
+            <span>[ EPUB ]</span><span>[ PDF ]</span><span>[ DOCX ]</span><span>[ Markdown ]</span><span>[ ZIP ]</span>
+        </div>
+        <input type="file" id="fileInput" style="display: none;" multiple>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>Processing Queue</h3>
+            <div id="queueCount" style="margin-bottom: 1rem; color: #8b949e;">0 Waiting</div>
+            <div id="queueList"></div>
+        </div>
+
+        <div class="card">
+            <h3>Knowledge Yield Dashboard</h3>
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files), false);
+
+        function handleDrop(e) {
+            handleFiles(e.dataTransfer.files);
+        }
+
+        function handleFiles(files) {
+            ([...files]).forEach(uploadFile);
+        }
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('priority', 'Normal');
+
+            fetch('/api/joe/kac/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    refreshQueue();
+                } else {
+                    alert('Upload failed: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function refreshQueue() {
+            fetch('/api/joe/kac/queue')
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    renderQueue(data.queue);
+                    renderStats(data.stats);
+                }
+            });
+        }
+
+        function renderQueue(queue) {
+            const list = document.getElementById('queueList');
+            document.getElementById('queueCount').innerText = `${queue.length} Total Jobs`;
+            list.innerHTML = '';
+
+            queue.forEach(job => {
+                let progress = job.status === 'Completed' ? 100 : (job.status === 'Parsing' ? 50 : 10);
+                list.innerHTML += `
+                    <div class="queue-item">
+                        <div style="flex-grow: 1;">
+                            <strong>${job.filename}</strong>
+                            <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">Status: ${job.status} | Vault: ${job.destination_vault}</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderStats(stats) {
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = `
+                <div class="stat-box"><div class="stat-value">${stats.books_processed}</div><div>Books Processed</div></div>
+                <div class="stat-box"><div class="stat-value">${stats.knowledge_cards_created}</div><div>Knowledge Cards</div></div>
+                <div class="stat-box"><div class="stat-value">${stats.algorithms_extracted}</div><div>Algorithms Extracted</div></div>
+                <div class="stat-box"><div class="stat-value">${stats.prediction_models_generated}</div><div>Predictions Models</div></div>
+            `;
+        }
+
+        // Auto refresh
+        setInterval(refreshQueue, 5000);
+        refreshQueue();
+    </script>
+</body>
+</html>

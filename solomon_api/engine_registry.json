@@ -224,6 +224,35 @@
       "known_blockers": [],
       "output_contract": "solomon.futures.memory.v1",
       "memory_writeback": []
+    },
+    {
+      "engine_id": "knowledge_assimilation_center",
+      "display_name": "Knowledge Assimilation Center (KAC)",
+      "source_path": "backend/services/kac/kac_manager.py",
+      "owner_family": "joe_jules",
+      "status_class": "active_route",
+      "entrypoint": "KACManager",
+      "route_paths": [
+        "/joe/knowledge-intake",
+        "/api/joe/kac/upload",
+        "/api/joe/kac/queue"
+      ],
+      "readiness_keys": [],
+      "parent_surface": "templates/joe_kac_intake.html",
+      "doc_path": null,
+      "test_paths": [
+        "tests/test_kac_intake.py"
+      ],
+      "approval_required": true,
+      "mutates_state": true,
+      "execution_capable": true,
+      "network_capable": false,
+      "ss1_touching": false,
+      "human_approval_authority": "Mark",
+      "safe_default": "dry_run",
+      "known_blockers": [],
+      "output_contract": "solomon.kac.v1",
+      "memory_writeback": []
     }
   ],
   "exclusions": [

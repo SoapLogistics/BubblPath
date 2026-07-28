@@ -746,6 +746,47 @@ def api_futures_dashboard():
     backend = FuturesDashboardBackend()
     return jsonify(backend.get_dashboard_data())
 
+# ==========================================
+# KNOWLEDGE ASSIMILATION CENTER (KAC) ROUTES
+# ==========================================
+
+from backend.services.kac.kac_manager import KACManager
+
+kac_manager = KACManager()
+
+@app.route("/joe/knowledge-intake")
+def joe_kac_intake():
+    """Renders the Knowledge Assimilation Center drag-and-drop UI."""
+    return render_template("joe_kac_intake.html")
+
+@app.route("/api/joe/kac/upload", methods=["POST"])
+def kac_upload():
+    """Handles file uploads for KAC intake."""
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "message": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "No selected file"}), 400
+
+    priority = request.form.get("priority", "Normal")
+
+    try:
+        job = kac_manager.ingest_file(file, priority)
+        return jsonify({"status": "success", "job": job})
+    except ValueError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/joe/kac/queue", methods=["GET"])
+def kac_queue():
+    """Returns the current KAC queue state."""
+    return jsonify({
+        "status": "success",
+        "queue": kac_manager.get_queue(),
+        "stats": kac_manager.get_stats()
+    })
+
 def perpetual_background_worker():
     """
     The True Perpetual Loop. Runs indefinitely in the background.
@@ -753,6 +794,10 @@ def perpetual_background_worker():
     print("[SYSTEM] Perpetual Learning Core Online. Engaging autonomous loop.")
     while True:
         try:
+            # Knowledge Assimilation Pipeline
+            print("[PERPETUAL] Processing Knowledge Assimilation Center Queue...")
+            kac_manager.process_next_job()
+
             print("[PERPETUAL] Running Memory Consolidation...")
             unified_memory.consolidate()
             
