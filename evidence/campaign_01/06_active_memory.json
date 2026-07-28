@@ -1,5 +1,5 @@
 {
-  "node_id": "42cab349-ed1f-4857-ad97-0a0ebc1f0125",
+  "node_id": "5be35c6b-256e-4d4d-be47-3452635a3a62",
   "content": "Always strip whitespace and case-fold lookup keys before database query execution.",
   "indexed": true
 }
