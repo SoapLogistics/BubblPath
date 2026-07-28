@@ -85,17 +85,19 @@ class QuantizedBrainMap:
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
-        self.nodes_lock = threading.Lock()
+        self.nodes_lock = threading.RLock()
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
-        if not self.ans_running:
-            self.ans_running = True
-            self.ans_thread = threading.Thread(target=self._ans_loop, daemon=True)
-            self.ans_thread.start()
+        with self.nodes_lock:
+            if not self.ans_running:
+                self.ans_running = True
+                self.ans_thread = threading.Thread(target=self._ans_loop, daemon=True)
+                self.ans_thread.start()
 
     def stop_ans(self):
-        self.ans_running = False
+        with self.nodes_lock:
+            self.ans_running = False
         if self.ans_thread:
             self.ans_thread.join(timeout=2.0)
 
@@ -192,30 +194,30 @@ class QuantizedBrainMap:
 
     def recall(self, query: str, top_k: int = 5) -> List[Dict]:
         """3.1 Vectorized Spreading Activation using Sparse Matrices"""
-        if not self.nodes:
-            return []
-
-        # Compile matrix if dirty
-        if self.is_matrix_dirty or self.csr_adj is None:
-            self.csr_adj = self.adj_matrix.tocsr()
-            self.is_matrix_dirty = False
-
-        # Amygdala Short-Circuit: Check L0 Cache first for threat/opportunity
-        # In a real system, we'd embed the query. Here we mock check keywords.
-        query_lower = query.lower()
-        if "fire" in query_lower or "danger" in query_lower:
-            for n_id, node in self.amygdala_cache.items():
-                node.access()
-                return [self._node_to_dict(node)] # Instant reflex response
-
-        # 1. Initialize activation vector
-        act_vector = np.zeros(self.max_nodes, dtype=np.float32)
-
-        # Mock initial activation based on query matching (normally would be dot product of query embedding)
-        query_words = set(query_lower.split())
-        activated_indices = []
-
         with self.nodes_lock:
+            if not self.nodes:
+                return []
+
+            # Compile matrix if dirty
+            if self.is_matrix_dirty or self.csr_adj is None:
+                self.csr_adj = self.adj_matrix.tocsr()
+                self.is_matrix_dirty = False
+
+            # Amygdala Short-Circuit: Check L0 Cache first for threat/opportunity
+            # In a real system, we'd embed the query. Here we mock check keywords.
+            query_lower = query.lower()
+            if "fire" in query_lower or "danger" in query_lower:
+                for n_id, node in self.amygdala_cache.items():
+                    node.access()
+                    return [self._node_to_dict(node)] # Instant reflex response
+
+            # 1. Initialize activation vector
+            act_vector = np.zeros(self.max_nodes, dtype=np.float32)
+
+            # Mock initial activation based on query matching (normally would be dot product of query embedding)
+            query_words = set(query_lower.split())
+            activated_indices = []
+
             for idx, node in self.nodes.items():
                 if isinstance(node.content, str):
                     node_words = set(node.content.lower().split())
@@ -225,16 +227,14 @@ class QuantizedBrainMap:
                         node.access()
                         activated_indices.append(idx)
 
-        # 2. Spread activation (SpMV: Sparse Matrix-Vector Multiplication)
-        spread_steps = 3
-        decay = 0.8
-        for _ in range(spread_steps):
-            # act_t1 = (Adj * act_t0) * decay + act_t0
-            spread = self.csr_adj.dot(act_vector) * decay
-            act_vector = np.clip(act_vector + spread, 0.0, 1.0)
+            # 2. Spread activation (SpMV: Sparse Matrix-Vector Multiplication)
+            spread_steps = 3
+            decay = 0.8
+            for _ in range(spread_steps):
+                # act_t1 = (Adj * act_t0) * decay + act_t0
+                spread = self.csr_adj.dot(act_vector) * decay
+                act_vector = np.clip(act_vector + spread, 0.0, 1.0)
 
-        # Update node activations
-        with self.nodes_lock:
             for idx in np.where(act_vector > 0.1)[0]:
                 if idx in self.nodes:
                     self.nodes[idx].activation = act_vector[idx]
@@ -258,10 +258,10 @@ class QuantizedBrainMap:
                     if len(results) >= top_k:
                         break
 
-        # 3.2 Vectorized Hebbian delta-weight updates
-        self._vectorized_hebbian_learning(retrieved_nodes)
+            # 3.2 Vectorized Hebbian delta-weight updates
+            self._vectorized_hebbian_learning(retrieved_nodes)
 
-        return results
+            return results
 
     def _vectorized_hebbian_learning(self, activated_nodes: List[QuantizedMemoryNode]):
         """O(1) vector outer-product update for co-activated nodes."""
@@ -282,59 +282,57 @@ class QuantizedBrainMap:
 
     def consolidate(self):
         """1.2 Structural Connectome Pruning and 1.3 Paged-KV Swapping"""
-        current_time = time.time()
-        nodes_to_remove = []
-        nodes_to_serialize = []
-
         with self.nodes_lock:
-            # Need to iterate over a copy of items to avoid size changed during iteration
+            current_time = time.time()
+            nodes_to_remove = []
+            nodes_to_serialize = []
+
             node_items = list(self.nodes.items())
 
-        for idx, node in node_items:
-            # 2.2 Ebbinghaus Decay
-            node.ebbinghaus_decay(current_time)
+            for idx, node in node_items:
+                # 2.2 Ebbinghaus Decay
+                node.ebbinghaus_decay(current_time)
 
-            age = current_time - node.creation_time
-            time_since_access = current_time - node.last_accessed
+                age = current_time - node.creation_time
+                time_since_access = current_time - node.last_accessed
 
-            if node.layer == LAYER_WORKING:
-                if age > self.working_ttl:
-                    if node.access_count > 2 or node.importance > 0.7:
-                        node.layer = LAYER_SHORT_TERM
-                    else:
-                        nodes_to_remove.append(idx)
-            elif node.layer == LAYER_SHORT_TERM:
-                if age > 86400: # 1 day
-                    node.layer = LAYER_LONG_TERM
-                    nodes_to_serialize.append(node)
+                if node.layer == LAYER_WORKING:
+                    if age > self.working_ttl:
+                        if node.access_count > 2 or node.importance > 0.7:
+                            node.layer = LAYER_SHORT_TERM
+                        else:
+                            nodes_to_remove.append(idx)
+                elif node.layer == LAYER_SHORT_TERM:
+                    if age > 86400: # 1 day
+                        node.layer = LAYER_LONG_TERM
+                        nodes_to_serialize.append(node)
 
-            # Prune Amygdala cache if calmed down
-            if node.id_str in self.amygdala_cache and time_since_access > 3600:
-                del self.amygdala_cache[node.id_str]
+                # Prune Amygdala cache if calmed down
+                if node.id_str in self.amygdala_cache and time_since_access > 3600:
+                    del self.amygdala_cache[node.id_str]
 
-        # Synaptic Scaling (Pruning edges < 0.05)
-        if self.is_matrix_dirty or self.csr_adj is None:
-             self.csr_adj = self.adj_matrix.tocsr()
+            # Synaptic Scaling (Pruning edges < 0.05)
+            if self.is_matrix_dirty or self.csr_adj is None:
+                 self.csr_adj = self.adj_matrix.tocsr()
 
-        # Remove small values efficiently in CSR
-        self.csr_adj.data = np.where(self.csr_adj.data < 0.05, 0, self.csr_adj.data)
-        self.csr_adj.eliminate_zeros()
-        self.adj_matrix = self.csr_adj.tolil()
-        self.is_matrix_dirty = False
+            # Remove small values efficiently in CSR
+            self.csr_adj.data = np.where(self.csr_adj.data < 0.05, 0, self.csr_adj.data)
+            self.csr_adj.eliminate_zeros()
+            self.adj_matrix = self.csr_adj.tolil()
+            self.is_matrix_dirty = False
 
-        # Serialize Long Term to binary blob (1.3 Paged Swapping & 4.2 Merkle Hashing)
-        if nodes_to_serialize:
-            with open("solomon_brain_map.bin", "ab") as f:
-                for n in nodes_to_serialize:
-                    b_data = n.serialize()
-                    # Append Merkle hash for immune system verification
-                    b_hash = hashlib.sha256(b_data).digest()
-                    f.write(b_data + b_hash)
+            # Serialize Long Term to binary blob (1.3 Paged Swapping & 4.2 Merkle Hashing)
+            if nodes_to_serialize:
+                with open("solomon_brain_map.bin", "ab") as f:
+                    for n in nodes_to_serialize:
+                        b_data = n.serialize()
+                        # Append Merkle hash for immune system verification
+                        b_hash = hashlib.sha256(b_data).digest()
+                        f.write(b_data + b_hash)
 
-                    # Remove from L1 RAM (Nodes dict)
-                    nodes_to_remove.append(n.id_int)
+                        # Remove from L1 RAM (Nodes dict)
+                        nodes_to_remove.append(n.id_int)
 
-        with self.nodes_lock:
             for idx in nodes_to_remove:
                 self._remove_node(idx)
 
@@ -398,9 +396,10 @@ class QuantizedBrainMap:
         }
 
     def get_stats(self):
-        return {
-            "total_nodes_in_ram": len(self.nodes),
-            "amygdala_cache_size": len(self.amygdala_cache),
-            "matrix_non_zeros": self.adj_matrix.nnz,
-            "ans_running": self.ans_running
-        }
+        with self.nodes_lock:
+            return {
+                "total_nodes_in_ram": len(self.nodes),
+                "amygdala_cache_size": len(self.amygdala_cache),
+                "matrix_non_zeros": self.adj_matrix.nnz,
+                "ans_running": self.ans_running
+            }
