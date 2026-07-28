@@ -3,8 +3,8 @@
 {"stage": "candidate_writeback", "data": {"recorded": true, "packet_id": "p1", "memory_type": "lesson", "result": "failed", "duplicate": false}}
 {"stage": "validation", "data": {"status": "passed", "checks": ["non_empty", "no_status_words", "idempotency_passed"]}}
 {"stage": "governance", "data": {"status": "approved", "audit_id": "aud_003"}}
-{"stage": "active_memory", "data": {"node_id": "5be35c6b-256e-4d4d-be47-3452635a3a62", "content": "Always strip whitespace and case-fold lookup keys before database query execution.", "indexed": true}}
-{"stage": "retrieval_trace", "data": {"query": "how to do database key normalization", "results": [{"id": "5be35c6b-256e-4d4d-be47-3452635a3a62", "type_idx": 99, "content": "Always strip whitespace and case-fold lookup keys before database query execution.", "layer": 0, "importance": 0.9, "valence": 0.5, "arousal": 0.8, "activation": 0.1666666716337204, "access_count": 2}]}}
+{"stage": "active_memory", "data": {"node_id": "0aadbd16-503b-4734-bd35-54c09acb3e06", "content": "Always strip whitespace and case-fold lookup keys before database query execution.", "indexed": true}}
+{"stage": "retrieval_trace", "data": {"query": "how to do database key normalization", "results": [{"id": "0aadbd16-503b-4734-bd35-54c09acb3e06", "type_idx": 204, "content": "Always strip whitespace and case-fold lookup keys before database query execution.", "layer": 0, "importance": 0.9, "valence": 0.5, "arousal": 0.8, "activation": 0.1666666716337204, "access_count": 2}]}}
 {"stage": "plan_trace", "data": {"action": "execute_with_normalized_keys", "derived_from_memory": true}}
 {"stage": "second_task", "data": {"task_id": "task_success_normalization", "status": "success", "normalization_applied": true}}
 {"stage": "outcome", "data": {"task_id": "task_success_normalization", "success": true, "improvement": "Lookup succeeded with whitespace-trimmed normalized key"}}
