@@ -140,3 +140,5 @@ class PerpetualLearningEngine:
                 return None
             finally:
                 conn.close()
+
+route_key = "solomon_plc_engine"
