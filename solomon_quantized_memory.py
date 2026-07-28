@@ -5,6 +5,8 @@ import struct
 import random
 import hashlib
 import threading
+import sqlite3
+import zlib
 import numpy as np
 from scipy.sparse import lil_matrix, csr_matrix
 from typing import Dict, List, Any, Optional
@@ -82,6 +84,26 @@ class QuantizedBrainMap:
         # 2.3 Routing by Arousal (The Amygdala Protocol)
         self.amygdala_cache = {} # High arousal nodes stored here for instant O(1) reflex routing
 
+        # Hyper-Quantized SQLite DB with Write-Ahead Logging (WAL)
+        self.db_path = "solomon_hyper_memory.db"
+        self.db = sqlite3.connect(self.db_path, check_same_thread=False)
+        # Apply intense pragmas for maximum disk speed and minimum RAM
+        self.db.execute("PRAGMA journal_mode=WAL;")
+        self.db.execute("PRAGMA synchronous=NORMAL;")
+        self.db.execute("PRAGMA temp_store=MEMORY;")
+        self.db.execute("PRAGMA mmap_size=30000000000;")
+        self.db.execute('''
+            CREATE TABLE IF NOT EXISTS memory_atoms (
+                id_int INTEGER PRIMARY KEY,
+                id_str TEXT,
+                type_idx INTEGER,
+                content BLOB,
+                layer INTEGER,
+                importance REAL
+            )
+        ''')
+        self.db.commit()
+
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
@@ -131,6 +153,18 @@ class QuantizedBrainMap:
 
             self._auto_link_ternary(node)
             self.is_matrix_dirty = True
+
+            # Hyper-Quantization: Compress content to binary and save to SQLite WAL DB
+            try:
+                compressed_content = zlib.compress(str(content).encode('utf-8'))
+                self.db.execute(
+                    "INSERT OR REPLACE INTO memory_atoms (id_int, id_str, type_idx, content, layer, importance) VALUES (?, ?, ?, ?, ?, ?)",
+                    (node.id_int, node.id_str, node.type_idx, compressed_content, node.layer, node.importance)
+                )
+                self.db.commit()
+            except Exception as e:
+                print(f"[ERROR] Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
+
             return node.id_str
 
     def _auto_link_ternary(self, new_node: QuantizedMemoryNode):

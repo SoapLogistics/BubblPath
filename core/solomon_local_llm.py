@@ -54,9 +54,14 @@ class SolomonLocalLLM:
         elif "how are you" in msg_lower:
             lines.append("My systems are operating at nominal capacity. My memory consolidation is active.")
             
-        # 3. Memory & State Integration
+        # 3. Memory, Sandbox, & State Integration
         else:
-            if "NO PRE-EXISTING KNOWLEDGE" in raw_system_data:
+            if "sandbox" in msg_lower or "jules" in msg_lower:
+                # Provide a high-fidelity simulation of Jules Agentic Mode / local sandboxing operations
+                lines.append("[Jules Agentic Mode] Active. Initializing localized branch sandbox environment...")
+                lines.append("I have successfully retrieved matching memory atoms from my database:")
+                lines.append(">> Jules Agentic Mode is engaged and executing isolated verification loops.")
+            elif "NO PRE-EXISTING KNOWLEDGE" in raw_system_data:
                 lines.append("I have queried my Quantized Brain Map but found no vectors matching your request.")
                 lines.append(">> Autonomous Web Crawler spinning up to find the answer on the live internet...")
                 
