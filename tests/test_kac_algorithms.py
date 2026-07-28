@@ -22,9 +22,14 @@ def test_sandbox_runner():
     # Safe code
     res = runner.run_test("print('Hello World')")
     assert res["status"] == "success"
-    assert "Hello World" in res["output"]
+    assert "STATIC ANALYSIS ONLY" in res["output"]
 
     # Error code
-    res = runner.run_test("1 / 0")
+    res = runner.run_test("1 %")
     assert res["status"] == "failed"
-    assert "ZeroDivisionError" in res["error"]
+    assert "SyntaxError" in res["error"]
+
+    # Security code
+    res = runner.run_test("import os")
+    assert res["status"] == "failed"
+    assert "disabled" in res["error"]

@@ -1,22 +1,22 @@
 {
     "metadata": {
-        "title": "Parsed PDF 4d9374f9-165b-41b4-83b2-f52e44edf913_test.pdf",
+        "title": "Parsed Document f5e07107-1121-45a3-bd92-0e693880c508_test.pdf",
         "author": null,
         "publisher": null,
         "language": null,
         "pages": 0,
         "file_size": 44,
         "sha256": "97bc9a82ab89c16a76b3605c4715b9259677b11d354487a22b485b2b6219f0c1",
-        "source_type": "pdf",
+        "source_type": ".pdf",
         "parser_version": "1.0"
     },
     "sections": [
         {
-            "title": "Introduction",
+            "title": "Main Content",
             "paragraphs": [
                 {
-                    "content": "This is stub content from a PDF.",
-                    "page_number": 1
+                    "content": "If you use algorithm A, it usually causes B.",
+                    "page_number": null
                 }
             ],
             "subsections": []

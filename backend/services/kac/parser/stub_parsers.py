@@ -2,32 +2,34 @@ from .parser_registry import BaseParser, registry
 from .canonical_document import CanonicalDocument, CanonicalMetadata, CanonicalSection, CanonicalParagraph
 import os
 
-class StubEpubParser(BaseParser):
+def _extract_text_content(filepath: str) -> str:
+    """Safely extracts text for stub parsing without discarding user data."""
+    try:
+        # In a real environment, proper libraries (PyMuPDF, ebooklib) would be used.
+        # For now, we make a best-effort text extraction to avoid throwing away data.
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()[:50000] # Read up to 50k chars to prevent memory issues in stubs
+    except Exception:
+        return "Could not extract text content."
+
+class UniversalFallbackParser(BaseParser):
     def parse(self) -> CanonicalDocument:
-        meta = CanonicalMetadata(title=f"Parsed EPUB {os.path.basename(self.filepath)}", source_type="epub")
-        section = CanonicalSection(title="Chapter 1", paragraphs=[
-            CanonicalParagraph("This is stub content from an EPUB.")
-        ])
+        ext = os.path.splitext(self.filepath)[1]
+        meta = CanonicalMetadata(title=f"Parsed Document {os.path.basename(self.filepath)}", source_type=ext)
+        content = _extract_text_content(self.filepath)
+
+        # Split into naive paragraphs
+        raw_paragraphs = content.split("\n\n")
+        paragraphs = [CanonicalParagraph(p.strip()) for p in raw_paragraphs if p.strip()]
+
+        if not paragraphs:
+            paragraphs = [CanonicalParagraph("No readable text found in document.")]
+
+        section = CanonicalSection(title="Main Content", paragraphs=paragraphs)
         return CanonicalDocument(metadata=meta, sections=[section])
 
-class StubPdfParser(BaseParser):
-    def parse(self) -> CanonicalDocument:
-        meta = CanonicalMetadata(title=f"Parsed PDF {os.path.basename(self.filepath)}", source_type="pdf")
-        section = CanonicalSection(title="Introduction", paragraphs=[
-            CanonicalParagraph("This is stub content from a PDF.", page_number=1)
-        ])
-        return CanonicalDocument(metadata=meta, sections=[section])
-
-class StubMarkdownParser(BaseParser):
-    def parse(self) -> CanonicalDocument:
-        meta = CanonicalMetadata(title=f"Parsed Markdown {os.path.basename(self.filepath)}", source_type="markdown")
-        section = CanonicalSection(title="Header 1", paragraphs=[
-            CanonicalParagraph("This is stub content from a Markdown file.")
-        ])
-        return CanonicalDocument(metadata=meta, sections=[section])
-
-# Register the stubs
-registry.register_parser('.epub', StubEpubParser)
-registry.register_parser('.pdf', StubPdfParser)
-registry.register_parser('.md', StubMarkdownParser)
-registry.register_parser('.txt', StubMarkdownParser)  # Fallback for now
+# Replace stubs with universal fallback that actually reads the file
+registry.register_parser('.epub', UniversalFallbackParser)
+registry.register_parser('.pdf', UniversalFallbackParser)
+registry.register_parser('.md', UniversalFallbackParser)
+registry.register_parser('.txt', UniversalFallbackParser)

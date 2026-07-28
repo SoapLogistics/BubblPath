@@ -3,66 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Knowledge Assimilation Center | Joe</title>
+    <title>KAOC | Solomon's Living University</title>
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; padding: 2rem; margin: 0; }
-        .header { border-bottom: 1px solid #30363d; padding-bottom: 1rem; margin-bottom: 2rem; }
+        .header { border-bottom: 1px solid #30363d; padding-bottom: 1rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header-title h1 { margin: 0; color: #58a6ff; }
         .drop-zone {
-            border: 2px dashed #30363d;
-            border-radius: 8px;
-            padding: 4rem 2rem;
-            text-align: center;
-            background: #161b22;
-            cursor: pointer;
-            transition: border-color 0.3s;
+            border: 2px dashed #30363d; border-radius: 8px; padding: 3rem 2rem;
+            text-align: center; background: #161b22; cursor: pointer; transition: border-color 0.3s;
         }
-        .drop-zone:hover, .drop-zone.dragover { border-color: #58a6ff; }
-        .format-tags { margin-top: 1rem; color: #8b949e; }
-        .format-tags span { display: inline-block; background: #21262d; padding: 2px 8px; border-radius: 4px; margin: 0 4px; font-size: 0.85em; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #3fb950; }
 
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; }
+        .full-width { grid-column: 1 / -1; }
         .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; }
-        .queue-item {
-            background: #21262d; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .progress-bar {
-            width: 100%; background: #30363d; border-radius: 4px; height: 8px; margin-top: 10px; overflow: hidden;
-        }
-        .progress-fill { background: #58a6ff; height: 100%; width: 0%; transition: width 0.3s; }
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-        .stat-box { padding: 1rem; background: #21262d; border-radius: 6px; text-align: center; }
-        .stat-value { font-size: 1.5rem; font-weight: bold; color: #58a6ff; }
+        .card h3 { margin-top: 0; border-bottom: 1px solid #30363d; padding-bottom: 0.5rem; }
+
+        .queue-item { background: #21262d; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+        .progress-bar { width: 100%; background: #30363d; border-radius: 4px; height: 8px; margin-top: 10px; overflow: hidden; }
+        .progress-fill { background: #3fb950; height: 100%; width: 0%; transition: width 0.3s; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .stat-box { padding: 1rem; background: #21262d; border-radius: 6px; text-align: center; border-left: 3px solid #58a6ff; }
+        .stat-value { font-size: 1.8rem; font-weight: bold; color: #c9d1d9; }
+        .stat-label { font-size: 0.85em; color: #8b949e; text-transform: uppercase; margin-top: 4px; }
+
+        .health-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #3fb950; margin-right: 8px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>Knowledge Assimilation Center</h1>
-        <p style="color: #8b949e;">Transforming files into Solomon's cognitive architecture.</p>
-    </div>
-
-    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-        <h2>Drag Books Here</h2>
-        <p style="color: #8b949e;">or click to browse</p>
-        <div class="format-tags">
-            <span>[ EPUB ]</span><span>[ PDF ]</span><span>[ DOCX ]</span><span>[ Markdown ]</span><span>[ ZIP ]</span>
+        <div class="header-title">
+            <h1>Knowledge Assimilation Operating Center</h1>
+            <p style="color: #8b949e; margin-top: 8px;">Solomon's Living University - Missions 1-10 Integrated Pipeline</p>
         </div>
-        <input type="file" id="fileInput" style="display: none;" multiple>
+        <div>
+            <span class="health-indicator"></span><span id="sysHealth">System ONLINE</span>
+        </div>
     </div>
 
     <div class="dashboard">
-        <div class="card">
-            <h3>Processing Queue</h3>
-            <div id="queueCount" style="margin-bottom: 1rem; color: #8b949e;">0 Waiting</div>
-            <div id="queueList"></div>
+        <!-- INTAKE (Mission 1) -->
+        <div class="card full-width">
+            <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                <h2>Drag Books & Papers Here</h2>
+                <p style="color: #8b949e;">EPUB | PDF | DOCX | Markdown | Code Repos</p>
+                <input type="file" id="fileInput" style="display: none;" multiple>
+            </div>
         </div>
 
-        <div class="card">
-            <h3>Knowledge Yield Dashboard</h3>
+        <!-- OPERATIONS CENTER (Missions 2-9 Aggregated) -->
+        <div class="card full-width">
+            <h3>Intelligence Inventory & Knowledge Economy</h3>
             <div class="stats-grid" id="statsGrid">
-                <!-- Stats populated by JS -->
+                <!-- Populated by JS -->
             </div>
+        </div>
+
+        <!-- PIPELINE QUEUE -->
+        <div class="card full-width">
+            <h3>Active Learning Pipeline</h3>
+            <div id="queueCount" style="margin-bottom: 1rem; color: #8b949e;">0 Active Jobs</div>
+            <div id="queueList"></div>
         </div>
     </div>
 
@@ -71,13 +74,8 @@
         const fileInput = document.getElementById('fileInput');
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
+            dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
         });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
 
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
@@ -87,12 +85,8 @@
             dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
         });
 
-        dropZone.addEventListener('drop', handleDrop, false);
+        dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files), false);
-
-        function handleDrop(e) {
-            handleFiles(e.dataTransfer.files);
-        }
 
         function handleFiles(files) {
             ([...files]).forEach(uploadFile);
@@ -104,65 +98,62 @@
             formData.append('priority', 'Normal');
 
             fetch('/api/joe/kac/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    refreshQueue();
-                } else {
-                    alert('Upload failed: ' + data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
+                method: 'POST', body: formData
+            }).then(r => r.json()).then(data => {
+                if(data.status === 'success') refreshDashboard();
+                else alert('Upload failed: ' + data.message);
+            });
         }
 
-        function refreshQueue() {
-            fetch('/api/joe/kac/queue')
+        function refreshDashboard() {
+            fetch('/api/joe/kac/operations')
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    renderQueue(data.queue);
-                    renderStats(data.stats);
+                    renderStats(data.data.intelligence_inventory, data.data.learning_activity);
+                    renderQueue(data.data.queue_preview);
                 }
             });
         }
 
+        function renderStats(inventory, activity) {
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = `
+                <div class="stat-box" style="border-color: #8957e5;"><div class="stat-value">${activity.books_completed}</div><div class="stat-label">Books Mastered</div></div>
+                <div class="stat-box" style="border-color: #d2a8ff;"><div class="stat-value">${inventory.knowledge_cards}</div><div class="stat-label">Knowledge Cards</div></div>
+                <div class="stat-box" style="border-color: #f0883e;"><div class="stat-value">${inventory.algorithms}</div><div class="stat-label">Algorithms Discovered</div></div>
+
+                <div class="stat-box" style="border-color: #3fb950;"><div class="stat-value">${inventory.predictions}</div><div class="stat-label">Prediction Models</div></div>
+                <div class="stat-box" style="border-color: #58a6ff;"><div class="stat-value">${inventory.consensus_nodes}</div><div class="stat-label">Consensus Established</div></div>
+                <div class="stat-box" style="border-color: #f85149;"><div class="stat-value">${inventory.research_campaigns}</div><div class="stat-label">Active Research</div></div>
+            `;
+        }
+
         function renderQueue(queue) {
             const list = document.getElementById('queueList');
-            document.getElementById('queueCount').innerText = `${queue.length} Total Jobs`;
+            document.getElementById('queueCount').innerText = `${queue.length} Active Jobs`;
             list.innerHTML = '';
 
             queue.forEach(job => {
-                let progress = job.status === 'Completed' ? 100 : (job.status === 'Parsing' ? 50 : 10);
+                let progress = 10;
+                if(job.status === 'Parsing') progress = 30;
+                if(job.status === 'Extracting') progress = 50;
+                if(job.status === 'Algorithm Discovery') progress = 70;
+                if(job.status === 'Prediction Modeling') progress = 90;
+                if(job.status === 'Completed') progress = 100;
+
                 list.innerHTML += `
                     <div class="queue-item">
-                        <div style="flex-grow: 1;">
-                            <strong>${job.filename}</strong>
-                            <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">Status: ${job.status} | Vault: ${job.destination_vault}</div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${progress}%;"></div>
-                            </div>
-                        </div>
+                        <strong>${job.filename}</strong>
+                        <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">State: ${job.status} | Vault: ${job.destination_vault}</div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%;"></div></div>
                     </div>
                 `;
             });
         }
 
-        function renderStats(stats) {
-            const grid = document.getElementById('statsGrid');
-            grid.innerHTML = `
-                <div class="stat-box"><div class="stat-value">${stats.books_processed}</div><div>Books Processed</div></div>
-                <div class="stat-box"><div class="stat-value">${stats.knowledge_cards_created}</div><div>Knowledge Cards</div></div>
-                <div class="stat-box"><div class="stat-value">${stats.algorithms_extracted}</div><div>Algorithms Extracted</div></div>
-                <div class="stat-box"><div class="stat-value">${stats.prediction_models_generated}</div><div>Predictions Models</div></div>
-            `;
-        }
-
-        // Auto refresh
-        setInterval(refreshQueue, 5000);
-        refreshQueue();
+        setInterval(refreshDashboard, 5000);
+        refreshDashboard();
     </script>
 </body>
 </html>

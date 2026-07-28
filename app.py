@@ -787,6 +787,17 @@ def kac_queue():
         "stats": kac_manager.get_stats()
     })
 
+from backend.services.kac.operations.operations_center import OperationsCenter
+from backend.services.kac.operations.dashboard_service import DashboardService
+
+kaoc = OperationsCenter(kac_manager)
+dashboard_service = DashboardService(kaoc)
+
+@app.route("/api/joe/kac/operations", methods=["GET"])
+def kac_operations():
+    """Returns the comprehensive KAOC state for the Joe Dashboard."""
+    return jsonify(dashboard_service.fetch_ui_payload())
+
 def perpetual_background_worker():
     """
     The True Perpetual Loop. Runs indefinitely in the background.

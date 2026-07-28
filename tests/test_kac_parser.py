@@ -14,7 +14,7 @@ def test_parser_manager_stub(tmp_path):
     doc = pm.process_file(str(dummy_file), "fakehash123")
 
     assert isinstance(doc, CanonicalDocument)
-    assert doc.metadata.source_type == "epub"
+    assert doc.metadata.source_type == ".epub"
     assert "fakehash123" in doc.metadata.sha256
     assert len(doc.sections) > 0
 

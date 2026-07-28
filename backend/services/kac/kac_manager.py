@@ -24,6 +24,9 @@ class KACManager:
             "algorithms_extracted": 0,
             "prediction_models_generated": 0,
             "cross_domain_connections": 0,
+            "consensus_nodes_created": 0,
+            "conflicts_detected": 0,
+            "research_campaigns_created": 0,
             "knowledge_yield": 0.0,
             "average_assimilation_time": 0.0,
             "vault_capacity": 0.0
@@ -158,8 +161,20 @@ class KACManager:
                     sd = SignalDetector()
                     predictive_models = sd.build_candidates(intelligence.get("predictions", []))
 
+                    # 5. Synthesis (Mission 7)
+                    job["status"] = "Synthesis"
+                    self._save_queue()
+                    from .synthesis.synthesis_engine import SynthesisEngine
+                    se = SynthesisEngine()
+                    # Simulating existing memory for synthesis
+                    stub_memory = [{"type": "fact", "content": "stub fact", "source": "memory"}]
+                    consensus, conflicts, campaigns = se.synthesize_knowledge(intelligence.get("facts", []), stub_memory)
+
                     # Update Stats
                     self.stats["books_processed"] += 1
+                    self.stats["consensus_nodes_created"] += len(consensus)
+                    self.stats["conflicts_detected"] += len(conflicts)
+                    self.stats["research_campaigns_created"] += len(campaigns)
                     self.stats["knowledge_cards_created"] += len(intelligence["facts"]) + len(intelligence["concepts"])
                     self.stats["algorithms_extracted"] += len(algorithm_cards)
                     self.stats["prediction_models_generated"] += len(predictive_models)
