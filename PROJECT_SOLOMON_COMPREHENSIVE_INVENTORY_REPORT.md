@@ -1,15 +1,15 @@
-# PROJECT SOLOMON — THE UNIVERSAL PREDICTIVE INTELLIGENCE CORE
+# PROJECT SOLOMON — COMPREHENSIVE ARCHITECTURAL REPORT & FOUNDATION FORGE DOCTRINE
 
 **Report Date:** July 28, 2026
 **Prepared For:** Executive Review & SOSS Core Systems Command
-**Mission:** "Learn the Mathematics Hidden Inside Reality"
+**Mission:** "Harden, Align, Comply, Quantize, and Verify"
 **Status:** Canonical, Integrated, Hardened & Verified
 
 ---
 
 ## Part 1: System Progress & Maturity Index
 
-With the latest integration of the **Universal Predictive Intelligence Engine** and re-entrant `threading.RLock()` memory safeguards, Project Solomon has achieved absolute **architectural stability**.
+With the latest integration of the **Foundation Forge Daemon Core** and re-entrant `threading.RLock()` memory safeguards, Project Solomon has achieved absolute **architectural stability**.
 
 ### System Progress Metrics:
 
@@ -28,25 +28,31 @@ With the latest integration of the **Universal Predictive Intelligence Engine** 
 
 ---
 
-## Part 2: The Universal Predictive Intelligence Core Doctrine
+## Part 2: The Foundation Forge Daemon Core Doctrine
 
-Project Solomon is no longer just a repository of raw information. It is an active intelligence that continuously **discovers, measures, models, predicts, validates, and refines** its mathematical understanding of reality.
+Project Solomon incorporates **Foundation Forge**, a permanent autonomous maintenance daemon whose role is to continuously strengthen, simplify, align, verify, compress, and protect the SOSS core.
 
-### 1. The Core Philosophy
-*   **Do not memorize, generalize:** Convert large bodies of raw experiences into compressed mathematical models.
-*   **Do not collect, compress:** Memory does not simply record "what happened," it models *"what usually happens next?"* and *"what usually causes this?"*
-*   **Do not guess, predict:** All predictions must feature an expected outcome, a confidence interval, supporting evidence, and alternative explanations.
-*   **Do not assume, measure:** Confidence must only increase through successful physical validation of predictions over time.
+### 1. Operating Cadence
+Foundation Forge operates on a highly controlled fifteen-minute cadence, executing small, bounded, and evidence-driven tasks:
+$$\text{Wake} \rightarrow \text{Acquire Lease} \rightarrow \text{Measure Health} \rightarrow \text{Select 1 Work Packet} \rightarrow \text{Implement} \rightarrow \text{Verify} \rightarrow \text{Release Lease}$$
+This cycle is managed by a durable process supervisor (such as systemd timer, cron, or Temporal) to ensure recovery after crashes, host reboots, or database restarts.
 
-### 2. The Pattern Extraction Pipeline
-Every completed task or ingested fact undergoes a rigorous reflection pass:
-$$\text{Observe} \rightarrow \text{Extract Entities/Links} \rightarrow \text{Generate Hypothesis} \rightarrow \text{Build Model} \rightarrow \text{Validate} \rightarrow \text{Update confidence}$$
+### 2. The Nonnegotiable Reality Rules
+*   **No Placeholders or TODOs:** Every component must have a real, executing physical implementation.
+*   **No Silent Failures:** Exception swallowing is forbidden; all exceptions must log observable diagnostics and update confidence.
+*   **No Unverified Claims:** Improvement metrics must be physically measured and compared before and after a change.
 
-### 3. Model Registry Standards
-Every predictive model instantiated by Solomon is stored with:
-*   **Unique ID & Metadata:** Domain, creator, version, inputs, outputs, last improvement date.
-*   **Scientific Backing:** Accuracy history, failure log, supporting training/validation evidence.
-*   **Economic Constraint:** Computational complexity cost, inference latency, retirement criteria.
+### 3. Five Permanent Pillars of Forge Maintenance
+1.  **Foundation Hardening:** Eradicating circular dependencies, validating transactions, enforcing exclusive task claims.
+2.  **Memory Alignment:** Detecting contradictory claims, deduplicating identical knowledge cards, preserving provenance.
+3.  **Registry Compliance:** Ensuring every operational service is registered, validating permissions, and detecting drift.
+4.  **Quantization and Efficiency:** Eliminating duplicate code, optimizing database query paths, shrinking context windows.
+5.  **Verification and Operational Truth:** Executing unit, contract, and integration tests to compute a traceable "Reality Score".
+
+### 4. Bounded Change & Anti-Thrashing Policy
+To prevent code oscillation and bloat, the daemon adheres to strict operational boundaries:
+*   Maximum of 5 files changed and 250 net lines modified per maintenance cycle.
+*   Enforces cooldown periods (24h for files, 7 days for schemas) to prevent repeating or cyclical rewrites.
 
 ---
 
@@ -162,7 +168,7 @@ Our engineering efforts have successfully delivered the core coordinated infrast
 ## Part 5: Things to Get Done in the Next Operating Cycle (Roadmap Goals)
 
 1.  **Incorporate Cross-Domain Pattern Transfer:**
-    *   Establish structural search algorithms to identify when mathematical trends discovered in one domain (such as sporting probability graphs) apply equivalently to another domain (such as scheduling workloads or geopolitical risks).
+    *   Establish structural search algorithms to identify when mathematical trends discovered in one domain apply equivalently to another domain (such as scheduling workloads or geopolitical risks).
 2.  **Autonomous Model Retraining & Evolution:**
     *   Trigger automatic background retraining campaigns whenever prediction accuracy or confidence intervals decay below target limits.
 3.  **Durable Event History & Replay:**
