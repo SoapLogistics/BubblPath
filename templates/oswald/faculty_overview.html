@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSWALD | Faculty & Curriculum</title>
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; padding: 2rem; margin: 0; }
+        .header { border-bottom: 1px solid #30363d; padding-bottom: 1rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header-title h1 { margin: 0; color: #58a6ff; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; }
+        .card h3 { margin-top: 0; border-bottom: 1px solid #30363d; padding-bottom: 0.5rem; }
+        .queue-item { background: #21262d; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            <h1>OSWALD Faculty & Curriculum Engine</h1>
+            <p style="color: #8b949e; margin-top: 8px;">Autonomous Curriculum Construction & Socratic Apprenticeship</p>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <!-- CURRICULUM -->
+        <div class="card">
+            <h3 style="color: #d2a8ff;">Learning Paths (Mission 12)</h3>
+            <div id="curriculumList">
+                <div class="queue-item">
+                    <strong>Goal: Improve Continual Learning</strong>
+                    <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">State: PLANNED | Prerequisite Gaps: None</div>
+                </div>
+            </div>
+            <button onclick="addLearningPath()" style="margin-top: 10px; background: #238636; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor:pointer;">Generate Curriculum</button>
+        </div>
+
+        <!-- FACULTY -->
+        <div class="card">
+            <h3 style="color: #3fb950;">Active Teaching Sessions (Mission 13)</h3>
+            <div id="facultyList">
+                <div class="queue-item">
+                    <strong>Instructor: AI Foundations</strong>
+                    <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">State: ACTIVE | Mode: Socratic | Misconceptions: 1</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addLearningPath() {
+             const list = document.getElementById('curriculumList');
+             list.innerHTML += `
+                <div class="queue-item">
+                    <strong style="color: #a371f7;">Goal: Master Deep Learning Quantization</strong>
+                    <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">State: SYLLABUS_BUILT | Modules: 4 | Estimated Time: 12h</div>
+                </div>
+             `;
+        }
+    </script>
+</body>
+</html>

@@ -798,6 +798,19 @@ def kac_operations():
     """Returns the comprehensive KAOC state for the Joe Dashboard."""
     return jsonify(dashboard_service.fetch_ui_payload())
 
+@app.route("/joe/oswald/laboratory")
+def oswald_laboratory():
+    """Renders the OSWALD Laboratory & Invention Studio UI."""
+    return render_template("oswald/laboratory_overview.html")
+
+@app.route("/joe/oswald/faculty")
+def oswald_faculty():
+    """Renders the OSWALD Curriculum & Faculty UI."""
+    return render_template("oswald/faculty_overview.html")
+
+from backend.services.oswald.api import oswald_bp
+app.register_blueprint(oswald_bp)
+
 def perpetual_background_worker():
     """
     The True Perpetual Loop. Runs indefinitely in the background.

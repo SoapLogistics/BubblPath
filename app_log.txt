@@ -7,5 +7,7 @@
  * Running on http://127.0.0.1:10000
  * Running on http://192.168.0.2:10000
 [33mPress CTRL+C to quit[0m
-127.0.0.1 - - [28/Jul/2026 14:14:20] "GET /joe/knowledge-intake HTTP/1.1" 200 -
-127.0.0.1 - - [28/Jul/2026 14:14:20] "GET /api/joe/kac/operations HTTP/1.1" 200 -
+127.0.0.1 - - [28/Jul/2026 16:44:34] "GET /joe/oswald/laboratory HTTP/1.1" 200 -
+127.0.0.1 - - [28/Jul/2026 16:44:34] "POST /api/oswald/invention/problems HTTP/1.1" 200 -
+127.0.0.1 - - [28/Jul/2026 16:44:34] "POST /api/oswald/invention/generate HTTP/1.1" 200 -
+127.0.0.1 - - [28/Jul/2026 16:44:34] "GET /joe/oswald/faculty HTTP/1.1" 200 -

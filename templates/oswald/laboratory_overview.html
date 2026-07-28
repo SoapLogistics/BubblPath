@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSWALD | Laboratory & Invention Studio</title>
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; padding: 2rem; margin: 0; }
+        .header { border-bottom: 1px solid #30363d; padding-bottom: 1rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header-title h1 { margin: 0; color: #58a6ff; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; }
+        .card h3 { margin-top: 0; border-bottom: 1px solid #30363d; padding-bottom: 0.5rem; }
+        .queue-item { background: #21262d; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            <h1>OSWALD Laboratory & Invention Studio</h1>
+            <p style="color: #8b949e; margin-top: 8px;">Experimental Reasoning & Novel Knowledge Creation</p>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <!-- INVENTION STUDIO -->
+        <div class="card">
+            <h3 style="color: #d2a8ff;">Invention Studio (Mission 15)</h3>
+            <div id="inventionList">
+                <div class="queue-item">
+                    <strong>Problem: Memory Corruption</strong>
+                    <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">State: IN_PROTOTYPING | Expected Value: High</div>
+                </div>
+                <!-- Dynamic Content injected via JS -->
+            </div>
+            <button onclick="createProblem()" style="margin-top: 10px; background: #238636; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor:pointer;">Simulate Found Problem</button>
+        </div>
+
+        <!-- LABORATORY -->
+        <div class="card">
+            <h3 style="color: #3fb950;">Experimental Sandbox (Mission 14)</h3>
+            <div id="experimentList">
+                <div class="queue-item">
+                    <strong>Hypothesis: Replay vs EWC Memory</strong>
+                    <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">State: EXECUTING | Sandbox: Docker/gVisor Simulator</div>
+                </div>
+                <div class="queue-item">
+                    <strong>Benchmark: Retrieval Latency V4</strong>
+                    <div style="font-size: 0.85em; color: #3fb950; margin-top: 4px;">Conclusion: SUPPORTED | Improvement: 15%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createProblem() {
+            fetch('/api/oswald/invention/problems', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: "High Latency in Cross-Domain Retrieval",
+                    description: "Retrieval slows down when querying >3 domains.",
+                    domain: "Memory",
+                    source: "Telemetry"
+                })
+            }).then(r => r.json()).then(data => {
+                if(data.status === 'success') {
+                    fetch('/api/oswald/invention/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ problem_id: data.problem_id })
+                    }).then(r => r.json()).then(inv => {
+                        const list = document.getElementById('inventionList');
+                        list.innerHTML += `
+                            <div class="queue-item">
+                                <strong style="color: #a371f7;">NEW: ${inv.summary}</strong>
+                                <div style="font-size: 0.85em; color: #8b949e; margin-top: 4px;">State: READY_FOR_EXPERIMENT | Novelty: NEW_COMBINATION</div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
