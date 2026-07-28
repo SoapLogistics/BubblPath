@@ -128,7 +128,7 @@ def test_consolidation_and_direct_binary_recall():
 
     # Check binary blob file was created
     assert os.path.exists("solomon_brain_map.bin")
-    expected_size = 10 * 201 # max_nodes * RECORD_SIZE
+    expected_size = 10 * 208 # max_nodes * RECORD_SIZE
     assert os.path.getsize("solomon_brain_map.bin") == expected_size
 
     # 3. Retrieve using direct-seek O(1) recall from blob
@@ -152,8 +152,8 @@ def test_binary_recall_sha256_merkle_verification():
     assert brain_map._read_from_blob(idx) is not None
 
     # Corrupt the hash part of that record in the file
-    RECORD_SIZE = 201
-    offset_to_hash = idx * RECORD_SIZE + 169
+    RECORD_SIZE = 208
+    offset_to_hash = idx * RECORD_SIZE + 176
 
     with open("solomon_brain_map.bin", "r+b") as f:
         f.seek(offset_to_hash)

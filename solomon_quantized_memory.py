@@ -55,12 +55,21 @@ class QuantizedMemoryNode:
         self.activation = max(0.0, self.activation * retention)
 
     def serialize(self) -> bytes:
-        """4.1 Zero-Copy Serialization (Struct packing)"""
-        # Pack metadata: id (int), layer (B), access_count (I), times (d, d), emotional stats (f, f, f)
-        metadata = struct.pack("!QBIddfff",
-                               self.id_int, self.layer, self.access_count,
-                               self.creation_time, self.last_accessed,
-                               self.importance, self.valence, self.arousal)
+        """4.1 Zero-Copy Serialization with Natural 64-bit Cache Alignment"""
+        # Formatted fields (48 bytes total, natural 8-byte aligned offsets, 7 bytes explicit padding):
+        # Q: id_int (8 bytes, offset 0)
+        # d: creation_time (8 bytes, offset 8)
+        # d: last_accessed (8 bytes, offset 16)
+        # I: access_count (4 bytes, offset 24)
+        # f: importance (4 bytes, offset 28)
+        # f: valence (4 bytes, offset 32)
+        # f: arousal (4 bytes, offset 36)
+        # B: layer (1 byte, offset 40)
+        # 7s: padding (7 bytes, offset 41 to 48)
+        metadata = struct.pack("!QddIfffB7s",
+                               self.id_int, self.creation_time, self.last_accessed,
+                               self.access_count, self.importance, self.valence, self.arousal,
+                               self.layer, b"\x00" * 7)
 
         # Pack ternary vector as raw bytes (128 bytes)
         vector_bytes = self.ternary_vector.tobytes()
@@ -167,9 +176,10 @@ class QuantizedBrainMap:
         if not os.path.exists("solomon_brain_map.bin"):
             return None
 
-        # Struct format: !QBIddfff (Q=8, B=1, I=4, d=8, d=8, f=4, f=4, f=4 = 41 bytes)
-        # Plus ternary vector (128 bytes) = 169 bytes. Plus SHA256 (32 bytes) = 201 bytes per node.
-        RECORD_SIZE = 201
+        # Struct format: !QddIfffB7s (Q=8, d=8, d=8, I=4, f=4, f=4, f=4, B=1, 7s=7 = 48 bytes)
+        # Plus ternary vector (128 bytes) = 176 bytes. Plus SHA256 (32 bytes) = 208 bytes per node.
+        # This aligns the whole record beautifully to a 16-byte boundary (16 * 13 = 208) for maximum CPU caching.
+        RECORD_SIZE = 208
 
         try:
             # 1. Primary: Ultra-efficient O(1) random-access direct seek
@@ -179,14 +189,14 @@ class QuantizedBrainMap:
                     f.seek(offset)
                     record = f.read(RECORD_SIZE)
                     if record and len(record) == RECORD_SIZE:
-                        metadata_bytes = record[:41]
+                        metadata_bytes = record[:48]
                         id_int = struct.unpack("!Q", metadata_bytes[:8])[0]
                         if id_int == target_id_int:
-                            # Verify SHA-256 Merkle integrity
-                            stored_hash = record[169:201]
-                            calculated_hash = hashlib.sha256(record[:169]).digest()
+                            # Verify SHA-256 Merkle integrity (over metadata + ternary vector)
+                            stored_hash = record[176:208]
+                            calculated_hash = hashlib.sha256(record[:176]).digest()
                             if stored_hash == calculated_hash:
-                                _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
+                                _, c_time, l_acc, access_count, imp, val, aro, layer, _ = struct.unpack("!QddIfffB7s", metadata_bytes)
                                 return {
                                     "id": f"blob-recovered-{target_id_int}",
                                     "type_idx": 0,
@@ -209,15 +219,15 @@ class QuantizedBrainMap:
                     if not record or len(record) < RECORD_SIZE:
                         break
 
-                    metadata_bytes = record[:41]
+                    metadata_bytes = record[:48]
                     id_int = struct.unpack("!Q", metadata_bytes[:8])[0]
 
                     if id_int == target_id_int:
                         # Verify SHA-256 Merkle integrity
-                        stored_hash = record[169:201]
-                        calculated_hash = hashlib.sha256(record[:169]).digest()
+                        stored_hash = record[176:208]
+                        calculated_hash = hashlib.sha256(record[:176]).digest()
                         if stored_hash == calculated_hash:
-                            _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
+                            _, c_time, l_acc, access_count, imp, val, aro, layer, _ = struct.unpack("!QddIfffB7s", metadata_bytes)
                             return {
                                 "id": f"blob-recovered-{target_id_int}",
                                 "type_idx": 0,
@@ -368,7 +378,7 @@ class QuantizedBrainMap:
         # Serialize Long Term to binary blob (1.3 Paged Swapping & 4.2 Merkle Hashing)
         if nodes_to_serialize:
             try:
-                RECORD_SIZE = 201
+                RECORD_SIZE = 208
                 expected_size = self.max_nodes * RECORD_SIZE
 
                 # Check if file exists or needs pre-allocation
