@@ -27,10 +27,23 @@ class Candidate:
 
     def validate(self) -> List[str]:
         errors = []
+        if not self.candidate_id or not isinstance(self.candidate_id, str):
+            errors.append("MISSING_OR_INVALID_CANDIDATE_ID")
+        if not self.event_id or not isinstance(self.event_id, str):
+            errors.append("MISSING_OR_INVALID_EVENT_ID")
         if self.source_mode not in ["TEST", "SIMULATION", "SHADOW", "LIVE"]:
             errors.append("INVALID_SOURCE_MODE")
-        if self.pre_simulation_confidence < 0.0 or self.pre_simulation_confidence > 100.0:
+        if not (0.0 <= self.pre_simulation_confidence <= 100.0):
             errors.append("OUT_OF_RANGE_CONFIDENCE")
+        if not (0.0 <= self.data_quality_score <= 100.0):
+            errors.append("OUT_OF_RANGE_DATA_QUALITY")
+
+        # Validate features if present
+        for key in ["base_prob", "win_prob", "volatility_index", "historical_support", "geopolitical_risk"]:
+            if key in self.features:
+                val = self.features[key]
+                if not isinstance(val, (int, float)) or not (0.0 <= val <= 1.0):
+                    errors.append(f"OUT_OF_BOUNDS_FEATURE_{key.upper()}")
         return errors
 
 @dataclasses.dataclass
@@ -64,8 +77,18 @@ class WilsonInterval:
     def calculate(successes: int, trials: int, confidence: float = 0.95) -> Tuple[float, float]:
         if trials == 0:
             return 0.0, 0.0
-        # Z-score for 95% confidence is approx 1.96
-        z = 1.96
+
+        # Z-score lookup table mapping standard confidence level float values
+        z_scores = {
+            0.80: 1.282,
+            0.85: 1.440,
+            0.90: 1.645,
+            0.95: 1.960,
+            0.98: 2.330,
+            0.99: 2.576
+        }
+        # Grab corresponding z-score, default to 1.960 for 95%
+        z = z_scores.get(confidence, 1.960)
         p = successes / trials
 
         denominator = 1 + z**2 / trials

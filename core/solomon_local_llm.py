@@ -32,9 +32,9 @@ class SolomonLocalLLM:
         """
         msg_lower = user_message.lower()
 
-        # Intercept queries containing 'sandbox' or 'jules' to return simulated [Jules Agentic Mode] responses
+        # Intercept queries containing 'sandbox' or 'jules' to return honest status info
         if "sandbox" in msg_lower or "jules" in msg_lower:
-            return f"[Jules Agentic Mode] Activated.\nExecuting command: {user_message}\nProceeding with sandbox setup..."
+            return f"[Jules Agentic Mode] Warning: Jules execution is currently unavailable because no agent adapter is configured in the environment."
 
         lines = []
         
