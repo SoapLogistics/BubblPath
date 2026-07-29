@@ -31,6 +31,11 @@ class SolomonLocalLLM:
         Uses keyword entropy to generate dynamic responses.
         """
         msg_lower = user_message.lower()
+
+        # Honest warning if sandbox or jules agentic mode is requested but agent adapter is not set up
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            return "Warning: Jules Agentic Mode is currently unavailable due to no configured agent adapter."
+
         lines = []
         
         # 1. Dynamic Processing Hash

@@ -107,7 +107,7 @@ class QuantizedBrainMap:
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
-        self.nodes_lock = threading.Lock()
+        self.nodes_lock = threading.RLock()
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
@@ -171,19 +171,27 @@ class QuantizedBrainMap:
         """Uses fast bitwise/vectorized math for semantic similarity instead of strings"""
         idx = new_node.id_int
 
-        # Must be called with self.nodes_lock held or safely copy keys
-        node_items = list(self.nodes.items())
+        if not self.nodes:
+            return
 
-        for existing_idx, existing_node in node_items:
-            if idx == existing_idx:
-                continue
+        # Prepare arrays for vectorized BLAS-accelerated dot product
+        # Filter out new_node's own index
+        target_nodes = [node for existing_idx, node in self.nodes.items() if existing_idx != idx]
+        if not target_nodes:
+            return
 
-            # Simulated bitwise XNOR (dot product on ternary is equivalent and fast)
-            similarity = np.dot(new_node.ternary_vector, existing_node.ternary_vector) / 128.0
+        # Cast the np.int8 ternary vectors to np.int32 before dot product multiplication to prevent signed 8-bit integer overflows
+        new_vec = new_node.ternary_vector.astype(np.int32)
+        stacked_vecs = np.stack([node.ternary_vector for node in target_nodes]).astype(np.int32) # shape: (num_nodes, 128)
 
-            if similarity > 0.3:
-                self.adj_matrix[idx, existing_idx] = similarity
-                self.adj_matrix[existing_idx, idx] = similarity * 0.5 # reverse edge weaker
+        # Vectorized ternary similarity calculations using a single BLAS-accelerated NumPy dot product
+        similarities = np.dot(stacked_vecs, new_vec) / 128.0 # shape: (num_nodes,)
+
+        for i, node in enumerate(target_nodes):
+            sim = float(similarities[i])
+            if sim > 0.3:
+                self.adj_matrix[idx, node.id_int] = sim
+                self.adj_matrix[node.id_int, idx] = sim * 0.5
         self.is_matrix_dirty = True
 
     def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
