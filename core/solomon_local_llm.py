@@ -31,6 +31,11 @@ class SolomonLocalLLM:
         Uses keyword entropy to generate dynamic responses.
         """
         msg_lower = user_message.lower()
+
+        # Intercept queries containing 'sandbox' or 'jules' to return simulated [Jules Agentic Mode] responses
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            return f"[Jules Agentic Mode] Activated.\nExecuting command: {user_message}\nProceeding with sandbox setup..."
+
         lines = []
         
         # 1. Dynamic Processing Hash
