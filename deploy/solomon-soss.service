@@ -1,0 +1,40 @@
+[Unit]
+Description=Solomon Secure Operations System (SOSS) Central Engine
+After=network-online.target local-fs.target
+Requires=network-online.target
+Documentation=https://github.com/solomon/soss
+
+[Service]
+Type=simple
+User=solomon
+Group=solomon
+WorkingDirectory=/opt/solomon/soss
+EnvironmentFile=/etc/solomon/soss.env
+ExecStart=/opt/solomon/venv/bin/python app.py
+
+# Graceful Shutdown
+KillMode=control-group
+TimeoutStopSec=30
+SendSIGKILL=yes
+
+# Restart Limits and Backoff
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Hard Resource and Permission Limits
+CPUQuota=50%
+MemoryHigh=1500M
+MemoryMax=2000M
+LimitNOFILE=65536
+
+# Security and Sandbox Sandbox Hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+DevicePolicy=closed
+
+[Install]
+WantedBy=multi-user.target
