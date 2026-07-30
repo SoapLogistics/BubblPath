@@ -271,7 +271,7 @@ class FuturesRepository:
         self._init_db()
 
     def _init_db(self):
-        with closing(sqlite3.connect(self.db_path)) as conn:
+        with closing(sqlite3.connect(self.db_path, timeout=10.0)) as conn:
             with conn:
                 # Use canonical WAL journal mode
                 conn.execute("PRAGMA journal_mode=WAL")
@@ -290,7 +290,7 @@ class FuturesRepository:
 
     def check_idempotency(self, candidate_id: str, source_mode: str) -> bool:
         """Prevent same candidate/mode execution logic."""
-        with closing(sqlite3.connect(self.db_path)) as conn:
+        with closing(sqlite3.connect(self.db_path, timeout=10.0)) as conn:
             cur = conn.cursor()
             cur.execute("""
                 SELECT 1 FROM futures_simulation_runs
@@ -300,7 +300,7 @@ class FuturesRepository:
             return cur.fetchone() is not None
 
     def save_run(self, result: SimulationResult):
-        with closing(sqlite3.connect(self.db_path)) as conn:
+        with closing(sqlite3.connect(self.db_path, timeout=10.0)) as conn:
             with conn:
                 sim = result.simulation
                 conn.execute("""
