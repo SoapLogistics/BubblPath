@@ -34,6 +34,11 @@ class GovernanceApprovalLane:
             self._audit_event("revoked", action)
             return {"status": "refused", "reason": "Approval has been revoked programmatically", "audit_id": "aud_004"}
 
+        # Strict Governance Segregation: Prevent self-approvals
+        if packet.get("requester") and packet.get("approved_by") and packet.get("requester") == packet.get("approved_by"):
+            self._audit_event("refused_self_approval", action)
+            return {"status": "refused", "reason": "Strict segregation policy violation: self-approval is forbidden", "audit_id": "aud_006"}
+
         # Expiration Check
         timestamp = packet.get("timestamp", time.time())
         expires_at = packet.get("expires_at", timestamp + 3600)  # Default 1-hour expiration

@@ -83,6 +83,7 @@ class QuantizedBrainMap:
 
         # 2.3 Routing by Arousal (The Amygdala Protocol)
         self.amygdala_cache = {} # High arousal nodes stored here for instant O(1) reflex routing
+        self.blob_cache = {} # In-memory paged cache for binary blob reads
 
         # Hyper-Quantized SQLite DB with Write-Ahead Logging (WAL)
         self.db_path = "solomon_hyper_memory.db"
@@ -104,10 +105,29 @@ class QuantizedBrainMap:
         ''')
         self.db.commit()
 
+        # Timed Lock Context Manager for Deadlock Detection
+        class _TimedLockContext:
+            def __init__(self, lock, timeout=5.0):
+                self.lock = lock
+                self.timeout = timeout
+
+            def __enter__(self):
+                if not self.lock.acquire(timeout=self.timeout):
+                    raise TimeoutError("Deadlock protection triggered: failed to acquire lock within timeout.")
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                self.lock.release()
+
+        self._timed_lock = _TimedLockContext
+
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
         self.nodes_lock = threading.Lock()
+
+    def lock_nodes(self, timeout=5.0):
+        return self._timed_lock(self.nodes_lock, timeout)
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
@@ -129,7 +149,7 @@ class QuantizedBrainMap:
                 self.dream_cycle(max_steps=5)
 
     def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
-        with self.nodes_lock:
+        with self.lock_nodes():
             if len(self.nodes) >= self.max_nodes:
                 # Force a consolidation to free up space, or return a failure/drop
                 self.consolidate()
@@ -187,7 +207,10 @@ class QuantizedBrainMap:
         self.is_matrix_dirty = True
 
     def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
-        """4.1 Zero-copy read from binary blob without parsing the whole file"""
+        """4.1 Zero-copy read from binary blob with in-memory paged caching"""
+        if target_id_int in self.blob_cache:
+            return self.blob_cache[target_id_int]
+
         if not os.path.exists("solomon_brain_map.bin"):
             return None
 
@@ -209,7 +232,7 @@ class QuantizedBrainMap:
                         # Found it! Unpack the rest
                         _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
 
-                        return {
+                        res = {
                             "id": "blob-recovered", # Note: real ID is deterministic hash, mock for now
                             "type_idx": 0,
                             "content": "Recovered from binary blob",
@@ -220,6 +243,8 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
+                        self.blob_cache[target_id_int] = res
+                        return res
         except Exception:
             pass
         return None
@@ -249,7 +274,7 @@ class QuantizedBrainMap:
         query_words = set(query_lower.split())
         activated_indices = []
 
-        with self.nodes_lock:
+        with self.lock_nodes():
             for idx, node in self.nodes.items():
                 if isinstance(node.content, str):
                     node_words = set(node.content.lower().split())
@@ -268,7 +293,7 @@ class QuantizedBrainMap:
             act_vector = np.clip(act_vector + spread, 0.0, 1.0)
 
         # Update node activations
-        with self.nodes_lock:
+        with self.lock_nodes():
             for idx in np.where(act_vector > 0.1)[0]:
                 if idx in self.nodes:
                     self.nodes[idx].activation = act_vector[idx]
@@ -320,7 +345,7 @@ class QuantizedBrainMap:
         nodes_to_remove = []
         nodes_to_serialize = []
 
-        with self.nodes_lock:
+        with self.lock_nodes():
             # Need to iterate over a copy of items to avoid size changed during iteration
             node_items = list(self.nodes.items())
 
@@ -368,12 +393,12 @@ class QuantizedBrainMap:
                     # Remove from L1 RAM (Nodes dict)
                     nodes_to_remove.append(n.id_int)
 
-        with self.nodes_lock:
+        with self.lock_nodes():
             for idx in nodes_to_remove:
                 self._remove_node(idx)
 
     def _remove_node(self, idx: int):
-        # Must be called with nodes_lock
+        # Must be called with lock_nodes
         if idx in self.nodes:
             del self.id_map[self.nodes[idx].id_str]
             del self.nodes[idx]
@@ -384,7 +409,7 @@ class QuantizedBrainMap:
         self.is_matrix_dirty = True
 
     def dream_cycle(self, max_steps: int = 10):
-        with self.nodes_lock:
+        with self.lock_nodes():
             if len(self.nodes) < 3:
                 return
 

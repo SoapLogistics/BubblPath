@@ -40,3 +40,14 @@ def test_audit_integrity_verification():
 
     # Verify cryptographic integrity
     assert lane.verify_integrity() is True
+
+def test_self_approval():
+    lane = GovernanceApprovalLane()
+    res = lane.review_packet({
+        "action": "self_approve_action",
+        "requires_approval": True,
+        "requester": "Mark",
+        "approved_by": "Mark"
+    })
+    assert res["status"] == "refused"
+    assert "self-approval is forbidden" in res["reason"]
