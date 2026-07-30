@@ -45,7 +45,7 @@ def cmd_run():
     return run_command([sys.executable, "app.py"])
 
 def cmd_health():
-    print("📋 Checking Solomon System Health & Consistency...")
+    print("📋 Checking Solomon System Health...")
     all_ok = True
 
     # 1. Check Python version
@@ -76,9 +76,70 @@ def cmd_health():
         all_ok = False
 
     if all_ok:
-        print("\n🎉 All health and consistency checks PASSED successfully!")
+        print("\n🎉 All health checks PASSED successfully!")
     else:
         print("\n⚠️ Some health checks failed. Please review the output above.")
+    return all_ok
+
+def cmd_consistency_check():
+    print("📋 Running Solomon Repository Consistency Scan...")
+    all_ok = True
+
+    # 1. Scan for duplicate Python filenames (excluding __init__.py)
+    seen_files = {}
+    duplicates = []
+    for root, _, files in os.walk("."):
+        if "venv" in root or "env" in root or ".git" in root or "__pycache__" in root:
+            continue
+        for file in files:
+            if file.endswith(".py") and file != "__init__.py":
+                if file in seen_files:
+                    duplicates.append((file, seen_files[file], os.path.join(root, file)))
+                else:
+                    seen_files[file] = os.path.join(root, file)
+
+    if duplicates:
+        print("  - Duplicate Python filenames detected:")
+        for dup, orig, dup_path in duplicates:
+            print(f"    ⚠️ '{dup}' found in '{orig}' and '{dup_path}'")
+        all_ok = False
+    else:
+        print("  - Python Filenames Consistency: ✅ Unique")
+
+    # 2. Scan for unregistered active engines
+    import json
+    registry_path = "solomon_api/engine_registry.json"
+    if os.path.exists(registry_path):
+        try:
+            with open(registry_path, 'r', encoding='utf-8') as f:
+                reg_data = json.load(f)
+            engines = reg_data.get("engines", [])
+            registered_paths = {e.get("source_path").replace('\\', '/') for e in engines}
+            exclusions = {exc.replace('\\', '/') for exc in reg_data.get("exclusions", [])}
+
+            # Walk and check services and backend/services
+            for folder in ["services", "backend/services"]:
+                if os.path.exists(folder):
+                    for root, _, files in os.walk(folder):
+                        for file in files:
+                            if file.endswith(".py") and file != "__init__.py":
+                                relative_path = os.path.join(root, file).replace('\\', '/')
+                                if relative_path not in registered_paths and relative_path not in exclusions:
+                                    print(f"  - Engine Registry Check: ❌ '{relative_path}' is NOT registered or excluded.")
+                                    all_ok = False
+            if all_ok:
+                print("  - Engine Registry Check: ✅ Compliant")
+        except Exception as e:
+            print(f"  - Engine Registry Read: ❌ Failed to parse JSON ({e})")
+            all_ok = False
+    else:
+        print(f"  - Engine Registry Check: ❌ Registry file {registry_path} missing.")
+        all_ok = False
+
+    if all_ok:
+        print("\n🎉 Repository consistency scan COMPLETED with zero anomalies!")
+    else:
+        print("\n⚠️ Anomaly detected in repository state. Please fix style or registration.")
     return all_ok
 
 def main():
@@ -91,6 +152,7 @@ def main():
     subparsers.add_parser("format", help="Auto-format code using Black")
     subparsers.add_parser("run", help="Start the main SOSS Flask core application")
     subparsers.add_parser("health-check", help="Verify dependencies, required files, and versions")
+    subparsers.add_parser("consistency-check", help="Scan for duplicate Python files and registry compliance")
 
     args = parser.parse_args()
 
@@ -107,6 +169,8 @@ def main():
         success = cmd_run()
     elif args.command == "health-check":
         success = cmd_health()
+    elif args.command == "consistency-check":
+        success = cmd_consistency_check()
 
     if not success:
         sys.exit(1)

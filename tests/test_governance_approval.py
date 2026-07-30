@@ -6,6 +6,7 @@ def test_refusal_without_mark():
     lane = GovernanceApprovalLane()
     res = lane.review_packet({"requires_approval": True, "approved_by": "Nobody"})
     assert res["status"] == "refused"
+    assert "Requires Mark approval" in res["reason"]
 
 def test_approval_with_mark():
     lane = GovernanceApprovalLane()
@@ -21,6 +22,7 @@ def test_revocation():
 
 def test_expiration():
     lane = GovernanceApprovalLane()
+    # Expired approval
     res = lane.review_packet({
         "action": "some_expired_action",
         "requires_approval": True,
@@ -30,6 +32,16 @@ def test_expiration():
     })
     assert res["status"] == "refused"
     assert "expired" in res["reason"]
+
+    # Active/non-expired approval
+    res_active = lane.review_packet({
+        "action": "some_active_action",
+        "requires_approval": True,
+        "approved_by": "Mark",
+        "timestamp": time.time(),
+        "expires_at": time.time() + 60  # expires in 1 minute
+    })
+    assert res_active["status"] == "approved"
 
 def test_audit_integrity_verification():
     lane = GovernanceApprovalLane()

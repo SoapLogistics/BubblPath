@@ -124,7 +124,7 @@ class QuantizedBrainMap:
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
-        self.nodes_lock = threading.Lock()
+        self.nodes_lock = threading.RLock()
 
     def lock_nodes(self, timeout=5.0):
         return self._timed_lock(self.nodes_lock, timeout)
@@ -150,6 +150,18 @@ class QuantizedBrainMap:
 
     def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
         with self.lock_nodes():
+            # Deduplication & Contradiction Resolution
+            for idx, existing_node in self.nodes.items():
+                if str(existing_node.content) == str(content):
+                    # Check for memory contradiction (conflicting emotional valence signs)
+                    if (existing_node.valence > 0 and valence < 0) or (existing_node.valence < 0 and valence > 0):
+                        print(f"[CONTRADICTION] Conflicting emotional valence detected for memory content: {content}")
+                        # Resolve contradiction: average the emotional attributes to stabilize
+                        existing_node.valence = (existing_node.valence + valence) / 2.0
+                        existing_node.importance = max(existing_node.importance, importance)
+                    existing_node.access()
+                    return existing_node.id_str
+
             if len(self.nodes) >= self.max_nodes:
                 # Force a consolidation to free up space, or return a failure/drop
                 self.consolidate()
