@@ -86,7 +86,7 @@ class QuantizedBrainMap:
 
         # Hyper-Quantized SQLite DB with Write-Ahead Logging (WAL)
         self.db_path = "solomon_hyper_memory.db"
-        self.db = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.db = sqlite3.connect(self.db_path, timeout=10.0, check_same_thread=False)
         # Apply intense pragmas for maximum disk speed and minimum RAM
         self.db.execute("PRAGMA journal_mode=WAL;")
         self.db.execute("PRAGMA synchronous=NORMAL;")

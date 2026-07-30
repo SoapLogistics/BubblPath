@@ -2,3 +2,11 @@ flask
 openai
 torch
 transformers
+pytest
+numpy
+scipy
+pydantic
+black
+flake8
+mypy
+duckduckgo-search
