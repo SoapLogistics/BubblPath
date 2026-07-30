@@ -17,6 +17,11 @@ class GovernanceApprovalLane:
                 f.write(b'\x00' * 65536)
 
     def review_packet(self, packet):
+        # Check strict requester-approver segregation (no self-approvals allowed)
+        if packet.get("requester") and packet.get("approved_by") and packet.get("requester") == packet.get("approved_by"):
+            self._audit_event("refused", packet.get("action", "unknown"))
+            return {"status": "refused", "reason": "Requester and approved_by cannot be the same person", "audit_id": "aud_004"}
+
         # Implementation of governance gate
         if packet.get("requires_approval") and packet.get("approved_by") != "Mark":
             self._audit_event("refused", packet.get("action", "unknown"))

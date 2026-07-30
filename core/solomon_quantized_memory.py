@@ -8,8 +8,19 @@ import threading
 import sqlite3
 import zlib
 import numpy as np
+from contextlib import contextmanager
 from scipy.sparse import lil_matrix, csr_matrix
 from typing import Dict, List, Any, Optional
+
+@contextmanager
+def timed_lock(lock, timeout=5.0):
+    acquired = lock.acquire(timeout=timeout)
+    if not acquired:
+        raise TimeoutError("Lock acquisition timed out")
+    try:
+        yield
+    finally:
+        lock.release()
 
 # Constants for Layers to save memory
 LAYER_WORKING = 0
@@ -107,7 +118,8 @@ class QuantizedBrainMap:
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
-        self.nodes_lock = threading.Lock()
+        self.nodes_lock = threading.RLock()
+        self.blob_cache = {}
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
@@ -129,7 +141,7 @@ class QuantizedBrainMap:
                 self.dream_cycle(max_steps=5)
 
     def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
-        with self.nodes_lock:
+        with timed_lock(self.nodes_lock):
             if len(self.nodes) >= self.max_nodes:
                 # Force a consolidation to free up space, or return a failure/drop
                 self.consolidate()
@@ -188,6 +200,9 @@ class QuantizedBrainMap:
 
     def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
         """4.1 Zero-copy read from binary blob without parsing the whole file"""
+        if hasattr(self, 'blob_cache') and target_id_int in self.blob_cache:
+            return self.blob_cache[target_id_int]
+
         if not os.path.exists("solomon_brain_map.bin"):
             return None
 
@@ -209,7 +224,7 @@ class QuantizedBrainMap:
                         # Found it! Unpack the rest
                         _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
 
-                        return {
+                        res = {
                             "id": "blob-recovered", # Note: real ID is deterministic hash, mock for now
                             "type_idx": 0,
                             "content": "Recovered from binary blob",
@@ -220,6 +235,9 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
+                        if hasattr(self, 'blob_cache'):
+                            self.blob_cache[target_id_int] = res
+                        return res
         except Exception:
             pass
         return None
