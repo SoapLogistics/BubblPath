@@ -12,7 +12,7 @@ class FuturesMemoryOutbox:
         self._init_outbox()
 
     def _init_outbox(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.db_path, timeout=10.0) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS futures_memory_outbox (
@@ -27,7 +27,7 @@ class FuturesMemoryOutbox:
 
     def queue_event(self, event_type: str, payload: Dict[str, Any]):
         """Durable outbox for memory delivery."""
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.db_path, timeout=10.0) as conn:
             conn.execute(
                 "INSERT INTO futures_memory_outbox (id, event_type, payload_json, status, created_at) VALUES (?, ?, ?, ?, ?)",
                 (str(uuid.uuid4()), event_type, json.dumps(payload), "PENDING", str(time.time()))
@@ -40,7 +40,7 @@ class FuturesOutcomeReconciler:
         self._init_outcomes()
 
     def _init_outcomes(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.db_path, timeout=10.0) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS futures_outcomes (
@@ -58,7 +58,7 @@ class FuturesOutcomeReconciler:
         outcome_val = 1 if actual_outcome else 0
         timestamp = str(time.time())
 
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.db_path, timeout=10.0) as conn:
             # Save the immutable outcome
             conn.execute(
                 "INSERT OR IGNORE INTO futures_outcomes (candidate_id, actual_outcome, source, verified_at) VALUES (?, ?, ?, ?)",

@@ -2948,3 +2948,19 @@
 }
 ```
 <!-- FUTURES_DAILY_END:2026-07-30_4a18104b-c2c8-4b86-9a21-a49bb2fdae84 -->
+
+<!-- FUTURES_DAILY_START:2026-07-30_f90305f2-3240-4a6e-977c-a51877522a6a -->
+### Futures Run f90305f2-3240-4a6e-977c-a51877522a6a
+```json
+{
+  "run_id": "f90305f2-3240-4a6e-977c-a51877522a6a",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-07-30_f90305f2-3240-4a6e-977c-a51877522a6a -->
