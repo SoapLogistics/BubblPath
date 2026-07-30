@@ -382,33 +382,33 @@ class QuantizedBrainMap:
 
             nodes_list = list(self.nodes.values())
 
-        start_node = random.choice(nodes_list)
-        current_idx = start_node.id_int
+            start_node = random.choice(nodes_list)
+            current_idx = start_node.id_int
 
-        if self.is_matrix_dirty or self.csr_adj is None:
-            self.csr_adj = self.adj_matrix.tocsr()
-            self.is_matrix_dirty = False
+            if self.is_matrix_dirty or self.csr_adj is None:
+                self.csr_adj = self.adj_matrix.tocsr()
+                self.is_matrix_dirty = False
 
-        path_indices = [current_idx]
+            path_indices = [current_idx]
 
-        for _ in range(max_steps):
-            row = self.csr_adj.getrow(current_idx)
-            if row.nnz == 0:
-                # Teleport
-                current_idx = random.choice(nodes_list).id_int
+            for _ in range(max_steps):
+                row = self.csr_adj.getrow(current_idx)
+                if row.nnz == 0:
+                    # Teleport
+                    current_idx = random.choice(nodes_list).id_int
+                    path_indices.append(current_idx)
+                    continue
+
+                # Random walk weighted by sparse row probabilities
+                probs = row.data / row.data.sum()
+                chosen_col = np.random.choice(row.indices, p=probs)
+                current_idx = chosen_col
                 path_indices.append(current_idx)
-                continue
 
-            # Random walk weighted by sparse row probabilities
-            probs = row.data / row.data.sum()
-            chosen_col = np.random.choice(row.indices, p=probs)
-            current_idx = chosen_col
-            path_indices.append(current_idx)
-
-        # Distant association link
-        if len(path_indices) > 3 and path_indices[0] != path_indices[-1]:
-            self.adj_matrix[path_indices[0], path_indices[-1]] = 0.3
-            self.is_matrix_dirty = True
+            # Distant association link
+            if len(path_indices) > 3 and path_indices[0] != path_indices[-1]:
+                self.adj_matrix[path_indices[0], path_indices[-1]] = 0.3
+                self.is_matrix_dirty = True
 
     def _node_to_dict(self, node: QuantizedMemoryNode) -> Dict:
         return {
