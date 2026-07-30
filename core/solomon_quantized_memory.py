@@ -305,14 +305,15 @@ class QuantizedBrainMap:
         indices = [n.id_int for n in activated_nodes]
         learning_rate = 0.05
 
-        for i in indices:
-            for j in indices:
-                if i != j:
-                    self.adj_matrix[i, j] += learning_rate
-                    # 1.2 Structural Connectome Pruning safeguard (cap at 1.0)
-                    if self.adj_matrix[i, j] > 1.0:
-                         self.adj_matrix[i, j] = 1.0
-        self.is_matrix_dirty = True
+        with self.nodes_lock:
+            for i in indices:
+                for j in indices:
+                    if i != j:
+                        self.adj_matrix[i, j] += learning_rate
+                        # 1.2 Structural Connectome Pruning safeguard (cap at 1.0)
+                        if self.adj_matrix[i, j] > 1.0:
+                             self.adj_matrix[i, j] = 1.0
+            self.is_matrix_dirty = True
 
     def consolidate(self):
         """1.2 Structural Connectome Pruning and 1.3 Paged-KV Swapping"""

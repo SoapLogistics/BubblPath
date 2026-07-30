@@ -39,7 +39,9 @@ class SolomonLocalLLM:
         
         # 2. Greeting / Conversational Logic
         greetings = ["hi", "hello", "hey", "greetings", "sup", "howdy"]
-        if any(g in msg_lower.split() for g in greetings):
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append("[Jules Agentic Mode] Active. Deploying simulated sandbox workspace and loading required context.")
+        elif any(g in msg_lower.split() for g in greetings):
             greet_responses = [
                 "Greetings. I am Solomon.",
                 "Acknowledged. My perpetual loop is listening.",
