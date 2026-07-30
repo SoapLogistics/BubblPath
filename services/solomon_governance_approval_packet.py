@@ -47,5 +47,5 @@ class GovernanceApprovalLane:
                         break
                 mm.flush()
                 mm.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[ERROR] Failed to write zero-copy audit log event: {e}")
