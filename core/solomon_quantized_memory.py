@@ -130,6 +130,12 @@ class QuantizedBrainMap:
 
     def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
         with self.nodes_lock:
+            # 1. Duplication Prevention
+            for existing_idx, existing_node in self.nodes.items():
+                if existing_node.content == content:
+                    existing_node.access()
+                    return existing_node.id_str
+
             if len(self.nodes) >= self.max_nodes:
                 # Force a consolidation to free up space, or return a failure/drop
                 self.consolidate()
@@ -138,6 +144,18 @@ class QuantizedBrainMap:
 
             node = QuantizedMemoryNode(node_type, content, importance, valence, arousal)
             idx = node.id_int % self.max_nodes
+
+            # 2. Contradiction Detection
+            for existing_idx, existing_node in self.nodes.items():
+                # Cast the np.int8 ternary vectors to np.int32 to prevent signed 8-bit integer overflows
+                v1 = node.ternary_vector.astype(np.int32)
+                v2 = existing_node.ternary_vector.astype(np.int32)
+                similarity = np.dot(v1, v2) / 128.0
+                if similarity > 0.6:
+                    # Opposite valence indicating factual/sentiment contradiction
+                    if (node.valence * existing_node.valence) < -0.2:
+                        node.importance = min(1.0, node.importance + 0.1) # Boost review urgency
+                        print(f"[CONTRADICTION DETECTED] Node {node.id_str} contradicts {existing_node.id_str}")
 
             # Handle collision (simple linear probing for prototype)
             while idx in self.nodes:

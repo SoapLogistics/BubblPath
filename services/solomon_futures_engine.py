@@ -27,10 +27,28 @@ class Candidate:
 
     def validate(self) -> List[str]:
         errors = []
+        if not self.candidate_id or not isinstance(self.candidate_id, str):
+            errors.append("INVALID_CANDIDATE_ID")
         if self.source_mode not in ["TEST", "SIMULATION", "SHADOW", "LIVE"]:
             errors.append("INVALID_SOURCE_MODE")
         if self.pre_simulation_confidence < 0.0 or self.pre_simulation_confidence > 100.0:
             errors.append("OUT_OF_RANGE_CONFIDENCE")
+        if self.data_quality_score < 0.0 or self.data_quality_score > 100.0:
+            errors.append("INVALID_DATA_QUALITY_SCORE")
+
+        # Validate feature boundaries (probabilities, volatility, support, chaos-risk)
+        for key in ["base_prob", "win_prob"]:
+            if key in self.features:
+                val = self.features[key]
+                if not isinstance(val, (int, float)) or val < 0.0 or val > 1.0:
+                    errors.append(f"OUT_OF_BOUNDS_{key.upper()}")
+
+        for key in ["volatility_index", "historical_support", "geopolitical_risk"]:
+            if key in self.features:
+                val = self.features[key]
+                if not isinstance(val, (int, float)) or val < 0.0 or val > 1.0:
+                    errors.append(f"OUT_OF_BOUNDS_{key.upper()}")
+
         return errors
 
 @dataclasses.dataclass

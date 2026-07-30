@@ -119,7 +119,7 @@ class DynamicPlanner:
             final_steps.append(b_step)
             step_counter += 1
 
-        return TaskPlan(
+        plan = TaskPlan(
             plan_id=plan_id,
             task_id=task_id,
             objective=objective,
@@ -130,3 +130,5 @@ class DynamicPlanner:
             created_at=now_str,
             updated_at=now_str
         )
+        plan.validate()
+        return plan

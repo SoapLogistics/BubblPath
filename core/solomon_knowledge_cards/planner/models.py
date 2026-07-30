@@ -35,6 +35,26 @@ class TaskPlan:
         if self.status not in ("DRAFT", "APPROVED", "EXECUTED", "FAILED"):
             raise ValueError(f"Invalid plan status: {self.status}")
 
+        # Enforce step count limit
+        if len(self.steps) > 50:
+            raise ValueError("Plan step count exceeds maximum allowed steps limit (MAX_STEPS = 50)")
+
+        seen_actions = set()
+        for idx, step in enumerate(self.steps):
+            action = step.get("action", "")
+            if not action or not action.strip():
+                raise ValueError(f"Step {idx+1} action cannot be empty")
+
+            # Prevent loop planning / repeated actions
+            if action in seen_actions:
+                raise ValueError(f"Plan loop detected: Repeated action step found: '{action}'")
+            seen_actions.add(action)
+
+            # Prevent dangerous/unsafe action execution patterns
+            unsafe_keywords = ["rm -rf", "rm -f", "sudo ", "mkfs", "dd if=", ":(){:|:&};:"]
+            if any(kw in action.lower() for kw in unsafe_keywords):
+                raise ValueError(f"Unsafe plan: Step {idx+1} contains dangerous executable commands")
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the task plan to a dictionary."""
         return {
