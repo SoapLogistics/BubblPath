@@ -50,12 +50,13 @@ class DynamicCapabilityRegistry:
             with open(temp_filepath, "w", encoding="utf-8") as f:
                 f.write(code_content)
 
-            # Compile directly to bytecode
-            py_compile.compile(temp_filepath, cfile=pyc_filepath)
-
-            # Shred the human-readable source code
-            if os.path.exists(temp_filepath):
-                os.remove(temp_filepath)
+            try:
+                # Compile directly to bytecode
+                py_compile.compile(temp_filepath, cfile=pyc_filepath)
+            finally:
+                # Shred the human-readable source code and ensure clean-up under compilation errors
+                if os.path.exists(temp_filepath):
+                    os.remove(temp_filepath)
 
             return pyc_filepath
 
