@@ -179,7 +179,7 @@ class QuantizedBrainMap:
                 continue
 
             # Simulated bitwise XNOR (dot product on ternary is equivalent and fast)
-            similarity = np.dot(new_node.ternary_vector, existing_node.ternary_vector) / 128.0
+            similarity = np.dot(new_node.ternary_vector.astype(np.int32), existing_node.ternary_vector.astype(np.int32)) / 128.0
 
             if similarity > 0.3:
                 self.adj_matrix[idx, existing_idx] = similarity

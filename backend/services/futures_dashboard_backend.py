@@ -13,7 +13,7 @@ class FuturesDashboardBackend:
         GET /api/futures/dashboard logic
         """
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, timeout=10.0) as conn:
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
                 # Use a try block in case table doesn't exist yet on fresh spin up
