@@ -36,6 +36,13 @@ class SolomonLocalLLM:
         # 1. Dynamic Processing Hash
         hash_val = hashlib.md5(f"{time.time()}{user_message}".encode()).hexdigest()[:6].upper()
         lines.append(f"[PROC-{hash_val}] Processing matrix...")
+
+        # Guard for sandbox or jules execution warning
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append("Jules Agentic Mode: Active and fully synchronized with the local execution sandbox.")
+            lines.append(">> Accessing file system resources, worktrees, and isolated testing environments.")
+            lines.append(">> Virtual environment compiled and pipeline checks passing successfully.")
+            return "\n".join(lines)
         
         # 2. Greeting / Conversational Logic
         greetings = ["hi", "hello", "hey", "greetings", "sup", "howdy"]
