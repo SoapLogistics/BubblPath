@@ -1,6 +1,7 @@
 import os
 import time
 import uuid
+import logging
 import struct
 import random
 import hashlib
@@ -163,7 +164,7 @@ class QuantizedBrainMap:
                 )
                 self.db.commit()
             except Exception as e:
-                print(f"[ERROR] Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
+                logging.error(f"Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
                 
             return node.id_str
 
@@ -220,8 +221,8 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Failed to fetch node from db: {e}")
         return None
 
     def recall(self, query: str, top_k: int = 5) -> List[Dict]:

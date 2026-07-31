@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 import subprocess
 from typing import Dict, Any, List, Optional
 
@@ -68,8 +69,8 @@ Provide a Flask-compatible API and SQLite connection worker capable of:
             try:
                 with open(mock_output_file, "w", encoding="utf-8") as f:
                     f.write(behavioral_spec)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.error(f"Failed to write mock output file {mock_output_file}: {e}")
 
         return {
             "target": binary_name,

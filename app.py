@@ -5,6 +5,9 @@ import threading
 import time
 import subprocess
 import sys
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 from flask import Flask, request, jsonify, render_template
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
@@ -48,8 +51,8 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_parallel_worktrees", code)
             module = gabriel_loop.registry.load_capability("codex_parallel_worktrees")
             codex_worktree_instance = module.CodexParallelWorktrees()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Error loading codex_parallel_worktrees: {e}")
 
     # 2. Instantiation of Kanban / Task Board
     if not codex_kanban_instance:
@@ -58,8 +61,8 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_kanban", code)
             module = gabriel_loop.registry.load_capability("codex_kanban")
             codex_kanban_instance = module.RenewableWorkerLease()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Error loading codex_kanban: {e}")
 
     # 3. Instantiation of MCP Bridge
     if not codex_mcp_instance:
@@ -68,8 +71,8 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_mcp_bridge", code)
             module = gabriel_loop.registry.load_capability("codex_mcp_bridge")
             codex_mcp_instance = module.CodexMCPBridge()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Error loading codex_mcp_bridge: {e}")
 
     # 4. Instantiation of Issue-to-PR Pipeline (Jules)
     if not codex_pipeline_instance:
@@ -81,8 +84,8 @@ def get_or_create_codex_components():
                 worktree_manager=codex_worktree_instance,
                 mcp_bridge=codex_mcp_instance
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Error loading codex_issue_to_pr_pipeline: {e}")
 
 
 def get_or_create_jules_components():
@@ -99,8 +102,8 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_dependency_installer", code)
             module = gabriel_loop.registry.load_capability("jules_dependency_installer")
             jules_installer_instance = module.JulesDependencyInstaller()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Error loading jules_dependency_installer: {e}")
 
     # 2. Instantiation of Code Patcher
     if not jules_patcher_instance:
@@ -109,8 +112,8 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_code_patcher", code)
             module = gabriel_loop.registry.load_capability("jules_code_patcher")
             jules_patcher_instance = module.JulesCodePatcher()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Error loading jules_code_patcher: {e}")
 
     # 3. Instantiation of Test Runner Loop
     if not jules_test_loop_instance:
@@ -119,8 +122,8 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_test_runner_loop", code)
             module = gabriel_loop.registry.load_capability("jules_test_runner_loop")
             jules_test_loop_instance = module.JulesTestRunnerLoop()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Error loading jules_test_runner_loop: {e}")
 
 
 @app.errorhandler(Exception)
