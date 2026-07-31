@@ -104,10 +104,13 @@ class QuantizedBrainMap:
         ''')
         self.db.commit()
 
+        # In-memory blob cache for L2 Long-Term binary retrieval
+        self.blob_cache = {}
+
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
-        self.nodes_lock = threading.Lock()
+        self.nodes_lock = threading.RLock()
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
@@ -130,6 +133,11 @@ class QuantizedBrainMap:
 
     def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
         with self.nodes_lock:
+            # 1. Duplication prevention
+            for idx, existing_node in list(self.nodes.items()):
+                if existing_node.content == content:
+                    return existing_node.id_str
+
             if len(self.nodes) >= self.max_nodes:
                 # Force a consolidation to free up space, or return a failure/drop
                 self.consolidate()
@@ -137,6 +145,14 @@ class QuantizedBrainMap:
                     raise Exception("QuantizedBrainMap is at absolute capacity and cannot be pruned further.")
 
             node = QuantizedMemoryNode(node_type, content, importance, valence, arousal)
+
+            # 2. Contradiction detection (highly semantically similar nodes with contradictory valence signs)
+            for idx, existing_node in list(self.nodes.items()):
+                similarity = np.dot(node.ternary_vector.astype(np.int32), existing_node.ternary_vector.astype(np.int32)) / 128.0
+                if similarity > 0.7:
+                    if (node.valence > 0.3 and existing_node.valence < -0.3) or (node.valence < -0.3 and existing_node.valence > 0.3):
+                        print(f"[CONTRADICTION DETECTED] Memory atom contradictions: {node.content} vs {existing_node.content}")
+
             idx = node.id_int % self.max_nodes
 
             # Handle collision (simple linear probing for prototype)
@@ -188,6 +204,9 @@ class QuantizedBrainMap:
 
     def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
         """4.1 Zero-copy read from binary blob without parsing the whole file"""
+        if target_id_int in self.blob_cache:
+            return self.blob_cache[target_id_int]
+
         if not os.path.exists("solomon_brain_map.bin"):
             return None
 
@@ -209,7 +228,7 @@ class QuantizedBrainMap:
                         # Found it! Unpack the rest
                         _, layer, access_count, c_time, l_acc, imp, val, aro = struct.unpack("!QBIddfff", metadata_bytes)
 
-                        return {
+                        node_dict = {
                             "id": "blob-recovered", # Note: real ID is deterministic hash, mock for now
                             "type_idx": 0,
                             "content": "Recovered from binary blob",
@@ -220,6 +239,8 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
+                        self.blob_cache[target_id_int] = node_dict
+                        return node_dict
         except Exception:
             pass
         return None

@@ -35,6 +35,24 @@ class TaskPlan:
         if self.status not in ("DRAFT", "APPROVED", "EXECUTED", "FAILED"):
             raise ValueError(f"Invalid plan status: {self.status}")
 
+        # 1. Enforce maximum-step limits to prevent infinite planner expansion
+        if len(self.steps) > 50:
+            raise ValueError("Plan exceeds maximum step limit of 50 steps")
+
+        # 2. Loop detection & duplicate plan action steps detection
+        seen_actions = set()
+        for step in self.steps:
+            action = step.get("action", "")
+            if action:
+                if action in seen_actions:
+                    raise ValueError(f"Detected loop / duplicate step action: {action}")
+                seen_actions.add(action)
+
+            # 3. Check for dangerous command injections or path traversal
+            cmd = step.get("command", "")
+            if isinstance(cmd, str) and ("rm -rf" in cmd or "dev/null" in cmd):
+                raise ValueError("Detected dangerous / unauthorized command string in plan step")
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the task plan to a dictionary."""
         return {

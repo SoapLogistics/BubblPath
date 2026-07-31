@@ -22,6 +22,11 @@ class GovernanceApprovalLane:
             self._audit_event("refused", packet.get("action", "unknown"))
             return {"status": "refused", "reason": "Requires Mark approval", "audit_id": "aud_001"}
 
+        # Block self-approval where separation of duties is required by SOSS governance
+        if packet.get("requester") and packet.get("requester") == packet.get("approved_by"):
+            self._audit_event("refused", packet.get("action", "unknown"))
+            return {"status": "refused", "reason": "Self-approval is forbidden by SOSS governance", "audit_id": "aud_004"}
+
         # Check SS3 verification
         if packet.get("requires_ss3_review") and not packet.get("ss3_verified", False):
              self._audit_event("refused", packet.get("action", "unknown"))
