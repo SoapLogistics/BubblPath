@@ -246,8 +246,8 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[BLOB ERROR] Zero-copy read from binary blob failed: {e}")
         return None
 
     def recall(self, query: str, top_k: int = 5) -> List[Dict]:

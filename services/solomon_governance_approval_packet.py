@@ -91,8 +91,8 @@ class GovernanceApprovalLane:
                 )
                 mm.flush()
                 mm.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[AUDIT ERROR] Zero-copy append audit logging failed: {e}")
 
     def verify_governance_chain(self) -> bool:
         """
@@ -126,5 +126,6 @@ class GovernanceApprovalLane:
                     prev_hash = c_hash
                 mm.close()
             return True
-        except Exception:
+        except Exception as e:
+            print(f"[GOVERNANCE TAMPER ERROR] Cryptographic chain validation failed: {e}")
             return False
