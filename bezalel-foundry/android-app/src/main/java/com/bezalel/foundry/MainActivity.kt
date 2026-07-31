@@ -6,32 +6,28 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.ui.Modifier
+import com.bezalel.foundry.ui.navigation.AppNavigation
 import com.bezalel.foundry.ui.theme.BezalelFoundryTheme
+import com.bezalel.foundry.ui.theme.ThemeMode
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            BezalelFoundryTheme {
-                // A surface container using the 'background' color from the theme
+            val windowSizeClass = calculateWindowSizeClass(this)
+
+            BezalelFoundryTheme(themeMode = ThemeMode.SYSTEM) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Bezalel Foundry")
+                    AppNavigation(windowSizeClass = windowSizeClass)
                 }
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Welcome to $name!",
-        modifier = modifier
-    )
 }
