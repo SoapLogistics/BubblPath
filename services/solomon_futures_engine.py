@@ -27,10 +27,74 @@ class Candidate:
 
     def validate(self) -> List[str]:
         errors = []
+        # Datatype verification of metadata
+        if not isinstance(self.candidate_id, str):
+            errors.append("INVALID_CANDIDATE_ID_TYPE")
+        if not isinstance(self.event_id, str):
+            errors.append("INVALID_EVENT_ID_TYPE")
+        if not isinstance(self.domain, str):
+            errors.append("INVALID_DOMAIN_TYPE")
+        if not isinstance(self.source_name, str):
+            errors.append("INVALID_SOURCE_NAME_TYPE")
+        if not isinstance(self.source_record_id, str):
+            errors.append("INVALID_SOURCE_RECORD_ID_TYPE")
+        if not isinstance(self.source_timestamp, str):
+            errors.append("INVALID_SOURCE_TIMESTAMP_TYPE")
+        if not isinstance(self.ingested_at, str):
+            errors.append("INVALID_INGESTED_AT_TYPE")
+
         if self.source_mode not in ["TEST", "SIMULATION", "SHADOW", "LIVE"]:
             errors.append("INVALID_SOURCE_MODE")
-        if self.pre_simulation_confidence < 0.0 or self.pre_simulation_confidence > 100.0:
+
+        if not isinstance(self.pre_simulation_confidence, (int, float)):
+            errors.append("INVALID_CONFIDENCE_TYPE")
+        elif self.pre_simulation_confidence < 0.0 or self.pre_simulation_confidence > 100.0:
             errors.append("OUT_OF_RANGE_CONFIDENCE")
+
+        if not isinstance(self.data_quality_score, (int, float)):
+            errors.append("INVALID_DATA_QUALITY_SCORE_TYPE")
+        elif self.data_quality_score < 0.0 or self.data_quality_score > 100.0:
+            errors.append("OUT_OF_RANGE_DATA_QUALITY_SCORE")
+
+        if not isinstance(self.features, dict):
+            errors.append("INVALID_FEATURES_TYPE")
+        else:
+            # Validate features keys, datatypes, and ranges
+            base_prob = self.features.get("base_prob")
+            if base_prob is not None:
+                if not isinstance(base_prob, (int, float)):
+                    errors.append("INVALID_BASE_PROB_TYPE")
+                elif base_prob < 0.0 or base_prob > 1.0:
+                    errors.append("OUT_OF_RANGE_BASE_PROB")
+
+            win_prob = self.features.get("win_prob")
+            if win_prob is not None:
+                if not isinstance(win_prob, (int, float)):
+                    errors.append("INVALID_WIN_PROB_TYPE")
+                elif win_prob < 0.0 or win_prob > 1.0:
+                    errors.append("OUT_OF_RANGE_WIN_PROB")
+
+            volatility = self.features.get("volatility_index")
+            if volatility is not None:
+                if not isinstance(volatility, (int, float)):
+                    errors.append("INVALID_VOLATILITY_INDEX_TYPE")
+                elif volatility < 0.0 or volatility > 1.0:
+                    errors.append("OUT_OF_RANGE_VOLATILITY_INDEX")
+
+            support = self.features.get("historical_support")
+            if support is not None:
+                if not isinstance(support, (int, float)):
+                    errors.append("INVALID_SUPPORT_TYPE")
+                elif support < 0.0 or support > 1.0:
+                    errors.append("OUT_OF_RANGE_SUPPORT")
+
+            chaos_risk = self.features.get("geopolitical_risk")
+            if chaos_risk is not None:
+                if not isinstance(chaos_risk, (int, float)):
+                    errors.append("INVALID_CHAOS_RISK_TYPE")
+                elif chaos_risk < 0.0 or chaos_risk > 1.0:
+                    errors.append("OUT_OF_RANGE_CHAOS_RISK")
+
         return errors
 
 @dataclasses.dataclass
@@ -94,7 +158,9 @@ class UniversalFuturesAdapter:
     def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
         """Extracts multidimensional global metrics from the candidate features."""
         # Baseline probability of the event occurring (e.g. historical average)
-        base = candidate.features.get("base_prob", 0.5)
+        base = candidate.features.get("base_prob")
+        if base is None:
+            base = candidate.features.get("win_prob", 0.5)
         # Market/Domain volatility (0.0 to 1.0) - how wildly things swing
         volatility = candidate.features.get("volatility_index", 0.1)
         # Structural support (0.0 to 1.0) - resistance to crashing
@@ -253,7 +319,7 @@ class FuturesRepository:
         self._init_db()
 
     def _init_db(self):
-        with closing(sqlite3.connect(self.db_path)) as conn:
+        with closing(sqlite3.connect(self.db_path, timeout=10.0)) as conn:
             with conn:
                 # Use canonical WAL journal mode
                 conn.execute("PRAGMA journal_mode=WAL")
@@ -272,7 +338,7 @@ class FuturesRepository:
 
     def check_idempotency(self, candidate_id: str, source_mode: str) -> bool:
         """Prevent same candidate/mode execution logic."""
-        with closing(sqlite3.connect(self.db_path)) as conn:
+        with closing(sqlite3.connect(self.db_path, timeout=10.0)) as conn:
             cur = conn.cursor()
             cur.execute("""
                 SELECT 1 FROM futures_simulation_runs
@@ -282,7 +348,7 @@ class FuturesRepository:
             return cur.fetchone() is not None
 
     def save_run(self, result: SimulationResult):
-        with closing(sqlite3.connect(self.db_path)) as conn:
+        with closing(sqlite3.connect(self.db_path, timeout=10.0)) as conn:
             with conn:
                 sim = result.simulation
                 conn.execute("""

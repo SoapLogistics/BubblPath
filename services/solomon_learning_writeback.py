@@ -10,7 +10,8 @@ class LearningWriteback:
         self._init_db()
 
     def _init_db(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.db_path, timeout=10.0) as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS memory_atoms (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,7 +23,7 @@ class LearningWriteback:
             ''')
 
     def record_lesson(self, packet_id, result, memory, lesson=""):
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.db_path, timeout=10.0) as conn:
             conn.execute(
                 "INSERT INTO memory_atoms (packet_id, memory_type, result, lesson) VALUES (?, ?, ?, ?)",
                 (packet_id, memory, result, lesson)

@@ -7,6 +7,7 @@ import hashlib
 import threading
 import sqlite3
 import zlib
+import logging
 import numpy as np
 from scipy.sparse import lil_matrix, csr_matrix
 from typing import Dict, List, Any, Optional
@@ -16,6 +17,23 @@ LAYER_WORKING = 0
 LAYER_SHORT_TERM = 1
 LAYER_LONG_TERM = 2
 LAYER_PROCEDURAL = 3
+
+class TimedLock:
+    def __init__(self, lock: threading.RLock, timeout: float = 5.0):
+        self.lock = lock
+        self.timeout = timeout
+        self.acquired = False
+
+    def __enter__(self):
+        self.acquired = self.lock.acquire(timeout=self.timeout)
+        if not self.acquired:
+            logging.error(f"TimedLock acquisition timed out after {self.timeout} seconds.")
+            raise TimeoutError("Failed to acquire lock within timeout period.")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.acquired:
+            self.lock.release()
 
 class QuantizedMemoryNode:
     __slots__ = ['id_int', 'id_str', 'type_idx', 'content', 'creation_time', 'last_accessed',
@@ -86,7 +104,7 @@ class QuantizedBrainMap:
 
         # Hyper-Quantized SQLite DB with Write-Ahead Logging (WAL)
         self.db_path = "solomon_hyper_memory.db"
-        self.db = sqlite3.connect(self.db_path, check_same_thread=False)
+        self.db = sqlite3.connect(self.db_path, check_same_thread=False, timeout=10.0)
         # Apply intense pragmas for maximum disk speed and minimum RAM
         self.db.execute("PRAGMA journal_mode=WAL;")
         self.db.execute("PRAGMA synchronous=NORMAL;")
@@ -107,7 +125,7 @@ class QuantizedBrainMap:
         # 2.1 Background Autonomic Nervous System (ANS)
         self.ans_running = False
         self.ans_thread = None
-        self.nodes_lock = threading.Lock()
+        self.nodes_lock = threading.RLock()
 
     def start_ans(self):
         """Starts the Background Autonomic Nervous System"""
@@ -129,7 +147,12 @@ class QuantizedBrainMap:
                 self.dream_cycle(max_steps=5)
 
     def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
-        with self.nodes_lock:
+        with TimedLock(self.nodes_lock):
+            # 1. Prevent duplicate entries by returning the existing node ID on identical content matches
+            for existing_node in self.nodes.values():
+                if existing_node.content == content:
+                    return existing_node.id_str
+
             if len(self.nodes) >= self.max_nodes:
                 # Force a consolidation to free up space, or return a failure/drop
                 self.consolidate()
@@ -144,6 +167,20 @@ class QuantizedBrainMap:
                 idx = (idx + 1) % self.max_nodes
 
             node.id_int = idx
+
+            # 2. Flag contradictions if newly ingested memories have high semantic similarity
+            # (using casted np.int32 dot products to prevent overflow) but contradictory valence signs.
+            for existing_node in self.nodes.values():
+                dot_prod = np.dot(node.ternary_vector.astype(np.int32), existing_node.ternary_vector.astype(np.int32))
+                similarity = dot_prod / 128.0
+                if similarity > 0.6:  # High semantic similarity
+                    # Contradictory valence signs (one positive, one negative)
+                    if (node.valence > 0 and existing_node.valence < 0) or (node.valence < 0 and existing_node.valence > 0):
+                        logging.warning(
+                            f"[CONTRADICTION] Newly ingested memory {node.id_str} contradicts "
+                            f"existing memory {existing_node.id_str} with valence {existing_node.valence} vs {node.valence}."
+                        )
+
             self.nodes[idx] = node
             self.id_map[node.id_str] = idx
 
@@ -163,7 +200,7 @@ class QuantizedBrainMap:
                 )
                 self.db.commit()
             except Exception as e:
-                print(f"[ERROR] Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
+                logging.error(f"Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
                 
             return node.id_str
 
@@ -178,8 +215,9 @@ class QuantizedBrainMap:
             if idx == existing_idx:
                 continue
 
-            # Simulated bitwise XNOR (dot product on ternary is equivalent and fast)
-            similarity = np.dot(new_node.ternary_vector, existing_node.ternary_vector) / 128.0
+            # Cast the np.int8 ternary vectors to np.int32 before dot product multiplication to prevent overflow
+            dot_prod = np.dot(new_node.ternary_vector.astype(np.int32), existing_node.ternary_vector.astype(np.int32))
+            similarity = dot_prod / 128.0
 
             if similarity > 0.3:
                 self.adj_matrix[idx, existing_idx] = similarity
@@ -249,7 +287,7 @@ class QuantizedBrainMap:
         query_words = set(query_lower.split())
         activated_indices = []
 
-        with self.nodes_lock:
+        with TimedLock(self.nodes_lock):
             for idx, node in self.nodes.items():
                 if isinstance(node.content, str):
                     node_words = set(node.content.lower().split())
@@ -268,7 +306,7 @@ class QuantizedBrainMap:
             act_vector = np.clip(act_vector + spread, 0.0, 1.0)
 
         # Update node activations
-        with self.nodes_lock:
+        with TimedLock(self.nodes_lock):
             for idx in np.where(act_vector > 0.1)[0]:
                 if idx in self.nodes:
                     self.nodes[idx].activation = act_vector[idx]
@@ -316,59 +354,58 @@ class QuantizedBrainMap:
 
     def consolidate(self):
         """1.2 Structural Connectome Pruning and 1.3 Paged-KV Swapping"""
-        current_time = time.time()
-        nodes_to_remove = []
-        nodes_to_serialize = []
+        with TimedLock(self.nodes_lock):
+            current_time = time.time()
+            nodes_to_remove = []
+            nodes_to_serialize = []
 
-        with self.nodes_lock:
             # Need to iterate over a copy of items to avoid size changed during iteration
             node_items = list(self.nodes.items())
 
-        for idx, node in node_items:
-            # 2.2 Ebbinghaus Decay
-            node.ebbinghaus_decay(current_time)
+            for idx, node in node_items:
+                # 2.2 Ebbinghaus Decay
+                node.ebbinghaus_decay(current_time)
 
-            age = current_time - node.creation_time
-            time_since_access = current_time - node.last_accessed
+                age = current_time - node.creation_time
+                time_since_access = current_time - node.last_accessed
 
-            if node.layer == LAYER_WORKING:
-                if age > self.working_ttl:
-                    if node.access_count > 2 or node.importance > 0.7:
-                        node.layer = LAYER_SHORT_TERM
-                    else:
-                        nodes_to_remove.append(idx)
-            elif node.layer == LAYER_SHORT_TERM:
-                if age > 86400: # 1 day
-                    node.layer = LAYER_LONG_TERM
-                    nodes_to_serialize.append(node)
+                if node.layer == LAYER_WORKING:
+                    if age > self.working_ttl:
+                        if node.access_count > 2 or node.importance > 0.7:
+                            node.layer = LAYER_SHORT_TERM
+                        else:
+                            nodes_to_remove.append(idx)
+                elif node.layer == LAYER_SHORT_TERM:
+                    if age > 86400: # 1 day
+                        node.layer = LAYER_LONG_TERM
+                        nodes_to_serialize.append(node)
 
-            # Prune Amygdala cache if calmed down
-            if node.id_str in self.amygdala_cache and time_since_access > 3600:
-                del self.amygdala_cache[node.id_str]
+                # Prune Amygdala cache if calmed down
+                if node.id_str in self.amygdala_cache and time_since_access > 3600:
+                    del self.amygdala_cache[node.id_str]
 
-        # Synaptic Scaling (Pruning edges < 0.05)
-        if self.is_matrix_dirty or self.csr_adj is None:
-             self.csr_adj = self.adj_matrix.tocsr()
+            # Synaptic Scaling (Pruning edges < 0.05)
+            if self.is_matrix_dirty or self.csr_adj is None:
+                 self.csr_adj = self.adj_matrix.tocsr()
 
-        # Remove small values efficiently in CSR
-        self.csr_adj.data = np.where(self.csr_adj.data < 0.05, 0, self.csr_adj.data)
-        self.csr_adj.eliminate_zeros()
-        self.adj_matrix = self.csr_adj.tolil()
-        self.is_matrix_dirty = False
+            # Remove small values efficiently in CSR
+            self.csr_adj.data = np.where(self.csr_adj.data < 0.05, 0, self.csr_adj.data)
+            self.csr_adj.eliminate_zeros()
+            self.adj_matrix = self.csr_adj.tolil()
+            self.is_matrix_dirty = False
 
-        # Serialize Long Term to binary blob (1.3 Paged Swapping & 4.2 Merkle Hashing)
-        if nodes_to_serialize:
-            with open("solomon_brain_map.bin", "ab") as f:
-                for n in nodes_to_serialize:
-                    b_data = n.serialize()
-                    # Append Merkle hash for immune system verification
-                    b_hash = hashlib.sha256(b_data).digest()
-                    f.write(b_data + b_hash)
+            # Serialize Long Term to binary blob (1.3 Paged Swapping & 4.2 Merkle Hashing)
+            if nodes_to_serialize:
+                with open("solomon_brain_map.bin", "ab") as f:
+                    for n in nodes_to_serialize:
+                        b_data = n.serialize()
+                        # Append Merkle hash for immune system verification
+                        b_hash = hashlib.sha256(b_data).digest()
+                        f.write(b_data + b_hash)
 
-                    # Remove from L1 RAM (Nodes dict)
-                    nodes_to_remove.append(n.id_int)
+                        # Remove from L1 RAM (Nodes dict)
+                        nodes_to_remove.append(n.id_int)
 
-        with self.nodes_lock:
             for idx in nodes_to_remove:
                 self._remove_node(idx)
 
@@ -384,39 +421,39 @@ class QuantizedBrainMap:
         self.is_matrix_dirty = True
 
     def dream_cycle(self, max_steps: int = 10):
-        with self.nodes_lock:
+        with TimedLock(self.nodes_lock):
             if len(self.nodes) < 3:
                 return
 
             nodes_list = list(self.nodes.values())
 
-        start_node = random.choice(nodes_list)
-        current_idx = start_node.id_int
+            start_node = random.choice(nodes_list)
+            current_idx = start_node.id_int
 
-        if self.is_matrix_dirty or self.csr_adj is None:
-            self.csr_adj = self.adj_matrix.tocsr()
-            self.is_matrix_dirty = False
+            if self.is_matrix_dirty or self.csr_adj is None:
+                self.csr_adj = self.adj_matrix.tocsr()
+                self.is_matrix_dirty = False
 
-        path_indices = [current_idx]
+            path_indices = [current_idx]
 
-        for _ in range(max_steps):
-            row = self.csr_adj.getrow(current_idx)
-            if row.nnz == 0:
-                # Teleport
-                current_idx = random.choice(nodes_list).id_int
+            for _ in range(max_steps):
+                row = self.csr_adj.getrow(current_idx)
+                if row.nnz == 0:
+                    # Teleport
+                    current_idx = random.choice(nodes_list).id_int
+                    path_indices.append(current_idx)
+                    continue
+
+                # Random walk weighted by sparse row probabilities
+                probs = row.data / row.data.sum()
+                chosen_col = np.random.choice(row.indices, p=probs)
+                current_idx = chosen_col
                 path_indices.append(current_idx)
-                continue
 
-            # Random walk weighted by sparse row probabilities
-            probs = row.data / row.data.sum()
-            chosen_col = np.random.choice(row.indices, p=probs)
-            current_idx = chosen_col
-            path_indices.append(current_idx)
-
-        # Distant association link
-        if len(path_indices) > 3 and path_indices[0] != path_indices[-1]:
-            self.adj_matrix[path_indices[0], path_indices[-1]] = 0.3
-            self.is_matrix_dirty = True
+            # Distant association link
+            if len(path_indices) > 3 and path_indices[0] != path_indices[-1]:
+                self.adj_matrix[path_indices[0], path_indices[-1]] = 0.3
+                self.is_matrix_dirty = True
 
     def _node_to_dict(self, node: QuantizedMemoryNode) -> Dict:
         return {
