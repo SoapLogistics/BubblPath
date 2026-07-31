@@ -6,6 +6,9 @@ import logging
 import hashlib
 from typing import Dict, Any, List
 from core.solomon_web_crawler import SolomonWebCrawler
+from datetime import datetime, UTC
+from core.health import HealthCheckResult, HealthStatus, registry
+
 
 logger = logging.getLogger("live_data_ingestion")
 
@@ -98,8 +101,58 @@ class OmniDataRouter:
             SportsAPIIngestor()
         ]
 
+    def healthcheck(self) -> HealthCheckResult:
+        try:
+            return HealthCheckResult(
+                service="omni_data_router",
+                status=HealthStatus.HEALTHY,
+                checked_at=datetime.now(UTC),
+                message=f"Router is active with {len(self.ingestors)} ingestors"
+            )
+        except Exception as e:
+            return HealthCheckResult(
+                service="omni_data_router",
+                status=HealthStatus.UNHEALTHY,
+                checked_at=datetime.now(UTC),
+                message="Health check failed",
+                details={"error_type": type(e).__name__}
+            )
+
     def stream_global_events(self):
         for ingestor in self.ingestors:
             candidates = ingestor.fetch_live_candidates()
             for c in candidates:
                 yield c
+
+def check_omni_data_router() -> HealthCheckResult:
+    try:
+        # We can just check the environment variables used by the ingestors
+        import os
+        keys_missing = []
+        if not os.environ.get("ALPHAVANTAGE_API_KEY"): keys_missing.append("ALPHAVANTAGE_API_KEY")
+        if not os.environ.get("NEWS_API_KEY"): keys_missing.append("NEWS_API_KEY")
+        if not os.environ.get("ODDS_API_KEY"): keys_missing.append("ODDS_API_KEY")
+
+        if len(keys_missing) == 3:
+            # If all are missing, we fall back to simulation
+            status = HealthStatus.DEGRADED
+            msg = "Using hyper-realistic simulation fallback (no live keys found)"
+        else:
+            status = HealthStatus.HEALTHY
+            msg = "Live data ingestor keys configured"
+
+        return HealthCheckResult(
+            service="omni_data_router",
+            status=status,
+            checked_at=datetime.now(UTC),
+            message=msg
+        )
+    except Exception as e:
+        return HealthCheckResult(
+            service="omni_data_router",
+            status=HealthStatus.UNHEALTHY,
+            checked_at=datetime.now(UTC),
+            message="Health check failed",
+            details={"error_type": type(e).__name__}
+        )
+registry.register("omni_data_router", check_omni_data_router, critical=False)

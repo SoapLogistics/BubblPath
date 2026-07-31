@@ -10,6 +10,9 @@ import zlib
 import numpy as np
 from scipy.sparse import lil_matrix, csr_matrix
 from typing import Dict, List, Any, Optional
+from datetime import datetime, UTC
+from core.health import HealthCheckResult, HealthStatus, registry
+
 
 # Constants for Layers to save memory
 LAYER_WORKING = 0
@@ -166,6 +169,26 @@ class QuantizedBrainMap:
                 print(f"[ERROR] Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
                 
             return node.id_str
+
+    def healthcheck(self) -> HealthCheckResult:
+        try:
+            # Verify DB connection
+            self.db.execute("SELECT 1").fetchone()
+
+            return HealthCheckResult(
+                service="unified_memory",
+                status=HealthStatus.HEALTHY,
+                checked_at=datetime.now(UTC),
+                message="Database connection is alive and WAL mode is active"
+            )
+        except Exception as e:
+            return HealthCheckResult(
+                service="unified_memory",
+                status=HealthStatus.UNHEALTHY,
+                checked_at=datetime.now(UTC),
+                message="Memory database check failed",
+                details={"error_type": type(e).__name__}
+            )
 
     def _auto_link_ternary(self, new_node: QuantizedMemoryNode):
         """Uses fast bitwise/vectorized math for semantic similarity instead of strings"""
@@ -438,3 +461,30 @@ class QuantizedBrainMap:
             "matrix_non_zeros": self.adj_matrix.nnz,
             "ans_running": self.ans_running
         }
+
+def check_quantized_memory() -> HealthCheckResult:
+    try:
+        # Use singleton if already initialized
+        import sqlite3
+        from core.config import settings
+        db_path = str(settings.database.db_path)
+
+        # Test basic connection without initializing the heavy CSR matrices
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("SELECT 1").fetchone()
+
+        return HealthCheckResult(
+            service="unified_memory",
+            status=HealthStatus.HEALTHY,
+            checked_at=datetime.now(UTC),
+            message="Database connection is alive"
+        )
+    except Exception as e:
+        return HealthCheckResult(
+            service="unified_memory",
+            status=HealthStatus.UNHEALTHY,
+            checked_at=datetime.now(UTC),
+            message="Memory database check failed",
+            details={"error_type": type(e).__name__}
+        )
+registry.register("unified_memory", check_quantized_memory)

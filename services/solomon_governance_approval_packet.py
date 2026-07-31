@@ -2,6 +2,12 @@
 import mmap
 import struct
 import os
+import hashlib
+import time
+import json
+from datetime import datetime, UTC
+from core.health import HealthCheckResult, HealthStatus, registry
+
 
 route_key = "solomon_governance_approval_packet"
 
@@ -30,6 +36,23 @@ class GovernanceApprovalLane:
         self._audit_event("approved", packet.get("action", "unknown"))
         return {"status": "approved", "audit_id": "aud_003"}
 
+    def healthcheck(self) -> HealthCheckResult:
+        try:
+            return HealthCheckResult(
+                service="governance_approval",
+                status=HealthStatus.HEALTHY,
+                checked_at=datetime.now(UTC),
+                message="Governance Approval Lane is healthy"
+            )
+        except Exception as e:
+            return HealthCheckResult(
+                service="governance_approval",
+                status=HealthStatus.UNHEALTHY,
+                checked_at=datetime.now(UTC),
+                message="Health check failed",
+                details={"error_type": type(e).__name__}
+            )
+
     def _audit_event(self, status, action):
         # Hyper-efficient zero-copy append
         # Here we'll append to the first empty slot we find, simulating a ring buffer logic
@@ -49,3 +72,27 @@ class GovernanceApprovalLane:
                 mm.close()
         except Exception:
             pass
+
+def check_governance_approval() -> HealthCheckResult:
+    try:
+        # Check if log file is writable
+        import os
+        log_file = "governance_log.bin"
+        if os.path.exists(log_file) and not os.access(log_file, os.W_OK):
+            raise PermissionError(f"Cannot write to {log_file}")
+
+        return HealthCheckResult(
+            service="governance_approval",
+            status=HealthStatus.HEALTHY,
+            checked_at=datetime.now(UTC),
+            message="Governance Approval Lane dependencies satisfied"
+        )
+    except Exception as e:
+        return HealthCheckResult(
+            service="governance_approval",
+            status=HealthStatus.UNHEALTHY,
+            checked_at=datetime.now(UTC),
+            message="Health check failed",
+            details={"error_type": type(e).__name__}
+        )
+registry.register("governance_approval", check_governance_approval)

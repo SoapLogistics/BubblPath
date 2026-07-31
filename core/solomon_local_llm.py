@@ -76,7 +76,9 @@ class SolomonLocalLLM:
                         lines.append(f">> {line.strip()}")
                 
         # 4. Action Logic
-        if "FUTURES CONTEXT DETECTED" in raw_system_data:
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append(">> Jules Agentic Mode activated. Deploying sandbox workspace operations.")
+        elif "FUTURES CONTEXT DETECTED" in raw_system_data:
             lines.append(">> Gabriel Engine armed. Actively evaluating futures 90+ threshold algorithms.")
             
         elif "ASSIMILATION KEYWORD DETECTED" in raw_system_data:

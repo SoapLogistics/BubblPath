@@ -7,6 +7,8 @@ import subprocess
 import sys
 from flask import Flask, request, jsonify, render_template
 
+from core.config import settings
+from core.health import registry, HealthStatus
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 from core.solomon_quantized_memory import QuantizedBrainMap
 from backend.services.futures_dashboard_backend import FuturesDashboardBackend
@@ -14,10 +16,11 @@ from core.solomon_web_crawler import SolomonWebCrawler
 from core.agentic_claw import SolomonAgenticClaw
 from core.solomon_local_llm import SolomonLocalLLM
 
+
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
 unified_memory.start_ans()
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+openai.api_key = settings.providers.openai_api_key
 
 # Instantiate Gabriel's perpetual absorption loop engine
 gabriel_loop = GabrielPerpetualLoop()

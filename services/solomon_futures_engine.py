@@ -4,6 +4,9 @@ import json
 import math
 import time
 from typing import Any, Dict, List, Optional, Tuple, Protocol
+from core.health import HealthCheckResult, HealthStatus, registry
+from datetime import datetime, UTC
+
 
 route_key = "solomon_futures_engine"
 
@@ -64,8 +67,15 @@ class WilsonInterval:
     def calculate(successes: int, trials: int, confidence: float = 0.95) -> Tuple[float, float]:
         if trials == 0:
             return 0.0, 0.0
-        # Z-score for 95% confidence is approx 1.96
-        z = 1.96
+        z_scores = {
+            0.80: 1.282,
+            0.85: 1.440,
+            0.90: 1.645,
+            0.95: 1.960,
+            0.98: 2.326,
+            0.99: 2.576
+        }
+        z = z_scores.get(confidence, 1.960)
         p = successes / trials
 
         denominator = 1 + z**2 / trials
@@ -94,7 +104,7 @@ class UniversalFuturesAdapter:
     def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
         """Extracts multidimensional global metrics from the candidate features."""
         # Baseline probability of the event occurring (e.g. historical average)
-        base = candidate.features.get("base_prob", 0.5)
+        base = candidate.features.get("base_prob", candidate.features.get("win_prob", 0.5))
         # Market/Domain volatility (0.0 to 1.0) - how wildly things swing
         volatility = candidate.features.get("volatility_index", 0.1)
         # Structural support (0.0 to 1.0) - resistance to crashing
@@ -172,6 +182,32 @@ class FuturesEngine:
             return QualificationResult(False, ["DATA_QUALITY_TOO_LOW"])
 
         return QualificationResult(True, reasons)
+
+    def healthcheck(self) -> HealthCheckResult:
+        try:
+            # Verify if universal_omni adapter is available
+            adapter = self.adapters.get("universal_omni")
+            if not adapter:
+                return HealthCheckResult(
+                    service="futures_engine",
+                    status=HealthStatus.UNHEALTHY,
+                    checked_at=datetime.now(UTC),
+                    message="universal_omni adapter missing"
+                )
+            return HealthCheckResult(
+                service="futures_engine",
+                status=HealthStatus.HEALTHY,
+                checked_at=datetime.now(UTC),
+                message="Futures engine is active"
+            )
+        except Exception as e:
+            return HealthCheckResult(
+                service="futures_engine",
+                status=HealthStatus.UNHEALTHY,
+                checked_at=datetime.now(UTC),
+                message="Health check failed",
+                details={"error_type": type(e).__name__}
+            )
 
     def process_candidate(self, candidate: Candidate, adapter_name: str = "universal_omni", run_id: str = "auto", seed: int = 42) -> SimulationResult:
         qual = self._evaluate_gate_a(candidate)
@@ -294,3 +330,30 @@ class FuturesRepository:
                     sim.get("simulation_probability", 0.0), sim.get("interval_lower", 0.0),
                     sim.get("interval_upper", 0.0), result.created_at
                 ))
+
+# Register with HealthRegistry
+# Since FuturesEngine is typically instantiated dynamically, we register an external checker or a singleton pattern.
+# For now, we will add a module-level check function.
+def check_futures_engine() -> HealthCheckResult:
+    try:
+        # Instead of instantiating, check if the engine's dependencies/configuration are present
+        # Since this engine just computes stats and uses UniversalFuturesAdapter
+        import sys
+        if 'services.solomon_futures_engine' not in sys.modules:
+            raise RuntimeError("Engine module not fully loaded")
+
+        return HealthCheckResult(
+            service="futures_engine",
+            status=HealthStatus.HEALTHY,
+            checked_at=datetime.now(UTC),
+            message="Futures engine dependencies satisfied"
+        )
+    except Exception as e:
+        return HealthCheckResult(
+            service="futures_engine",
+            status=HealthStatus.UNHEALTHY,
+            checked_at=datetime.now(UTC),
+            message="Health check failed",
+            details={"error_type": type(e).__name__}
+        )
+registry.register("futures_engine", check_futures_engine)

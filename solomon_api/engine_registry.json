@@ -227,10 +227,13 @@
     }
   ],
   "exclusions": [
-    "solomon_api/gpt_readiness_snapshot.py",
-    "solomon_api/gpt_route_index.py",
+    "services/live_data_ingestion.py",
+    "services/renewable_worker.py",
+    "backend/main.py",
+    "services/metrics_reporter.py",
     "solomon_api/capabilities_manifest.py",
-    "services/soss_workspace_status.py",
-    "backend/main.py"
+    "solomon_api/gpt_route_index.py",
+    "solomon_api/gpt_readiness_snapshot.py",
+    "services/soss_workspace_status.py"
   ]
 }
