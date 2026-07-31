@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/millerm/.gemini/antigravity/scratch/BubblPath/app.py", line 7, in <module>
-    from solomon_quantized_memory import QuantizedBrainMap
-  File "/Users/millerm/.gemini/antigravity/scratch/BubblPath/solomon_quantized_memory.py", line 8, in <module>
-    import numpy as np
-ModuleNotFoundError: No module named 'numpy'
