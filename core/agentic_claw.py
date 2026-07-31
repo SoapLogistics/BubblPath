@@ -43,6 +43,11 @@ class SolomonAgenticClaw:
         """
         Executes a shell command in the workspace.
         """
+        # Strict security check: prevent shell command injection
+        dangerous_chars = [";", "&&", "||", "|", "`", "$(", ")"]
+        if any(char in command for char in dangerous_chars):
+            return {"status": "error", "error": "Command injection detected: Dangerous characters are not allowed."}
+
         try:
             logger.info(f"Agentic Claw executing command: {command}")
             result = subprocess.run(

@@ -31,6 +31,15 @@ class BehavioralExperimentationEngine:
 
         # If we have a physical script/command, let's run it under a sub-process
         if command_or_script:
+            # Strict security check: prevent command injection
+            dangerous_chars = [";", "&&", "||", "|", "`", "$(", ")"]
+            if any(char in command_or_script for char in dangerous_chars):
+                results["observations"]["subprocess_execution"] = {
+                    "success": False,
+                    "error": "Command injection detected: Dangerous characters are not allowed."
+                }
+                return results
+
             try:
                 start_time = time.time()
                 proc = subprocess.run(
