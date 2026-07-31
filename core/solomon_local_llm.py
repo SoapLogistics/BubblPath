@@ -89,4 +89,7 @@ class SolomonLocalLLM:
                 if "[AGENTIC CLAW]" in line:
                     lines.append(line.strip())
 
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append("[Jules Agentic Mode] Orchestrator persona simulated successfully.")
+
         return "\n".join(lines)

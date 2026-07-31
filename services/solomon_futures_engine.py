@@ -64,8 +64,18 @@ class WilsonInterval:
     def calculate(successes: int, trials: int, confidence: float = 0.95) -> Tuple[float, float]:
         if trials == 0:
             return 0.0, 0.0
-        # Z-score for 95% confidence is approx 1.96
-        z = 1.96
+
+        z_scores = {
+            0.80: 1.282,
+            0.85: 1.440,
+            0.90: 1.645,
+            0.95: 1.960,
+            0.98: 2.326,
+            0.99: 2.576
+        }
+        # Fall back safely to 1.960 for 95%
+        z = z_scores.get(confidence, 1.960)
+
         p = successes / trials
 
         denominator = 1 + z**2 / trials
@@ -94,7 +104,7 @@ class UniversalFuturesAdapter:
     def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
         """Extracts multidimensional global metrics from the candidate features."""
         # Baseline probability of the event occurring (e.g. historical average)
-        base = candidate.features.get("base_prob", 0.5)
+        base = candidate.features.get("base_prob", candidate.features.get("win_prob", 0.5))
         # Market/Domain volatility (0.0 to 1.0) - how wildly things swing
         volatility = candidate.features.get("volatility_index", 0.1)
         # Structural support (0.0 to 1.0) - resistance to crashing
