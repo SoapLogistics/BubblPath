@@ -1,3 +1,4 @@
+import shlex
 import time
 import subprocess
 from typing import Dict, Any, List, Optional
@@ -34,8 +35,8 @@ class BehavioralExperimentationEngine:
             try:
                 start_time = time.time()
                 proc = subprocess.run(
-                    command_or_script,
-                    shell=True,
+                    shlex.split(command_or_script),
+                    shell=False,
                     capture_output=True,
                     text=True,
                     timeout=timeout

@@ -68,7 +68,7 @@ Provide a Flask-compatible API and SQLite connection worker capable of:
             try:
                 with open(mock_output_file, "w", encoding="utf-8") as f:
                     f.write(behavioral_spec)
-            except Exception:
+            except Exception as e:
                 pass
 
         return {

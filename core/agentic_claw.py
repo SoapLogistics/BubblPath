@@ -1,3 +1,4 @@
+import shlex
 import os
 import subprocess
 import logging
@@ -46,8 +47,8 @@ class SolomonAgenticClaw:
         try:
             logger.info(f"Agentic Claw executing command: {command}")
             result = subprocess.run(
-                command, 
-                shell=True, 
+                shlex.split(command),
+                shell=False,
                 cwd=self.workspace_root,
                 capture_output=True,
                 text=True,

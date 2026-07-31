@@ -220,7 +220,7 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
-        except Exception:
+        except Exception as e:
             pass
         return None
 

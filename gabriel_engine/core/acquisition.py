@@ -31,7 +31,7 @@ class AcquisitionEngine:
                     with open(file_path, "rb") as f:
                         for chunk in iter(lambda: f.read(4096), b""):
                             hash_sha256.update(chunk)
-                except Exception:
+                except Exception as e:
                     pass
         return hash_sha256.hexdigest()
 
@@ -69,7 +69,7 @@ class AcquisitionEngine:
                                 detected = "BSD-3-Clause"
                             elif "proprietary" in content or "copyright" in content:
                                 detected = "Proprietary"
-                    except Exception:
+                    except Exception as e:
                         pass
         else:
             # Simple heuristic for simulated string/paths
