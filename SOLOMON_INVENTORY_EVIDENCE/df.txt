@@ -1,0 +1,9 @@
+Filesystem               Size  Used Avail Use% Mounted on
+/dev/vdb                  98G  7.7G   86G   9% /rom/overlay
+overlayfs:/overlay/root   98G  7.7G   86G   9% /
+tmpfs                    3.9G     0  3.9G   0% /dev/shm
+tmpfs                    1.6G  304K  1.6G   1% /run
+tmpfs                    5.0M     0  5.0M   0% /run/lock
+tmpfs                    1.0M  4.0K 1020K   1% /run/credentials/@system
+tmpfs                    3.9G  224K  3.9G   1% /var/lib/systemd
+tmpfs                    796M  4.0K  796M   1% /run/user/1001

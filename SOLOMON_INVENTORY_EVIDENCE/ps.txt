@@ -1,0 +1,88 @@
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.1  0.1  21192 12288 ?        Ss   06:22   0:02 /usr/sbin/init
+root           2  0.0  0.0      0     0 ?        S    06:22   0:00 [kthreadd]
+root           3  0.0  0.0      0     0 ?        S    06:22   0:00 [pool_workqueue_release]
+root           4  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-rcu_g]
+root           5  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-rcu_p]
+root           6  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-slub_]
+root           7  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-netns]
+root           8  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/0:0-inet_frag_wq]
+root           9  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/0:0H-events_highpri]
+root          12  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-mm_pe]
+root          13  0.0  0.0      0     0 ?        I    06:22   0:00 [rcu_tasks_kthread]
+root          14  0.0  0.0      0     0 ?        I    06:22   0:00 [rcu_tasks_trace_kthread]
+root          15  0.0  0.0      0     0 ?        S    06:22   0:00 [ksoftirqd/0]
+root          16  0.1  0.0      0     0 ?        I    06:22   0:02 [rcu_preempt]
+root          17  0.0  0.0      0     0 ?        S    06:22   0:00 [migration/0]
+root          18  0.0  0.0      0     0 ?        S    06:22   0:00 [cpuhp/0]
+root          19  0.0  0.0      0     0 ?        S    06:22   0:00 [cpuhp/1]
+root          20  0.0  0.0      0     0 ?        S    06:22   0:01 [migration/1]
+root          21  0.0  0.0      0     0 ?        S    06:22   0:00 [ksoftirqd/1]
+root          23  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/1:0H-events_highpri]
+root          24  0.0  0.0      0     0 ?        S    06:22   0:00 [cpuhp/2]
+root          25  0.0  0.0      0     0 ?        S    06:22   0:01 [migration/2]
+root          26  0.0  0.0      0     0 ?        S    06:22   0:00 [ksoftirqd/2]
+root          27  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/2:0-events]
+root          28  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/2:0H-kblockd]
+root          29  0.0  0.0      0     0 ?        S    06:22   0:00 [cpuhp/3]
+root          30  0.0  0.0      0     0 ?        S    06:22   0:01 [migration/3]
+root          31  0.0  0.0      0     0 ?        S    06:22   0:00 [ksoftirqd/3]
+root          33  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/3:0H-events_highpri]
+root          34  0.0  0.0      0     0 ?        S    06:22   0:00 [kdevtmpfs]
+root          35  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-inet_]
+root          36  0.0  0.0      0     0 ?        S    06:22   0:00 [oom_reaper]
+root          37  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-write]
+root          38  0.0  0.0      0     0 ?        S    06:22   0:00 [kcompactd0]
+root          39  0.0  0.0      0     0 ?        SN   06:22   0:00 [ksmd]
+root          40  0.0  0.0      0     0 ?        SN   06:22   0:00 [khugepaged]
+root          41  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-crypt]
+root          42  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-kbloc]
+root          50  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/0:1H-kblockd]
+root          62  0.0  0.0      0     0 ?        I    06:22   0:02 [kworker/u8:3-events_unbound]
+root          78  0.0  0.0      0     0 ?        S    06:22   0:01 [kswapd0]
+root          84  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-kthro]
+root          86  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/2:2-cgroup_destroy]
+root          90  0.0  0.0      0     0 ?        S    06:22   0:00 [irq/24-ACPI:Ged]
+root          95  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-acpi_]
+root         178  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/1:2-events]
+root         179  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-mld]
+root         180  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-ipv6_]
+root         181  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/1:1H-kblockd]
+root         185  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-kstrp]
+root         187  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/3:1H-kblockd]
+root         341  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/u8:5-events_unbound]
+root         413  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/2:1H-kblockd]
+root         414  0.0  0.0      0     0 ?        S    06:22   0:00 [jbd2/vdb-8]
+root         415  0.0  0.0      0     0 ?        I<   06:22   0:00 [kworker/R-ext4-]
+root         439  0.1  0.2  67280 23020 ?        S<s  06:22   0:02 /usr/lib/systemd/systemd-journald
+root         782  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/3:2-events]
+root         783  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/3:3-cgroup_destroy]
+root         790  0.0  0.0  23864  6016 ?        Ss   06:22   0:00 /usr/lib/systemd/systemd-udevd
+root         823  0.0  0.0      0     0 ?        I    06:22   0:00 [kworker/1:3-events]
+message+     833  0.0  0.0   8132  4224 ?        Ss   06:23   0:00 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+root         841  0.0  0.1  17672  8192 ?        Ss   06:23   0:00 /usr/lib/systemd/systemd-logind
+root         844  0.0  0.0   6104  1920 tty1     Ss+  06:23   0:00 /sbin/agetty -o -p -- \u --noclear - linux
+root         845  0.0  0.0   6148  2048 ttyS0    Ss+  06:23   0:00 /sbin/agetty -o -p -- \u --keep-baud 115200,57600,38400,9600 - vt220
+root         872  0.3  0.5 1866880 48632 ?       Ssl  06:23   0:06 /usr/bin/containerd
+root         874  0.0  0.0  12024  7936 ?        Ss   06:23   0:00 sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups
+root         876  0.0  0.0   9292  3584 ?        Ss   06:23   0:00 /usr/bin/socat -d VSOCK-LISTEN:22,fork TCP4:127.0.0.1:22
+root         877  0.0  0.1  14220  9472 ?        Ss   06:23   0:00 sshd: swebot [priv]
+jules        887  0.0  0.1  20100 11264 ?        Ss   06:23   0:00 /usr/lib/systemd/systemd --user
+jules        888  0.0  0.0  20392  3156 ?        S    06:23   0:00 (sd-pam)
+jules        907  0.0  0.0  14480  6040 ?        S    06:23   0:00 sshd: swebot@notty
+root         911 610197  1.0 1988052 88184 ?     Ssl  06:23 210649:29 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+jules       2347  0.0  0.0  14412  5956 ?        Ss   06:23   0:00 tmux new-session -d -s default -c /app -e JULES_SESSION_ID=12469768157356479736 -e GIT_TERMINAL_PROMPT=0
+jules       2348  0.0  0.1  12092  8320 pts/0    Ss   06:23   0:00 -bash
+root       11248  0.0  0.0      0     0 ?        I    06:33   0:00 [kworker/0:1-cgroup_destroy]
+root       11249  0.0  0.1  14220  9344 ?        Ss   06:34   0:00 sshd: swebot [priv]
+jules      11259  0.3  0.0  14636  6168 ?        S    06:34   0:05 sshd: swebot@notty
+root      342790  0.0  0.0      0     0 ?        I    06:50   0:00 [kworker/u8:0-events_unbound]
+root      404036  0.0  0.0      0     0 ?        I    06:53   0:00 [kworker/0:2-events_power_efficient]
+root      467553  0.8  0.1  14188  9472 ?        Ss   06:57   0:00 sshd: swebot [priv]
+jules     467564  0.2  0.0  14448  6176 ?        S    06:57   0:00 sshd: swebot@notty
+root      467593  0.0  0.0      0     0 ?        I    06:57   0:00 [kworker/3:0-events]
+jules     467871  0.0  0.0   7740  3456 ?        Ss   06:57   0:00 bash -c echo "${BASHPID}"  RUN_ROOT_DIR=/run/devbox-session/default PANE_PID="2348"  # sleep 1  # enable this to mimic very slow command start. # set -x umask 0 sudo mkdir -m777 -p "${RUN_ROOT_DIR}"  coproc inw {     LC_ALL=C exec inotifywait -e create,moved_to --include '/stamp$' "${RUN_ROOT_DIR}" 2>&1 }  set -m (     # If the pane has exited, also end the wait.     if ps -p ${PANE_PID} > /dev/null; then       tail --pid "${PANE_PID}" -f /dev/null     fi     touch "${RUN_ROOT_DIR}/stamp" ) & pane_waiter=$!  echo "pane waiter is at $pane_waiter"  while IFS= read -r -u "${inw[0]}" line 2>/dev/null; do     if [ "$line" = "Watches established." ]; then         break     fi done if [ -e "${RUN_ROOT_DIR}/stamp" ]; then     echo "stamp found"     kill "$inw_PID" else     echo "waiting for stamp"     wait -n fi echo "done" kill -- "-$pane_waiter" || exit 0
+jules     467877  0.0  0.0   2896  1792 ?        S    06:57   0:00 inotifywait -e create,moved_to --include /stamp$ /run/devbox-session/default
+jules     467878  0.0  0.0   7740  1816 ?        S    06:57   0:00 bash -c echo "${BASHPID}"  RUN_ROOT_DIR=/run/devbox-session/default PANE_PID="2348"  # sleep 1  # enable this to mimic very slow command start. # set -x umask 0 sudo mkdir -m777 -p "${RUN_ROOT_DIR}"  coproc inw {     LC_ALL=C exec inotifywait -e create,moved_to --include '/stamp$' "${RUN_ROOT_DIR}" 2>&1 }  set -m (     # If the pane has exited, also end the wait.     if ps -p ${PANE_PID} > /dev/null; then       tail --pid "${PANE_PID}" -f /dev/null     fi     touch "${RUN_ROOT_DIR}/stamp" ) & pane_waiter=$!  echo "pane waiter is at $pane_waiter"  while IFS= read -r -u "${inw[0]}" line 2>/dev/null; do     if [ "$line" = "Watches established." ]; then         break     fi done if [ -e "${RUN_ROOT_DIR}/stamp" ]; then     echo "stamp found"     kill "$inw_PID" else     echo "waiting for stamp"     wait -n fi echo "done" kill -- "-$pane_waiter" || exit 0
+jules     467880  0.0  0.0   6144  1920 ?        S    06:57   0:00 tail --pid 2348 -f /dev/null
+jules     468164  0.0  0.0  11320  4352 pts/0    R+   06:57   0:00 ps aux

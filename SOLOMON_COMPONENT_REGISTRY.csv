@@ -1,0 +1,2 @@
+Component ID,Name,Category,Host,Path,Purpose,Owner,Entry Point,Status,Operational Evidence,Dependencies,Database,Ports,Tests,Logs,Security Risk,Change Risk,Duplication Status,Recommended Action
+solomon_futures_engine,Futures Engine,Simulation,SS1,services/solomon_futures_engine.py,Simulates probabilities,Loki,FuturesEngine,VERIFIED OPERATIONAL,Tests Pass,sqlite3,solomon_soss.db,None,tests/futures/test_threshold_logic.py,Yes,Low,Medium,None,Maintain

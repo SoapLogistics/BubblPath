@@ -1,0 +1,25 @@
+On branch jules-12469768157356479736-8ba7e538
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   app.py
+	modified:   core/solomon_local_llm.py
+	modified:   docs/solomon_daily_codex_context.md
+	deleted:    gabriel_engine/assimilated_capabilities/codex_issue_to_pr_pipeline.py
+	deleted:    gabriel_engine/assimilated_capabilities/codex_kanban.py
+	deleted:    gabriel_engine/assimilated_capabilities/codex_mcp_bridge.py
+	deleted:    gabriel_engine/assimilated_capabilities/codex_parallel_worktrees.py
+	deleted:    gabriel_engine/assimilated_capabilities/exponential_backoff_retry.py
+	deleted:    gabriel_engine/assimilated_capabilities/jules_code_patcher.py
+	deleted:    gabriel_engine/assimilated_capabilities/jules_dependency_installer.py
+	deleted:    gabriel_engine/assimilated_capabilities/jules_test_runner_loop.py
+	deleted:    gabriel_engine/assimilated_capabilities/rebuilt_kubernetes_cli.py
+	deleted:    gabriel_engine/assimilated_capabilities/renewable_worker_lease.py
+	modified:   gabriel_engine/core/models.py
+	modified:   services/solomon_futures_engine.py
+	modified:   services/solomon_governance_approval_packet.py
+	modified:   solomon_api/engine_registry.json
+	new file:   tests/test_system_resilience.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	SOLOMON_INVENTORY_EVIDENCE/

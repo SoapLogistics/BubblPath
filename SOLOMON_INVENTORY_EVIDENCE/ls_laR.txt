@@ -1,0 +1,706 @@
+.:
+total 384
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 .
+drwxr-xr-x  1 root  root   4096 Jul 31 00:00 ..
+drwxrwxr-x  7 jules jules  4096 Jul 31 06:57 .git
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:00 .github
+-rw-rw-r--  1 jules jules   198 Jul 31 00:00 .gitignore
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:02 .pytest_cache
+drwxrwxr-x  2 jules jules  4096 Jul 31 06:57 SOLOMON_INVENTORY_EVIDENCE
+-rw-rw-r--  1 jules jules 28212 Jul 31 00:00 SOLOMON_PERPETUAL_LEARNING_MASTER_AUDIT.md
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:17 __pycache__
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 api
+-rw-rw-r--  1 jules jules 30892 Jul 31 00:15 app.py
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:00 backend
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:00 config
+drwxrwxr-x  4 jules jules  4096 Jul 31 00:13 core
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:27 docs
+drwxrwxr-x  5 jules jules  4096 Jul 31 00:08 gabriel_engine
+-rw-rw-r--  1 jules jules 65536 Jul 31 00:27 governance_log.bin
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 lab
+-rw-r--r--  1 jules jules 12288 Jul 31 00:27 memory_atoms.db
+-rw-rw-r--  1 jules jules   226 Jul 31 00:00 render.yaml
+-rw-rw-r--  1 jules jules    32 Jul 31 00:00 requirements.txt
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 schemas
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:17 scripts
+-rw-rw-r--  1 jules jules   560 Jul 31 00:00 server_output.log
+-rw-rw-r--  1 jules jules   363 Jul 31 00:00 server_output_2.log
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:20 services
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:12 solomon_api
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:00 solomon_browser
+-rw-r--r--  1 jules jules  4096 Jul 31 00:08 solomon_hyper_memory.db
+-rw-r--r--  1 jules jules 32768 Jul 31 00:27 solomon_hyper_memory.db-shm
+-rw-r--r--  1 jules jules 57712 Jul 31 00:27 solomon_hyper_memory.db-wal
+drwxrwxr-x  4 jules jules  4096 Jul 31 00:00 solomon_ingest
+-rw-rw-r--  1 jules jules  6171 Jul 31 00:00 solomon_integration_audit.md
+-rw-rw-r--  1 jules jules 16249 Jul 31 00:00 solomon_quantized_memory.py
+-rw-r--r--  1 jules jules 12288 Jul 31 00:27 solomon_soss.db
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 templates
+drwxrwxr-x  5 jules jules  4096 Jul 31 00:14 tests
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 workers
+
+./.git:
+total 84
+drwxrwxr-x  7 jules jules  4096 Jul 31 06:57 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules    52 Jul 31 00:00 HEAD
+-rw-rw-r--  1 jules jules   287 Jul 31 00:00 config
+-rw-rw-r--  1 jules jules    73 Jul 31 00:00 description
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 hooks
+-rw-rw-r--  1 jules jules 14766 Jul 31 00:27 index
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 info
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:00 logs
+drwxrwxr-x 14 jules jules  4096 Jul 31 00:27 objects
+-rw-rw-r--  1 jules jules 17951 Jul 31 00:00 packed-refs
+drwxrwxr-x  5 jules jules  4096 Jul 31 00:00 refs
+-rw-rw-r--  1 jules jules  5986 Jul 31 00:00 shallow
+
+./.git/hooks:
+total 72
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 7 jules jules 4096 Jul 31 06:57 ..
+-rwxrwxr-x 1 jules jules  478 Jul 31 00:00 applypatch-msg.sample
+-rwxrwxr-x 1 jules jules  896 Jul 31 00:00 commit-msg.sample
+-rwxrwxr-x 1 jules jules 4726 Jul 31 00:00 fsmonitor-watchman.sample
+-rwxrwxr-x 1 jules jules  189 Jul 31 00:00 post-update.sample
+-rwxrwxr-x 1 jules jules  424 Jul 31 00:00 pre-applypatch.sample
+-rwxrwxr-x 1 jules jules 1649 Jul 31 00:00 pre-commit.sample
+-rwxrwxr-x 1 jules jules  416 Jul 31 00:00 pre-merge-commit.sample
+-rwxrwxr-x 1 jules jules 1374 Jul 31 00:00 pre-push.sample
+-rwxrwxr-x 1 jules jules 4898 Jul 31 00:00 pre-rebase.sample
+-rwxrwxr-x 1 jules jules  544 Jul 31 00:00 pre-receive.sample
+-rwxrwxr-x 1 jules jules 1492 Jul 31 00:00 prepare-commit-msg.sample
+-rwxrwxr-x 1 jules jules 2783 Jul 31 00:00 push-to-checkout.sample
+-rwxrwxr-x 1 jules jules 2308 Jul 31 00:00 sendemail-validate.sample
+-rwxrwxr-x 1 jules jules 3650 Jul 31 00:00 update.sample
+
+./.git/info:
+total 12
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 7 jules jules 4096 Jul 31 06:57 ..
+-rw-rw-r-- 1 jules jules  240 Jul 31 00:00 exclude
+
+./.git/logs:
+total 16
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 7 jules jules 4096 Jul 31 06:57 ..
+-rw-rw-r-- 1 jules jules  485 Jul 31 00:00 HEAD
+drwxrwxr-x 4 jules jules 4096 Jul 31 00:00 refs
+
+./.git/logs/refs:
+total 16
+drwxrwxr-x 4 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 ..
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 heads
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 remotes
+
+./.git/logs/refs/heads:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 4 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules  208 Jul 31 00:00 jules-12469768157356479736-8ba7e538
+-rw-rw-r-- 1 jules jules  237 Jul 31 00:00 main
+
+./.git/logs/refs/remotes:
+total 12
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 4 jules jules 4096 Jul 31 00:00 ..
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 origin
+
+./.git/logs/refs/remotes/origin:
+total 12
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules  237 Jul 31 00:00 HEAD
+
+./.git/objects:
+total 56
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 .
+drwxrwxr-x  7 jules jules 4096 Jul 31 06:57 ..
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:12 1c
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:15 54
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:17 79
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:15 8f
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:14 ad
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:12 c7
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:27 c8
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:13 ca
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:15 cc
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:21 f7
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 info
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 pack
+
+./.git/objects/1c:
+total 12
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:12 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules 1416 Jul 31 00:12 a24c2c3effcf89b4c71b0257ad1912a0a03e01
+
+./.git/objects/54:
+total 12
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:15 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules  254 Jul 31 00:15 717f590436f3cafec686c60d5740c29552ccda
+
+./.git/objects/79:
+total 16
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:17 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules 7719 Jul 31 00:17 2a77dcb2a566e5e9750f56c6425276cd99142e
+
+./.git/objects/8f:
+total 16
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:15 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules 8064 Jul 31 00:15 ab2af3d5319337fc2756f5aaa4b3fc2da38fec
+
+./.git/objects/ad:
+total 12
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:14 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules  854 Jul 31 00:14 418e7d83dfb488421913b484a000b88515a1b2
+
+./.git/objects/c7:
+total 12
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:12 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules 1427 Jul 31 00:12 49b1000776469a5df6a50fde4557618dd72821
+
+./.git/objects/c8:
+total 16
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:27 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules 7718 Jul 31 00:27 fa2fb16f99d35ef286b8e7044819e7d9a3a87c
+
+./.git/objects/ca:
+total 12
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:13 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules 1872 Jul 31 00:13 862535d90a3e3dfebf4582a69c15f7d40f6e41
+
+./.git/objects/cc:
+total 12
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:15 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules  895 Jul 31 00:15 12a696367c3ca87c1456931abaf73cf44bd18c
+
+./.git/objects/f7:
+total 16
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:21 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules 7770 Jul 31 00:25 649a3ae3104e8511c2554a0571548dd6139664
+
+./.git/objects/info:
+total 8
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 14 jules jules 4096 Jul 31 00:27 ..
+
+./.git/objects/pack:
+total 2088
+drwxrwxr-x  2 jules jules    4096 Jul 31 00:00 .
+drwxrwxr-x 14 jules jules    4096 Jul 31 00:27 ..
+-r--r--r--  1 jules jules   70540 Jul 31 00:00 pack-aa8d1c43ca86a674708f455cae20be6fa0a78f93.idx
+-r--r--r--  1 jules jules 2041390 Jul 31 00:27 pack-aa8d1c43ca86a674708f455cae20be6fa0a78f93.pack
+-r--r--r--  1 jules jules    9976 Jul 31 00:00 pack-aa8d1c43ca86a674708f455cae20be6fa0a78f93.rev
+
+./.git/refs:
+total 20
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 7 jules jules 4096 Jul 31 06:57 ..
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 heads
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 remotes
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 tags
+
+./.git/refs/heads:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules   41 Jul 31 00:00 jules-12469768157356479736-8ba7e538
+-rw-rw-r-- 1 jules jules   41 Jul 31 00:00 main
+
+./.git/refs/remotes:
+total 12
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:00 ..
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 origin
+
+./.git/refs/remotes/origin:
+total 12
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules   30 Jul 31 00:00 HEAD
+
+./.git/refs/tags:
+total 8
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:00 ..
+
+./.github:
+total 12
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 workflows
+
+./.github/workflows:
+total 20
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules  503 Jul 31 00:00 auto-merge.yml
+-rw-rw-r-- 1 jules jules  807 Jul 31 00:00 ci.yml
+-rw-rw-r-- 1 jules jules 1978 Jul 31 00:00 joe-fast-track.yml
+
+./.pytest_cache:
+total 24
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:02 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules   37 Jul 31 00:02 .gitignore
+-rw-rw-r--  1 jules jules  191 Jul 31 00:02 CACHEDIR.TAG
+-rw-rw-r--  1 jules jules  302 Jul 31 00:02 README.md
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:02 v
+
+./.pytest_cache/v:
+total 12
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:02 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:02 ..
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:02 cache
+
+./.pytest_cache/v/cache:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:02 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:02 ..
+-rw-rw-r-- 1 jules jules    2 Jul 31 00:20 lastfailed
+-rw-rw-r-- 1 jules jules 1630 Jul 31 00:27 nodeids
+
+./SOLOMON_INVENTORY_EVIDENCE:
+total 68
+drwxrwxr-x  2 jules jules  4096 Jul 31 06:57 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules    29 Jul 31 06:57 date.txt
+-rw-rw-r--  1 jules jules   530 Jul 31 06:57 df.txt
+-rw-rw-r--  1 jules jules   207 Jul 31 06:57 free.txt
+-rw-rw-r--  1 jules jules 10419 Jul 31 06:57 git_branches.txt
+-rw-rw-r--  1 jules jules  1254 Jul 31 06:57 git_log.txt
+-rw-rw-r--  1 jules jules  1369 Jul 31 06:57 git_status.txt
+-rw-rw-r--  1 jules jules  8192 Jul 31 06:57 ls_laR.txt
+-rw-rw-r--  1 jules jules  2524 Jul 31 06:57 lscpu.txt
+-rw-rw-r--  1 jules jules  2340 Jul 31 06:57 pip_list.txt
+-rw-rw-r--  1 jules jules    15 Jul 31 06:57 python.txt
+-rw-rw-r--  1 jules jules   102 Jul 31 06:57 uname.txt
+-rw-rw-r--  1 jules jules     6 Jul 31 06:57 whoami.txt
+
+./__pycache__:
+total 48
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:17 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules 38977 Jul 31 00:17 app.cpython-312.pyc
+
+./api:
+total 8
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules    0 Jul 31 00:00 __init__.py
+
+./backend:
+total 12
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:08 services
+
+./backend/services:
+total 20
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:08 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 ..
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:17 __pycache__
+-rw-rw-r-- 1 jules jules 1752 Jul 31 00:00 futures_dashboard_backend.py
+-rw-rw-r-- 1 jules jules  697 Jul 31 00:00 joe_blueprint_facade.py
+
+./backend/services/__pycache__:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:17 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:08 ..
+-rw-rw-r-- 1 jules jules 2215 Jul 31 00:08 futures_dashboard_backend.cpython-312.pyc
+-rw-rw-r-- 1 jules jules 1096 Jul 31 00:17 joe_blueprint_facade.cpython-312.pyc
+
+./config:
+total 16
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules  813 Jul 31 00:00 omni_feeds.json
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 sources
+
+./config/sources:
+total 20
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules   33 Jul 31 00:00 domain_allowlist.yaml
+-rw-rw-r-- 1 jules jules   30 Jul 31 00:00 rate_budgets.yaml
+-rw-rw-r-- 1 jules jules   56 Jul 31 00:00 source_registry.yaml
+
+./core:
+total 68
+drwxrwxr-x  4 jules jules  4096 Jul 31 00:13 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules     0 Jul 31 00:00 __init__.py
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:13 __pycache__
+-rw-rw-r--  1 jules jules  7492 Jul 31 00:00 agentic_claw.py
+-rw-rw-r--  1 jules jules  4145 Jul 31 00:00 solomon_context_budgeter.py
+-rw-rw-r--  1 jules jules  3356 Jul 31 00:00 solomon_embeddings.py
+drwxrwxr-x  8 jules jules  4096 Jul 31 00:00 solomon_knowledge_cards
+-rw-rw-r--  1 jules jules  4350 Jul 31 00:13 solomon_local_llm.py
+-rw-rw-r--  1 jules jules 17768 Jul 31 00:00 solomon_quantized_memory.py
+-rw-rw-r--  1 jules jules  1334 Jul 31 00:00 solomon_web_crawler.py
+
+./core/__pycache__:
+total 60
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:13 .
+drwxrwxr-x 4 jules jules  4096 Jul 31 00:13 ..
+-rw-rw-r-- 1 jules jules   118 Jul 31 00:08 __init__.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  9721 Jul 31 00:08 agentic_claw.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  5561 Jul 31 00:13 solomon_local_llm.cpython-312.pyc
+-rw-rw-r-- 1 jules jules 21407 Jul 31 00:08 solomon_quantized_memory.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  2229 Jul 31 00:08 solomon_web_crawler.cpython-312.pyc
+
+./core/solomon_knowledge_cards:
+total 36
+drwxrwxr-x 8 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 4 jules jules 4096 Jul 31 00:13 ..
+-rw-rw-r-- 1 jules jules   49 Jul 31 00:00 __init__.py
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 api
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 extractor
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 migrator
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 models
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 planner
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 storage
+
+./core/solomon_knowledge_cards/api:
+total 36
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:00 .
+drwxrwxr-x 8 jules jules  4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules    17 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules  3111 Jul 31 00:00 embeddings.py
+-rw-rw-r-- 1 jules jules  4089 Jul 31 00:00 graph.py
+-rw-rw-r-- 1 jules jules 11726 Jul 31 00:00 repository.py
+-rw-rw-r-- 1 jules jules  4020 Jul 31 00:00 review.py
+
+./core/solomon_knowledge_cards/extractor:
+total 40
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:00 .
+drwxrwxr-x 8 jules jules  4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules    23 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules 12280 Jul 31 00:00 extractor.py
+-rw-rw-r-- 1 jules jules  8192 Jul 31 00:00 proposal_engine.py
+-rw-rw-r-- 1 jules jules  5986 Jul 31 00:00 reflection.py
+
+./core/solomon_knowledge_cards/migrator:
+total 20
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 8 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules   22 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules 5603 Jul 31 00:00 importer.py
+
+./core/solomon_knowledge_cards/models:
+total 20
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 8 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules   20 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules 7716 Jul 31 00:00 card.py
+
+./core/solomon_knowledge_cards/planner:
+total 28
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 8 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules   21 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules 1858 Jul 31 00:00 arbiter.py
+-rw-rw-r-- 1 jules jules 5263 Jul 31 00:00 engine.py
+-rw-rw-r-- 1 jules jules 2555 Jul 31 00:00 models.py
+
+./core/solomon_knowledge_cards/storage:
+total 32
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:00 .
+drwxrwxr-x 8 jules jules  4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules    21 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules 18445 Jul 31 00:00 db.py
+
+./docs:
+total 112
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:27 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 data-ingestion
+-rw-rw-r--  1 jules jules    37 Jul 31 00:00 futures_dashboard_backend.md
+-rw-rw-r--  1 jules jules 69753 Jul 31 00:27 solomon_daily_codex_context.md
+-rw-rw-r--  1 jules jules   813 Jul 31 00:00 solomon_engine_registry.md
+-rw-rw-r--  1 jules jules    26 Jul 31 00:00 solomon_futures_engine.md
+-rw-rw-r--  1 jules jules    53 Jul 31 00:00 solomon_governance_approval_packet.md
+-rw-rw-r--  1 jules jules    57 Jul 31 00:00 solomon_learning_writeback.md
+-rw-rw-r--  1 jules jules   713 Jul 31 00:00 solomon_perpetual_learning_activation_record.md
+-rw-rw-r--  1 jules jules   329 Jul 31 00:00 worktree_classification.md
+
+./docs/data-ingestion:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:27 ..
+-rw-rw-r-- 1 jules jules   65 Jul 31 00:00 SOURCE_REGISTRY.md
+-rw-rw-r-- 1 jules jules  144 Jul 31 00:00 TRUST_POLICY.md
+
+./gabriel_engine:
+total 24
+drwxrwxr-x  5 jules jules 4096 Jul 31 00:08 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules   38 Jul 31 00:00 __init__.py
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:08 __pycache__
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:27 assimilated_capabilities
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:11 core
+
+./gabriel_engine/__pycache__:
+total 12
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:08 .
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:08 ..
+-rw-rw-r-- 1 jules jules  128 Jul 31 00:08 __init__.cpython-312.pyc
+
+./gabriel_engine/assimilated_capabilities:
+total 64
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:27 .
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:08 ..
+-rw-rw-r-- 1 jules jules   35 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules 2006 Jul 31 00:27 codex_issue_to_pr_pipeline.pyc
+-rw-rw-r-- 1 jules jules 5030 Jul 31 00:27 codex_kanban.pyc
+-rw-rw-r-- 1 jules jules 2333 Jul 31 00:27 codex_mcp_bridge.pyc
+-rw-rw-r-- 1 jules jules 3068 Jul 31 00:27 codex_parallel_worktrees.pyc
+-rw-rw-r-- 1 jules jules 3057 Jul 31 00:27 exponential_backoff_retry.pyc
+-rw-rw-r-- 1 jules jules 1222 Jul 31 00:27 jules_code_patcher.pyc
+-rw-rw-r-- 1 jules jules 1679 Jul 31 00:27 jules_dependency_installer.pyc
+-rw-rw-r-- 1 jules jules 1826 Jul 31 00:27 jules_test_runner_loop.pyc
+-rw-rw-r-- 1 jules jules   79 Jul 31 00:00 mock_math_helper.py
+-rw-rw-r-- 1 jules jules 1177 Jul 31 00:27 rebuilt_kubernetes_cli.pyc
+-rw-rw-r-- 1 jules jules 6191 Jul 31 00:27 renewable_worker_lease.pyc
+
+./gabriel_engine/core:
+total 120
+drwxrwxr-x 3 jules jules  4096 Jul 31 00:11 .
+drwxrwxr-x 5 jules jules  4096 Jul 31 00:08 ..
+-rw-rw-r-- 1 jules jules    25 Jul 31 00:00 __init__.py
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:12 __pycache__
+-rw-rw-r-- 1 jules jules  6184 Jul 31 00:00 acquisition.py
+-rw-rw-r-- 1 jules jules  3753 Jul 31 00:00 assimilation_decision.py
+-rw-rw-r-- 1 jules jules  3291 Jul 31 00:00 ast_injector.py
+-rw-rw-r-- 1 jules jules  4934 Jul 31 00:00 behavioral_experimentation.py
+-rw-rw-r-- 1 jules jules  4029 Jul 31 00:00 capability_extraction.py
+-rw-rw-r-- 1 jules jules  3456 Jul 31 00:00 crucible.py
+-rw-rw-r-- 1 jules jules  6015 Jul 31 00:00 dynamic_loader.py
+-rw-rw-r-- 1 jules jules 16228 Jul 31 00:00 independent_construction.py
+-rw-rw-r-- 1 jules jules  4782 Jul 31 00:11 models.py
+-rw-rw-r-- 1 jules jules  3590 Jul 31 00:00 observational_simulator.py
+-rw-rw-r-- 1 jules jules  2651 Jul 31 00:00 permission_gate.py
+-rw-rw-r-- 1 jules jules 16150 Jul 31 00:00 perpetual_loop.py
+-rw-rw-r-- 1 jules jules  4316 Jul 31 00:00 recursive_optimizer.py
+-rw-rw-r-- 1 jules jules  7524 Jul 31 00:00 structural_comprehension.py
+
+./gabriel_engine/core/__pycache__:
+total 124
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:12 .
+drwxrwxr-x 3 jules jules  4096 Jul 31 00:11 ..
+-rw-rw-r-- 1 jules jules   133 Jul 31 00:08 __init__.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  5730 Jul 31 00:08 acquisition.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  3263 Jul 31 00:08 assimilation_decision.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  4653 Jul 31 00:08 ast_injector.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  4288 Jul 31 00:08 behavioral_experimentation.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  4070 Jul 31 00:08 capability_extraction.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  2848 Jul 31 00:08 crucible.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  7092 Jul 31 00:08 dynamic_loader.cpython-312.pyc
+-rw-rw-r-- 1 jules jules 16665 Jul 31 00:08 independent_construction.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  5870 Jul 31 00:12 models.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  3841 Jul 31 00:08 observational_simulator.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  2836 Jul 31 00:08 permission_gate.cpython-312.pyc
+-rw-rw-r-- 1 jules jules 15115 Jul 31 00:08 perpetual_loop.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  3773 Jul 31 00:08 recursive_optimizer.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  8647 Jul 31 00:08 structural_comprehension.cpython-312.pyc
+
+./lab:
+total 60
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules     0 Jul 31 00:00 __init__.py
+-rw-rw-r--  1 jules jules  3563 Jul 31 00:00 event_bus.py
+-rw-rw-r--  1 jules jules  5140 Jul 31 00:00 kernel.py
+-rw-rw-r--  1 jules jules  2649 Jul 31 00:00 solomon_meta_learner.py
+-rw-rw-r--  1 jules jules  6705 Jul 31 00:00 solomon_sple_unified_engine.py
+-rw-rw-r--  1 jules jules 17200 Jul 31 00:00 vector_reasoning.py
+-rw-rw-r--  1 jules jules  7794 Jul 31 00:00 zero_copy_memory.py
+
+./schemas:
+total 24
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules   90 Jul 31 00:00 fact_candidate.schema.json
+-rw-rw-r--  1 jules jules   90 Jul 31 00:00 news_item.schema.json
+-rw-rw-r--  1 jules jules   90 Jul 31 00:00 normalized_item.schema.json
+-rw-rw-r--  1 jules jules   90 Jul 31 00:00 sports_event.schema.json
+
+./scripts:
+total 36
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:17 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:17 __pycache__
+-rw-rw-r--  1 jules jules 3462 Jul 31 00:00 run_autonomous_daemon.py
+-rw-rw-r--  1 jules jules 3414 Jul 31 00:00 run_daily_scan.py
+-rw-rw-r--  1 jules jules 2855 Jul 31 00:00 run_futures_daemon.py
+-rw-rw-r--  1 jules jules 1901 Jul 31 00:00 run_knowledge_ingestion.py
+-rw-rw-r--  1 jules jules  512 Jul 31 00:00 scheduler.py
+-rw-rw-r--  1 jules jules  882 Jul 31 00:00 verify_futures_subsystem.py
+
+./scripts/__pycache__:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:17 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:17 ..
+-rw-rw-r-- 1 jules jules 5057 Jul 31 00:17 run_daily_scan.cpython-312.pyc
+
+./services:
+total 48
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:20 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:20 __pycache__
+-rw-rw-r--  1 jules jules  3764 Jul 31 00:00 live_data_ingestion.py
+-rw-rw-r--  1 jules jules   467 Jul 31 00:00 renewable_worker.py
+-rw-rw-r--  1 jules jules 11781 Jul 31 00:20 solomon_futures_engine.py
+-rw-rw-r--  1 jules jules  3624 Jul 31 00:00 solomon_futures_memory.py
+-rw-rw-r--  1 jules jules  2239 Jul 31 00:15 solomon_governance_approval_packet.py
+-rw-rw-r--  1 jules jules  1220 Jul 31 00:00 solomon_joe_bridge.py
+-rw-rw-r--  1 jules jules  1035 Jul 31 00:00 solomon_learning_writeback.py
+
+./services/__pycache__:
+total 44
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:20 .
+drwxrwxr-x 3 jules jules  4096 Jul 31 00:20 ..
+-rw-rw-r-- 1 jules jules  5673 Jul 31 00:17 live_data_ingestion.cpython-312.pyc
+-rw-rw-r-- 1 jules jules 15345 Jul 31 00:20 solomon_futures_engine.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  3332 Jul 31 00:17 solomon_governance_approval_packet.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  1304 Jul 31 00:17 solomon_joe_bridge.cpython-312.pyc
+-rw-rw-r-- 1 jules jules  1825 Jul 31 00:17 solomon_learning_writeback.cpython-312.pyc
+
+./solomon_api:
+total 16
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:12 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules 7685 Jul 31 00:12 engine_registry.json
+
+./solomon_browser:
+total 12
+drwxrwxr-x  3 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 sidepanel
+
+./solomon_browser/sidepanel:
+total 12
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules  234 Jul 31 00:00 config.js
+
+./solomon_ingest:
+total 16
+drwxrwxr-x  4 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules    0 Jul 31 00:00 __init__.py
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 connectors
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 core
+
+./solomon_ingest/connectors:
+total 28
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 4 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules    0 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules  520 Jul 31 00:00 api_sports_connector.py
+-rw-rw-r-- 1 jules jules 2238 Jul 31 00:00 free_sports_rss_connector.py
+-rw-rw-r-- 1 jules jules 2508 Jul 31 00:00 gdelt_connector.py
+-rw-rw-r-- 1 jules jules 2328 Jul 31 00:00 official_rss_connector.py
+-rw-rw-r-- 1 jules jules 3053 Jul 31 00:00 omni_rss_connector.py
+
+./solomon_ingest/core:
+total 64
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 4 jules jules 4096 Jul 31 00:00 ..
+-rw-rw-r-- 1 jules jules    0 Jul 31 00:00 __init__.py
+-rw-rw-r-- 1 jules jules   51 Jul 31 00:00 clustering.py
+-rw-rw-r-- 1 jules jules  364 Jul 31 00:00 connector.py
+-rw-rw-r-- 1 jules jules   57 Jul 31 00:00 corroboration.py
+-rw-rw-r-- 1 jules jules   43 Jul 31 00:00 dedupe.py
+-rw-rw-r-- 1 jules jules   65 Jul 31 00:00 entity_resolution.py
+-rw-rw-r-- 1 jules jules   43 Jul 31 00:00 health.py
+-rw-rw-r-- 1 jules jules   53 Jul 31 00:00 http_client.py
+-rw-rw-r-- 1 jules jules   53 Jul 31 00:00 memory_gate.py
+-rw-rw-r-- 1 jules jules   51 Jul 31 00:00 normalizer.py
+-rw-rw-r-- 1 jules jules   51 Jul 31 00:00 provenance.py
+-rw-rw-r-- 1 jules jules   51 Jul 31 00:00 rate_limit.py
+-rw-rw-r-- 1 jules jules   49 Jul 31 00:00 raw_store.py
+-rw-rw-r-- 1 jules jules   49 Jul 31 00:00 scheduler.py
+-rw-rw-r-- 1 jules jules   49 Jul 31 00:00 validator.py
+
+./templates:
+total 40
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules 7792 Jul 31 00:00 futures_dashboard.html
+-rw-rw-r--  1 jules jules 8907 Jul 31 00:00 god_eye.html
+-rw-rw-r--  1 jules jules 5816 Jul 31 00:00 solomon_chat.html
+-rw-rw-r--  1 jules jules  122 Jul 31 00:00 solomon_loki_workspace.html
+
+./tests:
+total 68
+drwxrwxr-x  5 jules jules  4096 Jul 31 00:14 .
+drwxr-xr-x 23 jules root   4096 Jul 31 06:57 ..
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:17 __pycache__
+drwxrwxr-x  3 jules jules  4096 Jul 31 00:17 futures
+drwxrwxr-x  2 jules jules  4096 Jul 31 00:00 integration
+-rw-rw-r--  1 jules jules  3874 Jul 31 00:00 test_engine_registry.py
+-rw-rw-r--  1 jules jules 16037 Jul 31 00:00 test_gabriel.py
+-rw-rw-r--  1 jules jules  4643 Jul 31 00:00 test_gabriel_evolution.py
+-rw-rw-r--  1 jules jules   458 Jul 31 00:00 test_governance_approval.py
+-rw-rw-r--  1 jules jules   320 Jul 31 00:00 test_joe_blueprint_facade.py
+-rw-rw-r--  1 jules jules   212 Jul 31 00:00 test_learning_writeback.py
+-rw-rw-r--  1 jules jules   265 Jul 31 00:00 test_run_daily_scan.py
+-rw-rw-r--  1 jules jules  2293 Jul 31 00:14 test_system_resilience.py
+
+./tests/__pycache__:
+total 204
+drwxrwxr-x 2 jules jules  4096 Jul 31 00:17 .
+drwxrwxr-x 5 jules jules  4096 Jul 31 00:14 ..
+-rw-rw-r-- 1 jules jules 14163 Jul 31 00:02 test_engine_registry.cpython-312-pytest-9.0.2.pyc
+-rw-rw-r-- 1 jules jules 14123 Jul 31 00:08 test_engine_registry.cpython-312-pytest-9.1.1.pyc
+-rw-rw-r-- 1 jules jules 55831 Jul 31 00:02 test_gabriel.cpython-312-pytest-9.0.2.pyc
+-rw-rw-r-- 1 jules jules 55742 Jul 31 00:08 test_gabriel.cpython-312-pytest-9.1.1.pyc
+-rw-rw-r-- 1 jules jules 14857 Jul 31 00:17 test_gabriel_evolution.cpython-312-pytest-9.1.1.pyc
+-rw-rw-r-- 1 jules jules  1769 Jul 31 00:02 test_governance_approval.cpython-312-pytest-9.0.2.pyc
+-rw-rw-r-- 1 jules jules  1769 Jul 31 00:08 test_governance_approval.cpython-312-pytest-9.1.1.pyc
+-rw-rw-r-- 1 jules jules  1542 Jul 31 00:17 test_joe_blueprint_facade.cpython-312-pytest-9.1.1.pyc
+-rw-rw-r-- 1 jules jules  1117 Jul 31 00:17 test_learning_writeback.cpython-312-pytest-9.1.1.pyc
+-rw-rw-r-- 1 jules jules  1589 Jul 31 00:17 test_run_daily_scan.cpython-312-pytest-9.1.1.pyc
+-rw-rw-r-- 1 jules jules  5533 Jul 31 00:14 test_system_resilience.cpython-312-pytest-9.0.2.pyc
+-rw-rw-r-- 1 jules jules  5519 Jul 31 00:17 test_system_resilience.cpython-312-pytest-9.1.1.pyc
+
+./tests/futures:
+total 16
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:17 .
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:14 ..
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:17 __pycache__
+-rw-rw-r-- 1 jules jules 2046 Jul 31 00:00 test_threshold_logic.py
+
+./tests/futures/__pycache__:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:17 .
+drwxrwxr-x 3 jules jules 4096 Jul 31 00:17 ..
+-rw-rw-r-- 1 jules jules 6717 Jul 31 00:17 test_threshold_logic.cpython-312-pytest-9.1.1.pyc
+
+./tests/integration:
+total 16
+drwxrwxr-x 2 jules jules 4096 Jul 31 00:00 .
+drwxrwxr-x 5 jules jules 4096 Jul 31 00:14 ..
+-rw-rw-r-- 1 jules jules  548 Jul 31 00:00 solomon_joe_bridge_smoke.py
+-rw-rw-r-- 1 jules jules  445 Jul 31 00:00 soss_workspace_comms_smoke.py
+
+./workers:
+total 28
+drwxrwxr-x  2 jules jules 4096 Jul 31 00:00 .
+drwxr-xr-x 23 jules root  4096 Jul 31 06:57 ..
+-rw-rw-r--  1 jules jules    0 Jul 31 00:00 __init__.py
+-rw-rw-r--  1 jules jules 6995 Jul 31 00:00 cache_router.py
+-rw-rw-r--  1 jules jules 7562 Jul 31 00:00 planner.py
+-rw-rw-r--  1 jules jules 3532 Jul 31 00:00 telemetry.py
