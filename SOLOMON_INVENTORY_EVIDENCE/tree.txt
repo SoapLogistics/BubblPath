@@ -1,0 +1,131 @@
+/app
+├── SOLOMON_INVENTORY_EVIDENCE
+│   ├── date.txt
+│   ├── disk.txt
+│   ├── docker_version.txt
+│   ├── git_branches.txt
+│   ├── git_log.txt
+│   ├── git_remote.txt
+│   ├── git_status.txt
+│   ├── git_version.txt
+│   ├── hostname.txt
+│   ├── ip.txt
+│   ├── lsblk.txt
+│   ├── lscpu.txt
+│   ├── mount.txt
+│   ├── node_version.txt
+│   ├── python_version.txt
+│   ├── ram.txt
+│   ├── tailscale_ping.txt
+│   ├── tree.txt
+│   ├── uname.txt
+│   └── users.txt
+├── SOLOMON_PERPETUAL_LEARNING_MASTER_AUDIT.md
+├── __pycache__
+│   └── app.cpython-312.pyc
+├── api
+│   └── __init__.py
+├── app.py
+├── backend
+│   └── services
+├── config
+│   ├── omni_feeds.json
+│   └── sources
+├── core
+│   ├── __init__.py
+│   ├── __pycache__
+│   ├── agentic_claw.py
+│   ├── solomon_context_budgeter.py
+│   ├── solomon_embeddings.py
+│   ├── solomon_knowledge_cards
+│   ├── solomon_local_llm.py
+│   ├── solomon_quantized_memory.py
+│   └── solomon_web_crawler.py
+├── docs
+│   ├── data-ingestion
+│   ├── futures_dashboard_backend.md
+│   ├── solomon_daily_codex_context.md
+│   ├── solomon_engine_registry.md
+│   ├── solomon_futures_engine.md
+│   ├── solomon_governance_approval_packet.md
+│   ├── solomon_learning_writeback.md
+│   ├── solomon_perpetual_learning_activation_record.md
+│   └── worktree_classification.md
+├── gabriel_engine
+│   ├── __init__.py
+│   ├── __pycache__
+│   ├── assimilated_capabilities
+│   └── core
+├── governance_log.bin
+├── lab
+│   ├── __init__.py
+│   ├── event_bus.py
+│   ├── kernel.py
+│   ├── solomon_meta_learner.py
+│   ├── solomon_sple_unified_engine.py
+│   ├── vector_reasoning.py
+│   └── zero_copy_memory.py
+├── memory_atoms.db
+├── render.yaml
+├── requirements.txt
+├── schemas
+│   ├── fact_candidate.schema.json
+│   ├── news_item.schema.json
+│   ├── normalized_item.schema.json
+│   └── sports_event.schema.json
+├── scripts
+│   ├── __pycache__
+│   ├── run_autonomous_daemon.py
+│   ├── run_daily_scan.py
+│   ├── run_futures_daemon.py
+│   ├── run_knowledge_ingestion.py
+│   ├── scheduler.py
+│   └── verify_futures_subsystem.py
+├── server_output.log
+├── server_output_2.log
+├── services
+│   ├── __pycache__
+│   ├── live_data_ingestion.py
+│   ├── renewable_worker.py
+│   ├── solomon_futures_engine.py
+│   ├── solomon_futures_memory.py
+│   ├── solomon_governance_approval_packet.py
+│   ├── solomon_joe_bridge.py
+│   └── solomon_learning_writeback.py
+├── solomon_api
+│   └── engine_registry.json
+├── solomon_browser
+│   └── sidepanel
+├── solomon_hyper_memory.db
+├── solomon_hyper_memory.db-shm
+├── solomon_hyper_memory.db-wal
+├── solomon_ingest
+│   ├── __init__.py
+│   ├── connectors
+│   └── core
+├── solomon_integration_audit.md
+├── solomon_quantized_memory.py
+├── solomon_soss.db
+├── templates
+│   ├── futures_dashboard.html
+│   ├── god_eye.html
+│   ├── solomon_chat.html
+│   └── solomon_loki_workspace.html
+├── tests
+│   ├── __pycache__
+│   ├── futures
+│   ├── integration
+│   ├── test_engine_registry.py
+│   ├── test_gabriel.py
+│   ├── test_gabriel_evolution.py
+│   ├── test_governance_approval.py
+│   ├── test_joe_blueprint_facade.py
+│   ├── test_learning_writeback.py
+│   └── test_run_daily_scan.py
+└── workers
+    ├── __init__.py
+    ├── cache_router.py
+    ├── planner.py
+    └── telemetry.py
+
+35 directories, 94 files

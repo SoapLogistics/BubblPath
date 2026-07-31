@@ -1,0 +1,125 @@
+/app/backend/services/joe_blueprint_facade.py:class JoeBlueprintFacade:
+/app/backend/services/futures_dashboard_backend.py:class FuturesDashboardBackend:
+/app/services/solomon_learning_writeback.py:class LearningWriteback:
+/app/services/live_data_ingestion.py:class LiveAPIIngestor:
+/app/services/live_data_ingestion.py:class FinanceAPIIngestor(LiveAPIIngestor):
+/app/services/live_data_ingestion.py:class GeopoliticsAPIIngestor(LiveAPIIngestor):
+/app/services/live_data_ingestion.py:class SportsAPIIngestor(LiveAPIIngestor):
+/app/services/live_data_ingestion.py:class OmniDataRouter:
+/app/services/solomon_joe_bridge.py:class JoeOmegaEngine:
+/app/services/solomon_futures_engine.py:class Candidate:
+/app/services/solomon_futures_engine.py:class SimulationConfig:
+/app/services/solomon_futures_engine.py:class QualificationResult:
+/app/services/solomon_futures_engine.py:class SimulationResult:
+/app/services/solomon_futures_engine.py:class WilsonInterval:
+/app/services/solomon_futures_engine.py:class SimulationAdapter(Protocol):
+/app/services/solomon_futures_engine.py:class UniversalFuturesAdapter:
+/app/services/solomon_futures_engine.py:class FuturesEngine:
+/app/services/solomon_futures_engine.py:class FuturesRepository:
+/app/services/solomon_governance_approval_packet.py:class GovernanceApprovalLane:
+/app/services/renewable_worker.py:class SolomonRenewableWorker:
+/app/services/solomon_futures_memory.py:class FuturesMemoryOutbox:
+/app/services/solomon_futures_memory.py:class FuturesOutcomeReconciler:
+/app/app.py:    Programmatically mutates class source code using AST injections.
+/app/app.py:            "message": f"Function successfully injected into class {class_name} using AST.",
+/app/core/solomon_web_crawler.py:class SolomonWebCrawler:
+/app/core/solomon_context_budgeter.py:class ContextBudgetPlanner:
+/app/core/solomon_knowledge_cards/api/graph.py:class RelationGraph:
+/app/core/solomon_knowledge_cards/api/review.py:class ReviewGate:
+/app/core/solomon_knowledge_cards/api/repository.py:class CardRepository:
+/app/core/solomon_knowledge_cards/api/embeddings.py:class SemanticEmbedder:
+/app/core/solomon_knowledge_cards/models/card.py:class ValidationError(Exception):
+/app/core/solomon_knowledge_cards/models/card.py:class KnowledgeCard:
+/app/core/solomon_knowledge_cards/migrator/importer.py:class DoctrineImporter:
+/app/core/solomon_knowledge_cards/extractor/reflection.py:class ReflectionSynthesizer:
+/app/core/solomon_knowledge_cards/extractor/proposal_engine.py:class ProposalEngine:
+/app/core/solomon_knowledge_cards/extractor/extractor.py:class KnowledgeExtractor:
+/app/core/solomon_knowledge_cards/storage/db.py:class DatabaseManager:
+/app/core/solomon_knowledge_cards/planner/arbiter.py:class ToolArbiter:
+/app/core/solomon_knowledge_cards/planner/engine.py:class DynamicPlanner:
+/app/core/solomon_knowledge_cards/planner/models.py:class TaskPlan:
+/app/core/solomon_quantized_memory.py:class QuantizedMemoryNode:
+/app/core/solomon_quantized_memory.py:class QuantizedBrainMap:
+/app/core/agentic_claw.py:class SolomonAgenticClaw:
+/app/core/solomon_local_llm.py:class SolomonLocalLLM:
+/app/core/solomon_embeddings.py:class EmbeddingProvider(ABC):
+/app/core/solomon_embeddings.py:class DeterministicHashProvider(EmbeddingProvider):
+/app/core/solomon_embeddings.py:class DenseEmbeddingProvider(EmbeddingProvider):
+/app/workers/telemetry.py:class SolomonMetricsEngine:
+/app/workers/cache_router.py:class AmygdalaRouter:
+/app/workers/planner.py:class Action:
+/app/workers/planner.py:class StateNode:
+/app/workers/planner.py:class ChronosTemporalPlanner:
+/app/solomon_quantized_memory.py:class QuantizedMemoryNode:
+/app/solomon_quantized_memory.py:class QuantizedBrainMap:
+/app/solomon_ingest/connectors/omni_rss_connector.py:class OmniRSSConnector(SourceConnector):
+/app/solomon_ingest/connectors/free_sports_rss_connector.py:class FreeSportsRSSConnector(SourceConnector):
+/app/solomon_ingest/connectors/gdelt_connector.py:class GDELTConnector(SourceConnector):
+/app/solomon_ingest/connectors/official_rss_connector.py:class OfficialRSSConnector(SourceConnector):
+/app/solomon_ingest/connectors/api_sports_connector.py:class APISportsConnector(SourceConnector):
+/app/solomon_ingest/core/connector.py:class SourceConnector:
+/app/gabriel_engine/assimilated_capabilities/codex_mcp_bridge.py:class CodexMCPBridge:
+/app/gabriel_engine/assimilated_capabilities/mock_math_helper.py:class DynamicMathHelper:
+/app/gabriel_engine/assimilated_capabilities/codex_parallel_worktrees.py:class CodexParallelWorktrees:
+/app/gabriel_engine/assimilated_capabilities/codex_kanban.py:class CodexKanban:
+/app/gabriel_engine/assimilated_capabilities/codex_issue_to_pr_pipeline.py:class CodexIssueToPRPipeline:
+/app/gabriel_engine/core/crucible.py:class Crucible:
+/app/gabriel_engine/core/behavioral_experimentation.py:class BehavioralExperimentationEngine:
+/app/gabriel_engine/core/acquisition.py:class AcquisitionEngine:
+/app/gabriel_engine/core/observational_simulator.py:class ObservationalSandboxSimulator:
+/app/gabriel_engine/core/recursive_optimizer.py:class RecursiveCrucibleOptimizer:
+/app/gabriel_engine/core/recursive_optimizer.py:                # Inject a token-bucket rate limiter class into the code structure programmatically!
+/app/gabriel_engine/core/recursive_optimizer.py:                if "class " in current_code and "TokenBucketThrottler" not in current_code:
+/app/gabriel_engine/core/recursive_optimizer.py:class TokenBucketThrottler:
+/app/gabriel_engine/core/recursive_optimizer.py:                    class_match = re.search(r"(class \w+)", current_code)
+/app/gabriel_engine/core/independent_construction.py:class CleanRoomBuilder:
+/app/gabriel_engine/core/independent_construction.py:class RenewableWorkerLease:
+/app/gabriel_engine/core/independent_construction.py:class ExponentialBackoffRetry:
+/app/gabriel_engine/core/independent_construction.py:class CodexParallelWorktrees:
+/app/gabriel_engine/core/independent_construction.py:class CodexMCPBridge:
+/app/gabriel_engine/core/independent_construction.py:class CodexIssueToPRPipeline:
+/app/gabriel_engine/core/independent_construction.py:class JulesDependencyInstaller:
+/app/gabriel_engine/core/independent_construction.py:class JulesCodePatcher:
+/app/gabriel_engine/core/independent_construction.py:class JulesTestRunnerLoop:
+/app/gabriel_engine/core/independent_construction.py:class Solomon{capability_name.title().replace("_", "")}:
+/app/gabriel_engine/core/perpetual_loop.py:class GabrielPerpetualLoop:
+/app/gabriel_engine/core/dynamic_loader.py:class DynamicCapabilityRegistry:
+/app/gabriel_engine/core/dynamic_loader.py:                    raise AttributeError(f"Module {capability_name} has no class named {class_name}")
+/app/gabriel_engine/core/ast_injector.py:class ASTCodeInjector:
+/app/gabriel_engine/core/ast_injector.py:        Parses a Python file, locates the class `class_name`, parses `function_source`
+/app/gabriel_engine/core/ast_injector.py:        # Traverse AST to find class definition node
+/app/gabriel_engine/core/ast_injector.py:        class ast_visitor(ast.NodeTransformer):
+/app/gabriel_engine/core/capability_extraction.py:class CapabilityExtractionEngine:
+/app/gabriel_engine/core/structural_comprehension.py:class StructuralComprehensionEngine:
+/app/gabriel_engine/core/permission_gate.py:class PermissionGate:
+/app/gabriel_engine/core/assimilation_decision.py:class AssimilationDecisionEngine:
+/app/gabriel_engine/core/models.py:class AcquisitionRecord:
+/app/gabriel_engine/core/models.py:class ProgramAnatomyCard:
+/app/gabriel_engine/core/models.py:class CapabilityMemoryCard:
+/app/gabriel_engine/core/models.py:class CrucibleReport:
+/app/lab/zero_copy_memory.py:class ZeroCopyMemorySubstrate:
+/app/lab/event_bus.py:class Event:
+/app/lab/event_bus.py:class CognitiveEventBus:
+/app/lab/solomon_sple_unified_engine.py:class PerpetualLearningEngine:
+/app/lab/kernel.py:class SolomonModule:
+/app/lab/kernel.py:    Base class for all Solomon Subsystems (Modules).
+/app/lab/kernel.py:class Event:
+/app/lab/kernel.py:class SolomonKernel:
+/app/lab/solomon_meta_learner.py:class MetaLearner:
+/app/lab/vector_reasoning.py:class ProgressiveAbstractionTree:
+/app/lab/vector_reasoning.py:    """Legacy tree class representing previous heuristic groupings."""
+/app/lab/vector_reasoning.py:class FractalOntologySynthesizer:
+/app/tests/test_engine_registry.py:        status_class = engine_metadata.get('status_class')
+/app/tests/test_engine_registry.py:        if status_class == 'active_route':
+/app/tests/test_engine_registry.py:        elif status_class == 'active_readiness':
+/app/tests/test_engine_registry.py:        elif status_class == 'internal_helper':
+/app/tests/test_engine_registry.py:        elif status_class == 'approval_blocked':
+/app/tests/test_engine_registry.py:        if status_class != 'generated_artifact':
+/app/tests/test_gabriel_evolution.py:    dummy_source = """class DummyAgent:
+/app/tests/test_gabriel_evolution.py:    slow_code = """class ExponentialBackoffRetry:
+/app/tests/test_gabriel_evolution.py:    assert "class TokenBucketThrottler" in opt_code
+/app/tests/test_gabriel_evolution.py:        "original_code": "class Lease:\n    def __init__(self):\n        self.lease_duration_sec: int = 10",
+/app/tests/test_gabriel_evolution.py:    dummy_source = "class TargetModel:\n    pass\n"
+/app/tests/test_gabriel.py:    assert "class RenewableWorkerLease" in code
+/app/tests/test_gabriel.py:        registry.register_and_save("mod_one", "class ModOne:\n    def get(self): return 1")
+/app/tests/test_gabriel.py:        registry.register_and_save("mod_two", "class ModTwo:\n    def get(self): return 2")

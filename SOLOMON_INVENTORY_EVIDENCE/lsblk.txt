@@ -1,0 +1,3 @@
+NAME MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+vda  254:0    0  4.4G  1 disk /rom
+vdb  254:16   0  100G  0 disk /rom/overlay

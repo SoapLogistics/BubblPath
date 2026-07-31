@@ -1,0 +1,3 @@
+Component ID,Name,Category,Host,Path,Purpose,Owner,Entry Point,Status,Operational Evidence,Dependencies,Database,Ports,Tests,Logs,Security Risk,Change Risk,Duplication Status,Recommended Action
+core_llm,Solomon Local LLM,Engine,localhost,core/solomon_local_llm.py,Simulate LLM outputs via keywords,loki,SolomonLocalLLM,Operational,Tests pass,duckduckgo_search,none,none,test_gabriel.py,stdout,Low,High,Unique,Maintain
+futures_engine,Futures Engine,Engine,localhost,services/solomon_futures_engine.py,Monte Carlo simulation,loki,FuturesEngine,Operational,Tests pass,none,none,none,test_threshold_logic.py,none,Low,Medium,Unique,Maintain

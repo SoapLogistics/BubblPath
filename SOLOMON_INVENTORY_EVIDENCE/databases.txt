@@ -1,0 +1,3 @@
+/app/memory_atoms.db
+/app/solomon_soss.db
+/app/solomon_hyper_memory.db

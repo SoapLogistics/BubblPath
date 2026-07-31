@@ -1,0 +1,2 @@
+Host,Name,Type,Command,Path,User,Enabled,Active,Schedule,PID,Port,Last Run,Last Result,Logs,Health,Notes
+localhost,app,Flask,python app.py,/app/app.py,jules,false,false,none,none,10000,none,none,stdout,healthy,Requires dependencies

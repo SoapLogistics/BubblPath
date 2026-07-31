@@ -1,0 +1,15 @@
+/app/app.py:766:            subprocess.run([sys.executable, script_path], capture_output=True)
+/app/docs/solomon_engine_registry.md:9:| `solomon_joe_bridge` | `approval_blocked` | `/api/joe/status`, `/api/joe/queue-blueprint` | `docs/solomon_joe_bridge.md` | `tests/integration/solomon_joe_bridge_smoke.py` | duplicate backend/services import collision, subprocess launches jules CLI, repo allowlist missing | Resolve blockers to allow limited dry-run usage. |
+/app/core/agentic_claw.py:48:            result = subprocess.run(
+/app/core/agentic_claw.py:63:        except subprocess.TimeoutExpired:
+/app/solomon_api/engine_registry.json:29:        "subprocess launches jules CLI",
+/app/scripts/scheduler.py:12:        subprocess.run([sys.executable, script_path, "--mode=SHADOW"], check=True)
+/app/scripts/verify_futures_subsystem.py:16:    result = subprocess.run([sys.executable, "-m", "pytest", "tests/futures/test_threshold_logic.py", "-q"], capture_output=True, text=True)
+/app/gabriel_engine/core/behavioral_experimentation.py:36:                proc = subprocess.run(
+/app/gabriel_engine/core/behavioral_experimentation.py:43:                results["observations"]["subprocess_execution"] = {
+/app/gabriel_engine/core/behavioral_experimentation.py:49:            except subprocess.TimeoutExpired:
+/app/gabriel_engine/core/behavioral_experimentation.py:50:                results["observations"]["subprocess_execution"] = {
+/app/gabriel_engine/core/behavioral_experimentation.py:56:                results["observations"]["subprocess_execution"] = {
+/app/SOLOMON_PERPETUAL_LEARNING_MASTER_AUDIT.md:372:The production runtime should invoke skills through a runner interface or subprocess/container boundary. It should not dynamically import unreviewed files into the Solomon gateway.
+/app/SOLOMON_PERPETUAL_LEARNING_MASTER_AUDIT.md:482:**Merge from `203671...`:** conceptual stages and selected safe utilities, rewritten behind skill manifests and subprocess boundaries.
+/app/SOLOMON_PERPETUAL_LEARNING_MASTER_AUDIT.md:623:3. Execute generated/rebuilt skills only in sandboxed subprocesses/containers.

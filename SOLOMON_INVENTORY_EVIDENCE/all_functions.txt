@@ -1,0 +1,442 @@
+/app/backend/services/joe_blueprint_facade.py:    def __init__(self):
+/app/backend/services/joe_blueprint_facade.py:    def handle_queue_request(self, payload):
+/app/backend/services/futures_dashboard_backend.py:    def __init__(self, db_path="solomon_soss.db"):
+/app/backend/services/futures_dashboard_backend.py:    def get_dashboard_data(self) -> Dict[str, Any]:
+/app/services/solomon_learning_writeback.py:    def __init__(self):
+/app/services/solomon_learning_writeback.py:    def _init_db(self):
+/app/services/solomon_learning_writeback.py:    def record_lesson(self, packet_id, result, memory, lesson=""):
+/app/services/live_data_ingestion.py:    def __init__(self, api_key_env: str):
+/app/services/live_data_ingestion.py:    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+/app/services/live_data_ingestion.py:    def __init__(self):
+/app/services/live_data_ingestion.py:    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+/app/services/live_data_ingestion.py:    def __init__(self):
+/app/services/live_data_ingestion.py:    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+/app/services/live_data_ingestion.py:    def __init__(self):
+/app/services/live_data_ingestion.py:    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+/app/services/live_data_ingestion.py:    def __init__(self):
+/app/services/live_data_ingestion.py:    def stream_global_events(self):
+/app/services/solomon_joe_bridge.py:    def __init__(self):
+/app/services/solomon_joe_bridge.py:    def queue_blueprint(self, blueprint_data, run_execute=False):
+/app/services/solomon_futures_engine.py:    def validate(self) -> List[str]:
+/app/services/solomon_futures_engine.py:    def calculate(successes: int, trials: int, confidence: float = 0.95) -> Tuple[float, float]:
+/app/services/solomon_futures_engine.py:    def build_scenario(self, candidate: Candidate) -> Dict[str, Any]: ...
+/app/services/solomon_futures_engine.py:    def simulate_trial(self, scenario: Dict[str, Any], rng_seed: int) -> bool: ...
+/app/services/solomon_futures_engine.py:    def sensitivity_variants(self, scenario: Dict[str, Any]) -> List[Dict[str, Any]]: ...
+/app/services/solomon_futures_engine.py:    def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
+/app/services/solomon_futures_engine.py:    def simulate_trial(self, scenario: Dict[str, Any], rng_seed: int) -> bool:
+/app/services/solomon_futures_engine.py:    def sensitivity_variants(self, scenario: Dict[str, Any]) -> List[Dict[str, Any]]:
+/app/services/solomon_futures_engine.py:    def __init__(self, config: Optional[SimulationConfig] = None):
+/app/services/solomon_futures_engine.py:    def _evaluate_gate_a(self, candidate: Candidate) -> QualificationResult:
+/app/services/solomon_futures_engine.py:    def process_candidate(self, candidate: Candidate, adapter_name: str = "universal_omni", run_id: str = "auto", seed: int = 42) -> SimulationResult:
+/app/services/solomon_futures_engine.py:    def __init__(self, db_path="solomon_soss.db"):
+/app/services/solomon_futures_engine.py:    def _init_db(self):
+/app/services/solomon_futures_engine.py:    def check_idempotency(self, candidate_id: str, source_mode: str) -> bool:
+/app/services/solomon_futures_engine.py:    def save_run(self, result: SimulationResult):
+/app/services/solomon_governance_approval_packet.py:    def __init__(self):
+/app/services/solomon_governance_approval_packet.py:    def _ensure_log_exists(self):
+/app/services/solomon_governance_approval_packet.py:    def review_packet(self, packet):
+/app/services/solomon_governance_approval_packet.py:    def _audit_event(self, status, action):
+/app/services/renewable_worker.py:    def __init__(self):
+/app/services/renewable_worker.py:    def run(self, *args, **kwargs) -> dict:
+/app/services/solomon_futures_memory.py:    def __init__(self, db_path="solomon_soss.db"):
+/app/services/solomon_futures_memory.py:    def _init_outbox(self):
+/app/services/solomon_futures_memory.py:    def queue_event(self, event_type: str, payload: Dict[str, Any]):
+/app/services/solomon_futures_memory.py:    def __init__(self, db_path="solomon_soss.db"):
+/app/services/solomon_futures_memory.py:    def _init_outcomes(self):
+/app/services/solomon_futures_memory.py:    def reconcile_outcome(self, candidate_id: str, actual_outcome: bool, source: str):
+/app/app.py:def get_or_create_codex_components():
+/app/app.py:def get_or_create_jules_components():
+/app/app.py:def handle_unexpected_error(error):
+/app/app.py:def talk():
+/app/app.py:def chat():
+/app/app.py:def jules_install():
+/app/app.py:def jules_patch():
+/app/app.py:def jules_test_loop():
+/app/app.py:def manage_worktrees():
+/app/app.py:def manage_tasks():
+/app/app.py:def manage_mcp():
+/app/app.py:def manage_pipeline():
+/app/app.py:def assimilate():
+/app/app.py:def execute_assimilated_code():
+/app/app.py:def ast_inject():
+/app/app.py:def optimize_capability():
+/app/app.py:def observe_and_deconstruct():
+/app/app.py:def get_records():
+/app/app.py:def get_anatomies():
+/app/app.py:def get_capabilities():
+/app/app.py:def get_crucible_reports():
+/app/app.py:def get_implementations():
+/app/app.py:def get_status():
+/app/app.py:def ingest_memory():
+/app/app.py:def recall_memory():
+/app/app.py:def consolidate_memory():
+/app/app.py:def get_memory_blob():
+/app/app.py:def dream_memory():
+/app/app.py:def god_eye():
+/app/app.py:def futures_dashboard():
+/app/app.py:def api_futures_dashboard():
+/app/app.py:def perpetual_background_worker():
+/app/core/solomon_web_crawler.py:    def __init__(self):
+/app/core/solomon_web_crawler.py:    def search_and_extract(self, query: str, max_results: int = 3) -> str:
+/app/core/solomon_context_budgeter.py:    def __init__(
+/app/core/solomon_context_budgeter.py:    def calculate_budget(self, task_input_size: int) -> int:
+/app/core/solomon_context_budgeter.py:    def retrieve_context(self, db, task_input: str, task_input_size: int, relevance_threshold: float = 0.5) -> List[Dict[str, Any]]:
+/app/core/solomon_context_budgeter.py:        def estimate_tokens(text: str) -> int:
+/app/core/solomon_knowledge_cards/api/graph.py:    def __init__(self, repository: CardRepository, max_recursion_depth: int = 50):
+/app/core/solomon_knowledge_cards/api/graph.py:    def get_all_outgoing_links(self, card: KnowledgeCard) -> List[Tuple[str, str]]:
+/app/core/solomon_knowledge_cards/api/graph.py:    def find_dependency_chain(self, card_id: str, relation_type: str = "DEPENDS_ON") -> List[str]:
+/app/core/solomon_knowledge_cards/api/graph.py:        def traverse(current_id: str, current_depth: int):
+/app/core/solomon_knowledge_cards/api/graph.py:    def get_subgraph(self, card_id: str, max_depth: int = 2) -> Dict[str, Any]:
+/app/core/solomon_knowledge_cards/api/review.py:    def __init__(self, db_manager: DatabaseManager):
+/app/core/solomon_knowledge_cards/api/review.py:    def _sanitize(self, text: Optional[str]) -> str:
+/app/core/solomon_knowledge_cards/api/review.py:    def transition_status(
+/app/core/solomon_knowledge_cards/api/review.py:    def review_card(self, card_id: str, notes: str, updater: str = "reviewer") -> KnowledgeCard:
+/app/core/solomon_knowledge_cards/api/review.py:    def approve_card(self, card_id: str, updater: str = "approver") -> KnowledgeCard:
+/app/core/solomon_knowledge_cards/api/review.py:    def activate_card(self, card_id: str, updater: str = "operator") -> KnowledgeCard:
+/app/core/solomon_knowledge_cards/api/review.py:    def reject_card(self, card_id: str, reason: str, updater: str = "reviewer") -> KnowledgeCard:
+/app/core/solomon_knowledge_cards/api/repository.py:    def __init__(self, db_manager: DatabaseManager, embedder: Optional[SemanticEmbedder] = None):
+/app/core/solomon_knowledge_cards/api/repository.py:    def create_card(self, card: KnowledgeCard, creator: str = "system", reason: Optional[str] = None) -> None:
+/app/core/solomon_knowledge_cards/api/repository.py:    def get_card(self, card_id: str) -> Optional[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/api/repository.py:    def update_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
+/app/core/solomon_knowledge_cards/api/repository.py:    def deprecate_card(self, card_id: str, updater: str = "system", reason: Optional[str] = None) -> bool:
+/app/core/solomon_knowledge_cards/api/repository.py:    def list_cards(self, include_deleted: bool = False) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/api/repository.py:    def link_cards(self, source_id: str, target_id: str, link_type: str, updater: str = "system", reason: Optional[str] = None) -> None:
+/app/core/solomon_knowledge_cards/api/repository.py:    def get_related_cards(self, card_id: str) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/api/repository.py:    def retrieve_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
+/app/core/solomon_knowledge_cards/api/repository.py:    def export_cards(self, filepath: str) -> None:
+/app/core/solomon_knowledge_cards/api/repository.py:    def import_cards(self, filepath: str, updater: str = "importer") -> None:
+/app/core/solomon_knowledge_cards/api/repository.py:    def search_by_type(self, card_type: str) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/api/repository.py:    def search_by_tags(self, tags: List[str]) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/api/repository.py:    def search_by_source(self, source_id: str) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/api/repository.py:    def search(
+/app/core/solomon_knowledge_cards/api/embeddings.py:    def __init__(self, dimension: int = 128):
+/app/core/solomon_knowledge_cards/api/embeddings.py:    def _generate_hash_vector(self, text: str) -> List[float]:
+/app/core/solomon_knowledge_cards/api/embeddings.py:    def get_embedding(self, text: str) -> List[float]:
+/app/core/solomon_knowledge_cards/api/embeddings.py:    def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
+/app/core/solomon_knowledge_cards/models/card.py:    def __init__(
+/app/core/solomon_knowledge_cards/models/card.py:    def validate(self) -> None:
+/app/core/solomon_knowledge_cards/models/card.py:    def to_dict(self) -> Dict[str, Any]:
+/app/core/solomon_knowledge_cards/models/card.py:    def from_dict(cls, data: Dict[str, Any]) -> "KnowledgeCard":
+/app/core/solomon_knowledge_cards/migrator/importer.py:def validate_safe_path(filepath: str, allowed_base_dir: str = ".") -> str:
+/app/core/solomon_knowledge_cards/migrator/importer.py:    def __init__(self, db_manager: DatabaseManager):
+/app/core/solomon_knowledge_cards/migrator/importer.py:    def parse_card_id(self, filepath: str, content: str) -> str:
+/app/core/solomon_knowledge_cards/migrator/importer.py:    def classify_file(self, filepath: str) -> str:
+/app/core/solomon_knowledge_cards/migrator/importer.py:    def import_file(self, filepath: str) -> KnowledgeCard:
+/app/core/solomon_knowledge_cards/migrator/importer.py:    def import_directory(self, dir_path: str) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/extractor/reflection.py:    def __init__(self, repository: CardRepository):
+/app/core/solomon_knowledge_cards/extractor/reflection.py:    def analyze_failures_and_synthesize_research(self) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/extractor/reflection.py:    def apply_reinforcement_feedback(
+/app/core/solomon_knowledge_cards/extractor/proposal_engine.py:    def __init__(self, repository: CardRepository):
+/app/core/solomon_knowledge_cards/extractor/proposal_engine.py:    def create_procedure_proposal(
+/app/core/solomon_knowledge_cards/extractor/proposal_engine.py:    def apply_proposal_to_disk(self, proposal_id: str, operator: str = "operator") -> bool:
+/app/core/solomon_knowledge_cards/extractor/extractor.py:    def __init__(self, schema_version: str = "1.0.0"):
+/app/core/solomon_knowledge_cards/extractor/extractor.py:    def _parse_markdown_section(self, text: str, header: str) -> str:
+/app/core/solomon_knowledge_cards/extractor/extractor.py:    def _is_empty_or_placeholder(self, val: str) -> bool:
+/app/core/solomon_knowledge_cards/extractor/extractor.py:    def extract_draft_cards(
+/app/core/solomon_knowledge_cards/storage/db.py:    def __init__(self, db_path: str):
+/app/core/solomon_knowledge_cards/storage/db.py:    def _get_connection(self) -> sqlite3.Connection:
+/app/core/solomon_knowledge_cards/storage/db.py:    def _init_db(self) -> None:
+/app/core/solomon_knowledge_cards/storage/db.py:    def store_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
+/app/core/solomon_knowledge_cards/storage/db.py:    def get_card(self, card_id: str, include_deleted: bool = False) -> Optional[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/storage/db.py:    def get_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
+/app/core/solomon_knowledge_cards/storage/db.py:    def soft_delete_card(self, card_id: str, updater: str = "system", reason: Optional[str] = None) -> bool:
+/app/core/solomon_knowledge_cards/storage/db.py:    def list_all_cards(self, include_deleted: bool = False) -> List[KnowledgeCard]:
+/app/core/solomon_knowledge_cards/storage/db.py:    def export_to_jsonl(self, filepath: str) -> None:
+/app/core/solomon_knowledge_cards/storage/db.py:    def import_from_jsonl(self, filepath: str, updater: str = "importer") -> None:
+/app/core/solomon_knowledge_cards/planner/arbiter.py:    def __init__(self, repository: CardRepository):
+/app/core/solomon_knowledge_cards/planner/arbiter.py:    def arbitrate_tool_config(self, tool_name: str, base_config: Dict[str, Any]) -> Dict[str, Any]:
+/app/core/solomon_knowledge_cards/planner/engine.py:    def __init__(self, repository: CardRepository):
+/app/core/solomon_knowledge_cards/planner/engine.py:    def draft_plan(self, task_id: str, objective: str) -> TaskPlan:
+/app/core/solomon_knowledge_cards/planner/models.py:    def __init__(
+/app/core/solomon_knowledge_cards/planner/models.py:    def validate(self) -> None:
+/app/core/solomon_knowledge_cards/planner/models.py:    def to_dict(self) -> Dict[str, Any]:
+/app/core/solomon_knowledge_cards/planner/models.py:    def from_dict(cls, data: Dict[str, Any]) -> "TaskPlan":
+/app/core/solomon_quantized_memory.py:    def __init__(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0):
+/app/core/solomon_quantized_memory.py:    def access(self):
+/app/core/solomon_quantized_memory.py:    def ebbinghaus_decay(self, current_time: float):
+/app/core/solomon_quantized_memory.py:    def serialize(self) -> bytes:
+/app/core/solomon_quantized_memory.py:    def __init__(self, max_nodes: int = 10000):
+/app/core/solomon_quantized_memory.py:    def start_ans(self):
+/app/core/solomon_quantized_memory.py:    def stop_ans(self):
+/app/core/solomon_quantized_memory.py:    def _ans_loop(self):
+/app/core/solomon_quantized_memory.py:    def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
+/app/core/solomon_quantized_memory.py:    def _auto_link_ternary(self, new_node: QuantizedMemoryNode):
+/app/core/solomon_quantized_memory.py:    def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
+/app/core/solomon_quantized_memory.py:    def recall(self, query: str, top_k: int = 5) -> List[Dict]:
+/app/core/solomon_quantized_memory.py:    def _vectorized_hebbian_learning(self, activated_nodes: List[QuantizedMemoryNode]):
+/app/core/solomon_quantized_memory.py:    def consolidate(self):
+/app/core/solomon_quantized_memory.py:    def _remove_node(self, idx: int):
+/app/core/solomon_quantized_memory.py:    def dream_cycle(self, max_steps: int = 10):
+/app/core/solomon_quantized_memory.py:    def _node_to_dict(self, node: QuantizedMemoryNode) -> Dict:
+/app/core/solomon_quantized_memory.py:    def get_stats(self):
+/app/core/agentic_claw.py:    def __init__(self, workspace_root: str = None):
+/app/core/agentic_claw.py:    def write_file(self, relative_path: str, content: str) -> Dict[str, Any]:
+/app/core/agentic_claw.py:    def execute_command(self, command: str) -> Dict[str, Any]:
+/app/core/agentic_claw.py:    def self_scaffold_feature(self, feature_name: str, objective: str) -> str:
+/app/core/agentic_claw.py:    def add_omni_feed(self, category: str, url: str) -> str:
+/app/core/solomon_local_llm.py:    def __new__(cls):
+/app/core/solomon_local_llm.py:    def _initialize(self):
+/app/core/solomon_local_llm.py:    def generate_response(self, raw_system_data: str, user_message: str) -> str:
+/app/core/solomon_embeddings.py:    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+/app/core/solomon_embeddings.py:    def get_metadata(self) -> Dict[str, Any]:
+/app/core/solomon_embeddings.py:    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+/app/core/solomon_embeddings.py:    def get_metadata(self) -> Dict[str, Any]:
+/app/core/solomon_embeddings.py:    def __init__(self, model_name="all-MiniLM-L6-v2"):
+/app/core/solomon_embeddings.py:    def _load_model(self):
+/app/core/solomon_embeddings.py:    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+/app/core/solomon_embeddings.py:    def get_metadata(self) -> Dict[str, Any]:
+/app/workers/telemetry.py:    def __init__(self, max_records=100000, file_path="solomon_metrics.bin"):
+/app/workers/telemetry.py:    def _find_head(self) -> int:
+/app/workers/telemetry.py:    def record_interaction(self, duration_ms: float, success: bool, valence: float, arousal: float, endpoint: str, request_content: str):
+/app/workers/telemetry.py:    def get_all_records(self) -> List[Dict[str, Any]]:
+/app/workers/telemetry.py:    def close(self):
+/app/workers/cache_router.py:    def __init__(self):
+/app/workers/cache_router.py:    def _quantize(self, text: str) -> str:
+/app/workers/cache_router.py:    def analyze_tags(self, text: str) -> dict:
+/app/workers/cache_router.py:    def process(self, text: str) -> dict:
+/app/workers/cache_router.py:    def learn(self, text: str, response: str, force: bool = False):
+/app/workers/cache_router.py:    def dream_consolidation(self, max_capacity: int = 1000, max_age_seconds: int = 86400):
+/app/workers/planner.py:    def __init__(self, name: str, cost: float, effects: Dict[str, Any], preconditions: Dict[str, Any], execute_fn: Callable = None):
+/app/workers/planner.py:    def __init__(self, state_dict: Dict[str, Any], parent: 'StateNode' = None, action_taken: Action = None):
+/app/workers/planner.py:    def get_hashable_state(self) -> frozenset:
+/app/workers/planner.py:    def __init__(self, available_actions: List[Action]):
+/app/workers/planner.py:    def _state_satisfies(self, current_state: Dict[str, Any], conditions: Dict[str, Any]) -> bool:
+/app/workers/planner.py:    def _regress_state(self, current_goal: Dict[str, Any], action: Action) -> Optional[Dict[str, Any]]:
+/app/workers/planner.py:    def retrocausal_plan(self, start_node: StateNode, goal_state: Dict[str, Any]) -> Optional[List[Action]]:
+/app/workers/planner.py:    def execute_plan(self, initial_state: Dict[str, Any], goal_state: Dict[str, Any]) -> bool:
+/app/workers/planner.py:    def _rewind_and_replan(self, goal_state: Dict[str, Any]) -> bool:
+/app/solomon_quantized_memory.py:    def __init__(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0):
+/app/solomon_quantized_memory.py:    def access(self):
+/app/solomon_quantized_memory.py:    def ebbinghaus_decay(self, current_time: float):
+/app/solomon_quantized_memory.py:    def serialize(self) -> bytes:
+/app/solomon_quantized_memory.py:    def __init__(self, max_nodes: int = 10000):
+/app/solomon_quantized_memory.py:    def start_ans(self):
+/app/solomon_quantized_memory.py:    def stop_ans(self):
+/app/solomon_quantized_memory.py:    def _ans_loop(self):
+/app/solomon_quantized_memory.py:    def ingest(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0) -> str:
+/app/solomon_quantized_memory.py:    def _auto_link_ternary(self, new_node: QuantizedMemoryNode):
+/app/solomon_quantized_memory.py:    def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
+/app/solomon_quantized_memory.py:    def recall(self, query: str, top_k: int = 5) -> List[Dict]:
+/app/solomon_quantized_memory.py:    def _vectorized_hebbian_learning(self, activated_nodes: List[QuantizedMemoryNode]):
+/app/solomon_quantized_memory.py:    def consolidate(self):
+/app/solomon_quantized_memory.py:    def _remove_node(self, idx: int):
+/app/solomon_quantized_memory.py:    def dream_cycle(self, max_steps: int = 10):
+/app/solomon_quantized_memory.py:    def _node_to_dict(self, node: QuantizedMemoryNode) -> Dict:
+/app/solomon_quantized_memory.py:    def get_stats(self):
+/app/scripts/run_futures_daemon.py:def run_futures_cycle(test_mode=False):
+/app/scripts/run_daily_scan.py:def inject_daily_report(run_id, output_summary):
+/app/scripts/run_daily_scan.py:def run_scan(mode="TEST", seed=42):
+/app/scripts/run_daily_scan.py:    def yield_candidates():
+/app/scripts/run_autonomous_daemon.py:def run_daemon_cycle(test_mode=False):
+/app/scripts/run_knowledge_ingestion.py:def run():
+/app/scripts/scheduler.py:def run_scheduler():
+/app/scripts/verify_futures_subsystem.py:def verify():
+/app/solomon_ingest/connectors/omni_rss_connector.py:    def __init__(self, target_categories: List[str] = None):
+/app/solomon_ingest/connectors/omni_rss_connector.py:    def healthcheck(self) -> dict:
+/app/solomon_ingest/connectors/omni_rss_connector.py:    def discover(self, cursor: str | None = None) -> List[Dict[str, Any]]:
+/app/solomon_ingest/connectors/omni_rss_connector.py:    def fetch(self, native_id: str) -> dict:
+/app/solomon_ingest/connectors/omni_rss_connector.py:    def normalize(self, raw: dict) -> list[dict]:
+/app/solomon_ingest/connectors/omni_rss_connector.py:    def next_cursor(self, response: dict) -> str | None:
+/app/solomon_ingest/connectors/free_sports_rss_connector.py:    def __init__(self):
+/app/solomon_ingest/connectors/free_sports_rss_connector.py:    def healthcheck(self) -> dict:
+/app/solomon_ingest/connectors/free_sports_rss_connector.py:    def discover(self, cursor: str | None = None) -> List[Dict[str, Any]]:
+/app/solomon_ingest/connectors/free_sports_rss_connector.py:    def fetch(self, native_id: str) -> dict:
+/app/solomon_ingest/connectors/free_sports_rss_connector.py:    def normalize(self, raw: dict) -> list[dict]:
+/app/solomon_ingest/connectors/free_sports_rss_connector.py:    def next_cursor(self, response: dict) -> str | None:
+/app/solomon_ingest/connectors/gdelt_connector.py:    def healthcheck(self) -> dict:
+/app/solomon_ingest/connectors/gdelt_connector.py:    def discover(self, cursor: str | None = None) -> list[dict]:
+/app/solomon_ingest/connectors/gdelt_connector.py:    def fetch(self, native_id: str) -> dict:
+/app/solomon_ingest/connectors/gdelt_connector.py:    def normalize(self, raw_list: list) -> list[dict]:
+/app/solomon_ingest/connectors/gdelt_connector.py:    def next_cursor(self, response: dict) -> str | None:
+/app/solomon_ingest/connectors/official_rss_connector.py:    def healthcheck(self) -> dict:
+/app/solomon_ingest/connectors/official_rss_connector.py:    def discover(self, cursor: str | None = None) -> list[dict]:
+/app/solomon_ingest/connectors/official_rss_connector.py:    def fetch(self, native_id: str) -> dict:
+/app/solomon_ingest/connectors/official_rss_connector.py:    def normalize(self, raw_list: list) -> list[dict]:
+/app/solomon_ingest/connectors/official_rss_connector.py:    def next_cursor(self, response: dict) -> str | None:
+/app/solomon_ingest/connectors/api_sports_connector.py:    def healthcheck(self) -> dict:
+/app/solomon_ingest/connectors/api_sports_connector.py:    def discover(self, cursor: str | None = None) -> list[dict]:
+/app/solomon_ingest/connectors/api_sports_connector.py:    def fetch(self, native_id: str) -> dict:
+/app/solomon_ingest/connectors/api_sports_connector.py:    def normalize(self, raw: dict) -> list[dict]:
+/app/solomon_ingest/connectors/api_sports_connector.py:    def next_cursor(self, response: dict) -> str | None:
+/app/solomon_ingest/core/connector.py:    def healthcheck(self) -> dict:
+/app/solomon_ingest/core/connector.py:    def discover(self, cursor: str | None = None) -> list[dict]:
+/app/solomon_ingest/core/connector.py:    def fetch(self, native_id: str) -> dict:
+/app/solomon_ingest/core/connector.py:    def normalize(self, raw: dict) -> list[dict]:
+/app/solomon_ingest/core/connector.py:    def next_cursor(self, response: dict) -> str | None:
+/app/gabriel_engine/assimilated_capabilities/codex_mcp_bridge.py:    def __init__(self):
+/app/gabriel_engine/assimilated_capabilities/codex_mcp_bridge.py:    def _register_default_tools(self):
+/app/gabriel_engine/assimilated_capabilities/codex_mcp_bridge.py:    def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+/app/gabriel_engine/assimilated_capabilities/mock_math_helper.py:    def add_numbers(self, a, b):
+/app/gabriel_engine/assimilated_capabilities/codex_parallel_worktrees.py:    def __init__(self, root_dir: str = "/tmp/codex_workspaces"):
+/app/gabriel_engine/assimilated_capabilities/codex_parallel_worktrees.py:    def create_worktree(self, task_id: str, origin_src_dir: str) -> str:
+/app/gabriel_engine/assimilated_capabilities/codex_parallel_worktrees.py:    def run_tests_in_worktree(self, task_id: str) -> bool:
+/app/gabriel_engine/assimilated_capabilities/codex_parallel_worktrees.py:    def remove_worktree(self, task_id: str):
+/app/gabriel_engine/assimilated_capabilities/codex_kanban.py:    def __init__(self, workspace_root: str = ""):
+/app/gabriel_engine/assimilated_capabilities/codex_kanban.py:    def run_swarm(self, issues: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+/app/gabriel_engine/assimilated_capabilities/codex_kanban.py:        def worker_thread(worker_id: str):
+/app/gabriel_engine/assimilated_capabilities/codex_issue_to_pr_pipeline.py:    def __init__(self, worktree_manager=None, mcp_bridge=None):
+/app/gabriel_engine/assimilated_capabilities/codex_issue_to_pr_pipeline.py:    def process_issue(self, issue_id: str, description: str, codebase_path: str) -> Dict[str, Any]:
+/app/gabriel_engine/assimilated_capabilities/codex_issue_to_pr_pipeline.py:def resolved_issue_handler():
+/app/gabriel_engine/core/crucible.py:    def run_validation(
+/app/gabriel_engine/core/behavioral_experimentation.py:    def run_experiment(
+/app/gabriel_engine/core/acquisition.py:    def calculate_dir_hash(directory_path: str) -> str:
+/app/gabriel_engine/core/acquisition.py:    def detect_license_and_actions(
+/app/gabriel_engine/core/acquisition.py:    def acquire(
+/app/gabriel_engine/core/observational_simulator.py:    def deconstruct_binary(
+/app/gabriel_engine/core/recursive_optimizer.py:    def optimize_code(
+/app/gabriel_engine/core/recursive_optimizer.py:    def __init__(self, rate: int = 10, capacity: int = 10):
+/app/gabriel_engine/core/recursive_optimizer.py:    def consume(self, tokens_needed: float = 1.0) -> bool:
+/app/gabriel_engine/core/independent_construction.py:    def generate_requirements_packet(capability_name: str, concept_summary: str) -> str:
+/app/gabriel_engine/core/independent_construction.py:    def build_native_capability(self, capability_name: str, concept_summary: str) -> Tuple[str, str]:
+/app/gabriel_engine/core/independent_construction.py:    def __init__(self, db_path: str = ":memory:", lease_duration_sec: int = 10):
+/app/gabriel_engine/core/independent_construction.py:    def _init_db(self):
+/app/gabriel_engine/core/independent_construction.py:    def add_task(self, task_id: str, payload: str):
+/app/gabriel_engine/core/independent_construction.py:    def claim_task(self, worker_id: str) -> Optional[Dict[str, Any]]:
+/app/gabriel_engine/core/independent_construction.py:    def renew_lease(self, task_id: str, worker_id: str) -> bool:
+/app/gabriel_engine/core/independent_construction.py:    def complete_task(self, task_id: str, worker_id: str) -> bool:
+/app/gabriel_engine/core/independent_construction.py:    def get_task_status(self, task_id: str) -> Optional[str]:
+/app/gabriel_engine/core/independent_construction.py:    def __init__(self, max_retries: int = 4, base_delay: float = 0.5, max_delay: float = 4.0, jitter: bool = True):
+/app/gabriel_engine/core/independent_construction.py:    def execute(self, func: Callable[..., Any], *args, exceptions_to_catch: Tuple[Type[Exception], ...] = (Exception,), **kwargs) -> Any:
+/app/gabriel_engine/core/independent_construction.py:    def __init__(self, root_dir: str = "/tmp/codex_workspaces"):
+/app/gabriel_engine/core/independent_construction.py:    def create_worktree(self, task_id: str, origin_src_dir: str) -> str:
+/app/gabriel_engine/core/independent_construction.py:    def run_tests_in_worktree(self, task_id: str) -> bool:
+/app/gabriel_engine/core/independent_construction.py:    def remove_worktree(self, task_id: str):
+/app/gabriel_engine/core/independent_construction.py:    def __init__(self):
+/app/gabriel_engine/core/independent_construction.py:    def _register_default_tools(self):
+/app/gabriel_engine/core/independent_construction.py:    def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+/app/gabriel_engine/core/independent_construction.py:    def __init__(self, worktree_manager=None, mcp_bridge=None):
+/app/gabriel_engine/core/independent_construction.py:    def process_issue(self, issue_id: str, description: str, codebase_path: str) -> Dict[str, Any]:
+/app/gabriel_engine/core/independent_construction.py:def resolved_issue_handler():
+/app/gabriel_engine/core/independent_construction.py:    def __init__(self, sandbox_path: str = "/tmp/jules_sandbox"):
+/app/gabriel_engine/core/independent_construction.py:    def install_requirements(self, requirements_txt_content: str) -> Dict[str, Any]:
+/app/gabriel_engine/core/independent_construction.py:    def apply_patch(self, original_code: str, search_pattern: str, replace_pattern: str) -> Tuple[str, bool]:
+/app/gabriel_engine/core/independent_construction.py:    def run_test_suite_and_auto_correct(
+/app/gabriel_engine/core/independent_construction.py:    def __init__(self):
+/app/gabriel_engine/core/independent_construction.py:    def run(self, *args, **kwargs) -> dict:
+/app/gabriel_engine/core/perpetual_loop.py:    def __init__(self):
+/app/gabriel_engine/core/perpetual_loop.py:    def assimilate_project(
+/app/gabriel_engine/core/perpetual_loop.py:    def deconstruct_and_rebuild_binary(self, binary_name: str) -> Dict[str, Any]:
+/app/gabriel_engine/core/dynamic_loader.py:    def __init__(self, target_dir: str = "gabriel_engine/assimilated_capabilities", max_cached_modules: int = 50):
+/app/gabriel_engine/core/dynamic_loader.py:    def register_and_save(self, capability_name: str, code_content: str) -> str:
+/app/gabriel_engine/core/dynamic_loader.py:    def load_capability(self, capability_name: str) -> Any:
+/app/gabriel_engine/core/dynamic_loader.py:    def execute_capability(
+/app/gabriel_engine/core/ast_injector.py:    def inject_function_to_class(
+/app/gabriel_engine/core/ast_injector.py:            def visit_ClassDef(self, node):
+/app/gabriel_engine/core/ast_injector.py:    def inject_to_module_body(
+/app/gabriel_engine/core/capability_extraction.py:    def extract_capabilities(
+/app/gabriel_engine/core/structural_comprehension.py:    def scan_project(self, directory_path: str) -> ProgramAnatomyCard:
+/app/gabriel_engine/core/structural_comprehension.py:    def _parse_python_file(self, filepath: str, routes: List[str], deps: Set[str]):
+/app/gabriel_engine/core/structural_comprehension.py:    def _parse_requirements(self, filepath: str, deps: Set[str]):
+/app/gabriel_engine/core/structural_comprehension.py:    def _parse_package_json(self, filepath: str, deps: Set[str]):
+/app/gabriel_engine/core/permission_gate.py:    def evaluate_lane(record: AcquisitionRecord) -> Tuple[str, str]:
+/app/gabriel_engine/core/assimilation_decision.py:    def calculate_decision(
+/app/gabriel_engine/core/models.py:    def __init__(
+/app/gabriel_engine/core/models.py:    def to_dict(self) -> Dict[str, Any]:
+/app/gabriel_engine/core/models.py:    def __init__(
+/app/gabriel_engine/core/models.py:    def to_dict(self) -> Dict[str, Any]:
+/app/gabriel_engine/core/models.py:    def __init__(
+/app/gabriel_engine/core/models.py:    def to_dict(self) -> Dict[str, Any]:
+/app/gabriel_engine/core/models.py:    def __init__(
+/app/gabriel_engine/core/models.py:    def to_dict(self) -> Dict[str, Any]:
+/app/lab/zero_copy_memory.py:    def __init__(self, filepath, max_records=10000):
+/app/lab/zero_copy_memory.py:    def _initialize_file(self):
+/app/lab/zero_copy_memory.py:    def close(self):
+/app/lab/zero_copy_memory.py:    def add_record(self, record_id, valence, arousal, concept_hash, embedding):
+/app/lab/zero_copy_memory.py:    def get_record(self, index):
+/app/lab/zero_copy_memory.py:    def get_raw_embeddings_matrix(self):
+/app/lab/zero_copy_memory.py:    def search_similar(self, query_embedding, top_k=5):
+/app/lab/event_bus.py:    def __init__(self, topic: str, payload: Any, source: Optional[str] = None):
+/app/lab/event_bus.py:    def __new__(cls):
+/app/lab/event_bus.py:    def _init(self):
+/app/lab/event_bus.py:    def subscribe(self, topic: str, callback: Callable[[Event], None]) -> None:
+/app/lab/event_bus.py:    def unsubscribe(self, topic: str, callback: Callable[[Event], None]) -> None:
+/app/lab/event_bus.py:    def publish(self, topic: str, payload: Any, source: Optional[str] = None) -> None:
+/app/lab/event_bus.py:    def publish_sync(self, topic: str, payload: Any, source: Optional[str] = None) -> None:
+/app/lab/event_bus.py:    def _dispatch_loop(self):
+/app/lab/event_bus.py:    def _execute_callbacks(self, event: Event):
+/app/lab/event_bus.py:    def shutdown(self):
+/app/lab/solomon_sple_unified_engine.py:    def __init__(self):
+/app/lab/solomon_sple_unified_engine.py:    def process_learning_event(self, event_type: str, event_data: Dict[str, Any]) -> Dict[str, Any]:
+/app/lab/kernel.py:    def __init__(self):
+/app/lab/kernel.py:    def attach(self, kernel):
+/app/lab/kernel.py:    def start(self):
+/app/lab/kernel.py:    def stop(self):
+/app/lab/kernel.py:    def get_status(self) -> Dict[str, Any]:
+/app/lab/kernel.py:    def __init__(self, topic: str, sender: str, payload: Dict[str, Any]):
+/app/lab/kernel.py:    def __new__(cls):
+/app/lab/kernel.py:    def boot(self):
+/app/lab/kernel.py:    def load_module(self, module: SolomonModule):
+/app/lab/kernel.py:    def unload_module(self, module_name: str):
+/app/lab/kernel.py:    def get_module(self, module_name: str) -> Optional[SolomonModule]:
+/app/lab/kernel.py:    def subscribe(self, topic: str, callback: Callable[[Event], None]):
+/app/lab/kernel.py:    def publish(self, topic: str, sender: str, payload: Dict[str, Any]):
+/app/lab/kernel.py:    def register_rpc(self, method_name: str, handler: Callable):
+/app/lab/kernel.py:    def call_rpc(self, method_name: str, *args, **kwargs):
+/app/lab/kernel.py:    def get_system_status(self) -> Dict[str, Any]:
+/app/lab/solomon_meta_learner.py:    def __init__(self):
+/app/lab/solomon_meta_learner.py:    def optimize_prompt(self, base_prompt: str, task_context: str, success_score: float) -> str:
+/app/lab/solomon_meta_learner.py:    def tune_retrieval_parameters(self, task_type: str, accuracy_feedback: float):
+/app/lab/solomon_meta_learner.py:    def analyze_failure_patterns(self, execution_logs: List[Dict[str, Any]]) -> List[str]:
+/app/lab/vector_reasoning.py:def quantize_to_ternary(v: Vector, threshold: float = 0.3) -> Tuple[int, int]:
+/app/lab/vector_reasoning.py:def dequantize_from_ternary(packed: Tuple[int, int], dimensions: int) -> Vector:
+/app/lab/vector_reasoning.py:def vector_add(v1: Vector, v2: Vector) -> Vector:
+/app/lab/vector_reasoning.py:def vector_sub(v1: Vector, v2: Vector) -> Vector:
+/app/lab/vector_reasoning.py:def vector_mul(v: Vector, scalar: float) -> Vector:
+/app/lab/vector_reasoning.py:def dot_product(v1: Vector, v2: Vector) -> float:
+/app/lab/vector_reasoning.py:def vector_magnitude(v: Vector) -> float:
+/app/lab/vector_reasoning.py:def cosine_similarity(v1: Vector, v2: Vector) -> float:
+/app/lab/vector_reasoning.py:def bitwise_ternary_similarity(t1: Tuple[int, int], t2: Tuple[int, int], dimensions: int) -> float:
+/app/lab/vector_reasoning.py:    def __init__(self, dimensions: int = 64, max_concepts: int = 10000):
+/app/lab/vector_reasoning.py:    def _generate_orthogonal_base(self, seed_string: str) -> Vector:
+/app/lab/vector_reasoning.py:    def learn_concept(self, concept_name: str, domain: str, vector_override: Vector = None, quantize: bool = True) -> None:
+/app/lab/vector_reasoning.py:    def establish_quantum_concept(self, concept_name: str, superpositions: Dict[str, float]) -> None:
+/app/lab/vector_reasoning.py:    def observe_quantum_concept(self, concept_name: str) -> str:
+/app/lab/vector_reasoning.py:    def synthesize_holographic_cluster(self, concept_names: List[str]) -> Tuple[str, Vector]:
+/app/lab/vector_reasoning.py:    def add_context_shadow(self, concept_name: str, context_string: str) -> None:
+/app/lab/vector_reasoning.py:    def get_domain_centroid(self, domain: str) -> Vector:
+/app/lab/vector_reasoning.py:    def synthesize_cross_domain_leap(self, source_concept: str, source_domain: str, target_domain: str) -> Dict[str, Any]:
+/app/lab/vector_reasoning.py:    def run_infinite_learning_cycle(self, iterations: int = 1) -> List[Dict[str, Any]]:
+/app/lab/vector_reasoning.py:    def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5) -> List[Tuple[str, float]]:
+/app/lab/vector_reasoning.py:    def start_dream_state(self, cycle_interval_seconds: int = 60):
+/app/lab/vector_reasoning.py:        def _dream_loop():
+/app/lab/vector_reasoning.py:    def stop_dream_state(self):
+/app/tests/test_engine_registry.py:def get_python_files(directories):
+/app/tests/test_engine_registry.py:def has_registry_metadata(filepath):
+/app/tests/test_engine_registry.py:def test_engine_registry_compliance():
+/app/tests/test_gabriel_evolution.py:def test_ast_code_injector():
+/app/tests/test_gabriel_evolution.py:    def greet(self):
+/app/tests/test_gabriel_evolution.py:    function_to_inject = """def ask_solomon(self, question):
+/app/tests/test_gabriel_evolution.py:def test_recursive_optimization_feedback():
+/app/tests/test_gabriel_evolution.py:    def __init__(self):
+/app/tests/test_gabriel_evolution.py:def test_observational_sandbox_simulator():
+/app/tests/test_gabriel_evolution.py:def test_evolutionary_api_endpoints():
+/app/tests/test_gabriel_evolution.py:        "original_code": "class Lease:\n    def __init__(self):\n        self.lease_duration_sec: int = 10",
+/app/tests/test_gabriel_evolution.py:    func_source = "def predict(self):\n    return 1.0\n"
+/app/tests/test_gabriel_evolution.py:        assert "def predict(self):" in mutated_code
+/app/tests/test_learning_writeback.py:def test_record_lesson():
+/app/tests/test_run_daily_scan.py:def test_deterministic_scan():
+/app/tests/integration/soss_workspace_comms_smoke.py:def test_soss_workspace_smoke():
+/app/tests/integration/solomon_joe_bridge_smoke.py:def test_joe_omega_dry_run():
+/app/tests/integration/solomon_joe_bridge_smoke.py:def test_joe_omega_execution_blocked():
+/app/tests/test_governance_approval.py:def test_refusal_without_mark():
+/app/tests/test_governance_approval.py:def test_approval_with_mark():
+/app/tests/test_joe_blueprint_facade.py:def test_joe_facade_dry_run():
+/app/tests/test_gabriel.py:def test_models():
+/app/tests/test_gabriel.py:def test_acquisition_and_permission_gate():
+/app/tests/test_gabriel.py:def test_structural_comprehension_and_behavioral():
+/app/tests/test_gabriel.py:def get_tasks():
+/app/tests/test_gabriel.py:def test_capability_extraction_and_decisions():
+/app/tests/test_gabriel.py:def test_independent_construction():
+/app/tests/test_gabriel.py:def test_crucible_and_perpetual_loop():
+/app/tests/test_gabriel.py:def test_assimilated_codex_stack():
+/app/tests/test_gabriel.py:def test_assimilated_jules_stack():
+/app/tests/test_gabriel.py:        "original_code": "def run_loop():\n    return 'error'",
+/app/tests/test_gabriel.py:        "target_code": "def process():\n    return 'error'",
+/app/tests/test_gabriel.py:def test_hardening_and_exception_handling():
+/app/tests/test_gabriel.py:        "original_code": "def run(): pass"
+/app/tests/test_gabriel.py:        registry.register_and_save("mod_one", "class ModOne:\n    def get(self): return 1")
+/app/tests/test_gabriel.py:        registry.register_and_save("mod_two", "class ModTwo:\n    def get(self): return 2")
+/app/tests/test_gabriel.py:def test_flask_endpoints():
+/app/tests/futures/test_threshold_logic.py:def test_wilson_interval():
+/app/tests/futures/test_threshold_logic.py:def test_candidate_gate_a_qualification():
+/app/tests/futures/test_threshold_logic.py:def test_full_simulation_gate_b_confirmation():

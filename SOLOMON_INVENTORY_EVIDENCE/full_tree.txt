@@ -1,0 +1,271 @@
+/app
+├── SOLOMON_INVENTORY_EVIDENCE
+│   ├── crontab.txt
+│   ├── databases.txt
+│   ├── date.txt
+│   ├── dir_sizes.txt
+│   ├── disk.txt
+│   ├── docker_version.txt
+│   ├── full_tree.txt
+│   ├── git_branches.txt
+│   ├── git_log.txt
+│   ├── git_remote.txt
+│   ├── git_status.txt
+│   ├── git_version.txt
+│   ├── hostname.txt
+│   ├── ip.txt
+│   ├── lsblk.txt
+│   ├── lscpu.txt
+│   ├── mount.txt
+│   ├── netstat.txt
+│   ├── node_version.txt
+│   ├── pip_freeze.txt
+│   ├── ps_aux.txt
+│   ├── pytest_results.txt
+│   ├── python_version.txt
+│   ├── ram.txt
+│   ├── requirements.txt
+│   ├── services.txt
+│   ├── tailscale_ping.txt
+│   ├── timers.txt
+│   ├── tree.txt
+│   ├── uname.txt
+│   └── users.txt
+├── SOLOMON_PERPETUAL_LEARNING_MASTER_AUDIT.md
+├── __pycache__
+│   └── app.cpython-312.pyc
+├── api
+│   └── __init__.py
+├── app.py
+├── backend
+│   └── services
+│       ├── __pycache__
+│       │   ├── futures_dashboard_backend.cpython-312.pyc
+│       │   └── joe_blueprint_facade.cpython-312.pyc
+│       ├── futures_dashboard_backend.py
+│       └── joe_blueprint_facade.py
+├── config
+│   ├── omni_feeds.json
+│   └── sources
+│       ├── domain_allowlist.yaml
+│       ├── rate_budgets.yaml
+│       └── source_registry.yaml
+├── core
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── agentic_claw.cpython-312.pyc
+│   │   ├── solomon_local_llm.cpython-312.pyc
+│   │   ├── solomon_quantized_memory.cpython-312.pyc
+│   │   └── solomon_web_crawler.cpython-312.pyc
+│   ├── agentic_claw.py
+│   ├── solomon_context_budgeter.py
+│   ├── solomon_embeddings.py
+│   ├── solomon_knowledge_cards
+│   │   ├── __init__.py
+│   │   ├── api
+│   │   │   ├── __init__.py
+│   │   │   ├── embeddings.py
+│   │   │   ├── graph.py
+│   │   │   ├── repository.py
+│   │   │   └── review.py
+│   │   ├── extractor
+│   │   │   ├── __init__.py
+│   │   │   ├── extractor.py
+│   │   │   ├── proposal_engine.py
+│   │   │   └── reflection.py
+│   │   ├── migrator
+│   │   │   ├── __init__.py
+│   │   │   └── importer.py
+│   │   ├── models
+│   │   │   ├── __init__.py
+│   │   │   └── card.py
+│   │   ├── planner
+│   │   │   ├── __init__.py
+│   │   │   ├── arbiter.py
+│   │   │   ├── engine.py
+│   │   │   └── models.py
+│   │   └── storage
+│   │       ├── __init__.py
+│   │       └── db.py
+│   ├── solomon_local_llm.py
+│   ├── solomon_quantized_memory.py
+│   └── solomon_web_crawler.py
+├── docs
+│   ├── data-ingestion
+│   │   ├── SOURCE_REGISTRY.md
+│   │   └── TRUST_POLICY.md
+│   ├── futures_dashboard_backend.md
+│   ├── solomon_daily_codex_context.md
+│   ├── solomon_engine_registry.md
+│   ├── solomon_futures_engine.md
+│   ├── solomon_governance_approval_packet.md
+│   ├── solomon_learning_writeback.md
+│   ├── solomon_perpetual_learning_activation_record.md
+│   └── worktree_classification.md
+├── gabriel_engine
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   └── __init__.cpython-312.pyc
+│   ├── assimilated_capabilities
+│   │   ├── __init__.py
+│   │   ├── codex_issue_to_pr_pipeline.py
+│   │   ├── codex_issue_to_pr_pipeline.pyc
+│   │   ├── codex_kanban.py
+│   │   ├── codex_kanban.pyc
+│   │   ├── codex_mcp_bridge.py
+│   │   ├── codex_mcp_bridge.pyc
+│   │   ├── codex_parallel_worktrees.py
+│   │   ├── codex_parallel_worktrees.pyc
+│   │   ├── exponential_backoff_retry.pyc
+│   │   ├── jules_code_patcher.pyc
+│   │   ├── jules_dependency_installer.pyc
+│   │   ├── jules_test_runner_loop.pyc
+│   │   ├── mock_math_helper.py
+│   │   ├── rebuilt_kubernetes_cli.pyc
+│   │   └── renewable_worker_lease.pyc
+│   └── core
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── __init__.cpython-312.pyc
+│       │   ├── acquisition.cpython-312.pyc
+│       │   ├── assimilation_decision.cpython-312.pyc
+│       │   ├── ast_injector.cpython-312.pyc
+│       │   ├── behavioral_experimentation.cpython-312.pyc
+│       │   ├── capability_extraction.cpython-312.pyc
+│       │   ├── crucible.cpython-312.pyc
+│       │   ├── dynamic_loader.cpython-312.pyc
+│       │   ├── independent_construction.cpython-312.pyc
+│       │   ├── models.cpython-312.pyc
+│       │   ├── observational_simulator.cpython-312.pyc
+│       │   ├── permission_gate.cpython-312.pyc
+│       │   ├── perpetual_loop.cpython-312.pyc
+│       │   ├── recursive_optimizer.cpython-312.pyc
+│       │   └── structural_comprehension.cpython-312.pyc
+│       ├── acquisition.py
+│       ├── assimilation_decision.py
+│       ├── ast_injector.py
+│       ├── behavioral_experimentation.py
+│       ├── capability_extraction.py
+│       ├── crucible.py
+│       ├── dynamic_loader.py
+│       ├── independent_construction.py
+│       ├── models.py
+│       ├── observational_simulator.py
+│       ├── permission_gate.py
+│       ├── perpetual_loop.py
+│       ├── recursive_optimizer.py
+│       └── structural_comprehension.py
+├── governance_log.bin
+├── lab
+│   ├── __init__.py
+│   ├── event_bus.py
+│   ├── kernel.py
+│   ├── solomon_meta_learner.py
+│   ├── solomon_sple_unified_engine.py
+│   ├── vector_reasoning.py
+│   └── zero_copy_memory.py
+├── memory_atoms.db
+├── render.yaml
+├── requirements.txt
+├── schemas
+│   ├── fact_candidate.schema.json
+│   ├── news_item.schema.json
+│   ├── normalized_item.schema.json
+│   └── sports_event.schema.json
+├── scripts
+│   ├── __pycache__
+│   │   └── run_daily_scan.cpython-312.pyc
+│   ├── run_autonomous_daemon.py
+│   ├── run_daily_scan.py
+│   ├── run_futures_daemon.py
+│   ├── run_knowledge_ingestion.py
+│   ├── scheduler.py
+│   └── verify_futures_subsystem.py
+├── server_output.log
+├── server_output_2.log
+├── services
+│   ├── __pycache__
+│   │   ├── live_data_ingestion.cpython-312.pyc
+│   │   ├── solomon_futures_engine.cpython-312.pyc
+│   │   ├── solomon_governance_approval_packet.cpython-312.pyc
+│   │   ├── solomon_joe_bridge.cpython-312.pyc
+│   │   └── solomon_learning_writeback.cpython-312.pyc
+│   ├── live_data_ingestion.py
+│   ├── renewable_worker.py
+│   ├── solomon_futures_engine.py
+│   ├── solomon_futures_memory.py
+│   ├── solomon_governance_approval_packet.py
+│   ├── solomon_joe_bridge.py
+│   └── solomon_learning_writeback.py
+├── solomon_api
+│   └── engine_registry.json
+├── solomon_browser
+│   └── sidepanel
+│       └── config.js
+├── solomon_hyper_memory.db
+├── solomon_hyper_memory.db-shm
+├── solomon_hyper_memory.db-wal
+├── solomon_ingest
+│   ├── __init__.py
+│   ├── connectors
+│   │   ├── __init__.py
+│   │   ├── api_sports_connector.py
+│   │   ├── free_sports_rss_connector.py
+│   │   ├── gdelt_connector.py
+│   │   ├── official_rss_connector.py
+│   │   └── omni_rss_connector.py
+│   └── core
+│       ├── __init__.py
+│       ├── clustering.py
+│       ├── connector.py
+│       ├── corroboration.py
+│       ├── dedupe.py
+│       ├── entity_resolution.py
+│       ├── health.py
+│       ├── http_client.py
+│       ├── memory_gate.py
+│       ├── normalizer.py
+│       ├── provenance.py
+│       ├── rate_limit.py
+│       ├── raw_store.py
+│       ├── scheduler.py
+│       └── validator.py
+├── solomon_integration_audit.md
+├── solomon_quantized_memory.py
+├── solomon_soss.db
+├── templates
+│   ├── futures_dashboard.html
+│   ├── god_eye.html
+│   ├── solomon_chat.html
+│   └── solomon_loki_workspace.html
+├── tests
+│   ├── __pycache__
+│   │   ├── test_engine_registry.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_gabriel.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_gabriel_evolution.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_governance_approval.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_joe_blueprint_facade.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_learning_writeback.cpython-312-pytest-9.0.2.pyc
+│   │   └── test_run_daily_scan.cpython-312-pytest-9.0.2.pyc
+│   ├── futures
+│   │   ├── __pycache__
+│   │   │   └── test_threshold_logic.cpython-312-pytest-9.0.2.pyc
+│   │   └── test_threshold_logic.py
+│   ├── integration
+│   │   ├── solomon_joe_bridge_smoke.py
+│   │   └── soss_workspace_comms_smoke.py
+│   ├── test_engine_registry.py
+│   ├── test_gabriel.py
+│   ├── test_gabriel_evolution.py
+│   ├── test_governance_approval.py
+│   ├── test_joe_blueprint_facade.py
+│   ├── test_learning_writeback.py
+│   └── test_run_daily_scan.py
+└── workers
+    ├── __init__.py
+    ├── cache_router.py
+    ├── planner.py
+    └── telemetry.py
+
+44 directories, 225 files

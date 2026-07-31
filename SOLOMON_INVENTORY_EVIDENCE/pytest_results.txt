@@ -1,0 +1,123 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/jules/.local/share/pipx/venvs/pytest/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+plugins: anyio-4.14.2
+collecting ... collected 23 items
+
+tests/futures/test_threshold_logic.py::test_wilson_interval PASSED       [  4%]
+tests/futures/test_threshold_logic.py::test_candidate_gate_a_qualification PASSED [  8%]
+tests/futures/test_threshold_logic.py::test_full_simulation_gate_b_confirmation FAILED [ 13%]
+tests/test_engine_registry.py::test_engine_registry_compliance FAILED    [ 17%]
+tests/test_gabriel.py::test_models PASSED                                [ 21%]
+tests/test_gabriel.py::test_acquisition_and_permission_gate PASSED       [ 26%]
+tests/test_gabriel.py::test_structural_comprehension_and_behavioral PASSED [ 30%]
+tests/test_gabriel.py::test_capability_extraction_and_decisions PASSED   [ 34%]
+tests/test_gabriel.py::test_independent_construction PASSED              [ 39%]
+tests/test_gabriel.py::test_crucible_and_perpetual_loop PASSED           [ 43%]
+tests/test_gabriel.py::test_assimilated_codex_stack FAILED               [ 47%]
+tests/test_gabriel.py::test_assimilated_jules_stack PASSED               [ 52%]
+tests/test_gabriel.py::test_hardening_and_exception_handling PASSED      [ 56%]
+tests/test_gabriel.py::test_flask_endpoints PASSED                       [ 60%]
+tests/test_gabriel_evolution.py::test_ast_code_injector PASSED           [ 65%]
+tests/test_gabriel_evolution.py::test_recursive_optimization_feedback PASSED [ 69%]
+tests/test_gabriel_evolution.py::test_observational_sandbox_simulator PASSED [ 73%]
+tests/test_gabriel_evolution.py::test_evolutionary_api_endpoints PASSED  [ 78%]
+tests/test_governance_approval.py::test_refusal_without_mark PASSED      [ 82%]
+tests/test_governance_approval.py::test_approval_with_mark PASSED        [ 86%]
+tests/test_joe_blueprint_facade.py::test_joe_facade_dry_run PASSED       [ 91%]
+tests/test_learning_writeback.py::test_record_lesson PASSED              [ 95%]
+tests/test_run_daily_scan.py::test_deterministic_scan PASSED             [100%]
+
+=================================== FAILURES ===================================
+___________________ test_full_simulation_gate_b_confirmation ___________________
+
+    def test_full_simulation_gate_b_confirmation():
+        # We set seed so that out of 1000 trials, the success count hits roughly the probability
+        engine = FuturesEngine()
+        c = Candidate(
+            candidate_id="c3", event_id="e3", domain="sports", source_name="src",
+            source_record_id="rec3", source_mode="SHADOW", source_timestamp="2026-07-26",
+            ingested_at="2026-07-26", pre_simulation_confidence=95.0, data_quality_score=95.0,
+            features={"win_prob": 0.95} # High probability ensuring Wilson lower bound > 0.90
+        )
+
+        result = engine.process_candidate(c, seed=42)
+>       assert result.status == "CONFIRMED_90_PLUS"
+E       AssertionError: assert 'NOT_CONFIRMED_90_PLUS' == 'CONFIRMED_90_PLUS'
+E
+E         - CONFIRMED_90_PLUS
+E         + NOT_CONFIRMED_90_PLUS
+E         ? ++++
+
+tests/futures/test_threshold_logic.py:44: AssertionError
+_______________________ test_engine_registry_compliance ________________________
+
+    def test_engine_registry_compliance():
+        # 1. Load registry JSON
+        registry_path = "solomon_api/engine_registry.json"
+        assert os.path.exists(registry_path), f"Registry JSON not found at {registry_path}"
+
+        with open(registry_path, 'r', encoding='utf-8') as f:
+            registry_data = json.load(f)
+
+        engines = registry_data.get('engines', [])
+        registered_engines = {engine['source_path'].replace('\\', '/'): engine for engine in engines}
+        exclusions = [exc.replace('\\', '/') for exc in registry_data.get('exclusions', [])]
+
+        # 2. Scan directories for python files
+        target_dirs = ["services", "backend/services", "solomon_api"]
+        python_files = get_python_files(target_dirs)
+
+        # 3. Assertions
+        for py_file in python_files:
+            # Check if the file is explicitly excluded
+            if py_file in exclusions:
+                continue
+
+            # Check if the file is registered in JSON
+>           assert py_file in registered_engines, f"File {py_file} is not registered in {registry_path} and not in exclusions."
+E           AssertionError: File services/live_data_ingestion.py is not registered in solomon_api/engine_registry.json and not in exclusions.
+E           assert 'services/live_data_ingestion.py' in {'backend/services/futures_dashboard_backend.py': {'approval_required': False, 'display_name': 'Futures Dashboard Backend', 'doc_path': 'docs/futures_dashboard_backend.md', 'engine_id': 'futures_dashboard_backend', ...}, 'backend/services/joe_blueprint_facade.py': {'approval_required': False, 'display_name': 'J.O.E. Blueprint Facade', 'doc_path': 'docs/joe_blueprint_facade.md', 'engine_id': 'joe_blueprint_facade', ...}, 'scripts/run_daily_scan.py': {'approval_required': False, 'display_name': 'Daily Scan', 'doc_path': None, 'engine_id': 'run_daily_scan', ...}, 'services/solomon_futures_engine.py': {'approval_required': True, 'display_name': 'Futures Engine', 'doc_path': 'docs/solomon_futures_engine.md', 'engine_id': 'solomon_futures_engine', ...}, ...}
+
+tests/test_engine_registry.py:59: AssertionError
+_________________________ test_assimilated_codex_stack _________________________
+
+    def test_assimilated_codex_stack():
+        """
+        Validates re-engineered OpenAI Codex operations running inside Gabriel.
+        """
+        client = app.test_client()
+
+        # 1. Chat under Codex/Jules Orchestrator Persona
+        res_chat = client.post("/chat", json={"message": "Deploy a sandbox for my branch"})
+        assert res_chat.status_code == 200
+        data_chat = json.loads(res_chat.data)
+>       assert "Jules Agentic Mode" in data_chat["reply"]
+E       AssertionError: assert 'Jules Agentic Mode' in '[PROC-58C3D8] Processing matrix...\nI have queried my Quantized Brain Map but found no vectors matching your request.\n>> Autonomous Web Crawler spinning up to find the answer on the live internet...\n>> WEB RESULTS EXTRACTED: [WEB CRAWLER FAILURE] No live data found for query: Deploy a sandbox for my branch\n>> This knowledge has been permanently assimilated into my memory.'
+
+tests/test_gabriel.py:256: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[SYSTEM] Hyper-Quantized Synthesizer Brain Online (RAM usage: ~12MB).
+=============================== warnings summary ===============================
+tests/test_gabriel.py::test_models
+tests/test_gabriel.py::test_acquisition_and_permission_gate
+tests/test_gabriel.py::test_acquisition_and_permission_gate
+tests/test_gabriel.py::test_crucible_and_perpetual_loop
+tests/test_gabriel.py::test_flask_endpoints
+  /app/gabriel_engine/core/models.py:25: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.timestamp = timestamp or datetime.datetime.utcnow().isoformat()
+
+tests/test_gabriel.py::test_assimilated_codex_stack
+tests/test_run_daily_scan.py::test_deterministic_scan
+tests/test_run_daily_scan.py::test_deterministic_scan
+tests/test_run_daily_scan.py::test_deterministic_scan
+  /app/core/solomon_web_crawler.py:12: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+    self.ddgs = DDGS()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/futures/test_threshold_logic.py::test_full_simulation_gate_b_confirmation
+FAILED tests/test_engine_registry.py::test_engine_registry_compliance - Asser...
+FAILED tests/test_gabriel.py::test_assimilated_codex_stack - AssertionError: ...
+=================== 3 failed, 20 passed, 9 warnings in 2.75s ===================

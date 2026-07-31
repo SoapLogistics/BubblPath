@@ -1,0 +1,6 @@
+PING tailscale.com (76.76.21.21) 56(84) bytes of data.
+64 bytes from 76.76.21.21: icmp_seq=1 ttl=249 time=11.5 ms
+
+--- tailscale.com ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 11.544/11.544/11.544/0.000 ms

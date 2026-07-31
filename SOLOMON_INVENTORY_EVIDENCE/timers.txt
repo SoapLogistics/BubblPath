@@ -1,0 +1,14 @@
+NEXT                            LEFT LAST                              PASSED UNIT                         ACTIVATES
+Thu 2026-07-30 15:28:37 UTC     5min -                                      - systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Thu 2026-07-30 15:30:00 UTC     7min Thu 2026-07-30 15:20:01 UTC 2min 53s ago sysstat-collect.timer        sysstat-collect.service
+Thu 2026-07-30 15:34:58 UTC    12min -                                      - apt-daily-upgrade.timer      apt-daily-upgrade.service
+Thu 2026-07-30 15:39:00 UTC    16min Thu 2026-07-30 15:13:53 UTC     9min ago phpsessionclean.timer        phpsessionclean.service
+Thu 2026-07-30 16:39:28 UTC 1h 16min -                                      - fstrim.timer                 fstrim.service
+Thu 2026-07-30 18:36:41 UTC 3h 13min -                                      - motd-news.timer              motd-news.service
+Fri 2026-07-31 00:00:00 UTC       8h Thu 2026-07-30 15:13:53 UTC     9min ago dpkg-db-backup.timer         dpkg-db-backup.service
+Fri 2026-07-31 00:07:00 UTC       8h Thu 2026-07-30 15:13:53 UTC     9min ago sysstat-summary.timer        sysstat-summary.service
+Fri 2026-07-31 02:32:40 UTC      11h -                                      - apt-daily.timer              apt-daily.service
+Sun 2026-08-02 03:10:43 UTC   2 days Thu 2026-07-30 15:13:53 UTC     9min ago e2scrub_all.timer            e2scrub_all.service
+
+10 timers listed.
+Pass --all to see loaded but inactive timers, too.
