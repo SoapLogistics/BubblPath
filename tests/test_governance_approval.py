@@ -9,3 +9,9 @@ def test_approval_with_mark():
     lane = GovernanceApprovalLane()
     res = lane.review_packet({"requires_approval": True, "approved_by": "Mark"})
     assert res["status"] == "approved"
+
+def test_segregation_refusal():
+    lane = GovernanceApprovalLane()
+    res = lane.review_packet({"requester": "Mark", "approved_by": "Mark"})
+    assert res["status"] == "refused"
+    assert "same person" in res["reason"]

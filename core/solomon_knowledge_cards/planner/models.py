@@ -34,6 +34,8 @@ class TaskPlan:
             raise ValueError("objective is required")
         if self.status not in ("DRAFT", "APPROVED", "EXECUTED", "FAILED"):
             raise ValueError(f"Invalid plan status: {self.status}")
+        if len(self.steps) > 50:
+            raise ValueError("TaskPlan exceeds the maximum limit of 50 steps")
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the task plan to a dictionary."""
