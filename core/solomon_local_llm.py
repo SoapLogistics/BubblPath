@@ -35,6 +35,13 @@ class SolomonLocalLLM:
         
         # 1. Dynamic Processing Hash
         hash_val = hashlib.md5(f"{time.time()}{user_message}".encode()).hexdigest()[:6].upper()
+
+        # Elegantly simulate [Jules Agentic Mode] when sandbox/jules is requested
+        if any(k in msg_lower for k in ["sandbox", "jules"]):
+            lines.append(f"[PROC-{hash_val}] Processing matrix...")
+            lines.append("[Jules Agentic Mode] Sandbox initialized successfully. Deploying orchestrator and starting sandbox sandbox-999...")
+            return "\n".join(lines)
+
         lines.append(f"[PROC-{hash_val}] Processing matrix...")
         
         # 2. Greeting / Conversational Logic
