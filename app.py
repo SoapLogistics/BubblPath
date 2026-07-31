@@ -190,6 +190,8 @@ def chat():
         response_lines.append("[ACTION] ASSIMILATION KEYWORD DETECTED. Gabriel Engine standing by for coordinates.")
     elif "futures" in user_message.lower():
         response_lines.append("[ACTION] FUTURES CONTEXT DETECTED. Loki workspace evaluating 90+ threshold algorithms.")
+    elif any(kw in user_message.lower() for kw in ["sandbox", "jules"]):
+        response_lines.append("Jules Agentic Mode")
     elif any(kw in user_message.lower() for kw in ["build", "code", "create"]):
         response_lines.append("[ACTION] AGENTIC ACTION DETECTED. Deploying Agentic Claw...")
         claw = SolomonAgenticClaw()

@@ -33,9 +33,10 @@ class BehavioralExperimentationEngine:
         if command_or_script:
             try:
                 start_time = time.time()
+                import shlex
                 proc = subprocess.run(
-                    command_or_script,
-                    shell=True,
+                    shlex.split(command_or_script),
+                    shell=False,
                     capture_output=True,
                     text=True,
                     timeout=timeout
