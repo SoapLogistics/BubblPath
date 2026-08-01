@@ -18,13 +18,14 @@ LAYER_LONG_TERM = 2
 LAYER_PROCEDURAL = 3
 
 class QuantizedMemoryNode:
-    __slots__ = ['id_int', 'id_str', 'type_idx', 'content', 'creation_time', 'last_accessed',
+    __slots__ = ['id_int', 'id_str', 'type_idx', 'node_type', 'content', 'creation_time', 'last_accessed',
                  'access_count', 'importance', 'valence', 'arousal', 'layer', 'activation', 'ternary_vector']
 
     def __init__(self, node_type: str, content: Any, importance: float = 0.5, valence: float = 0.0, arousal: float = 0.0):
         self.id_str = str(uuid.uuid4())
         self.id_int = int(self.id_str.replace("-", ""), 16) % (2**31 - 1) # Deterministic int mapping for matrix index
-        self.type_idx = hash(node_type) % 256 # compressed type
+        self.type_idx = int(hashlib.md5(node_type.encode('utf-8')).hexdigest(), 16) % 256 # compressed type
+        self.node_type = node_type
         self.content = content # In true Phase 1, this moves to disk. Keeping for API debug.
 
         self.creation_time = time.time()
@@ -330,6 +331,13 @@ class QuantizedBrainMap:
 
             age = current_time - node.creation_time
             time_since_access = current_time - node.last_accessed
+
+            # Auto archive anything chat that hasn't been accessed in 24 hours
+            if hasattr(node, 'node_type') and 'chat' in node.node_type.lower() and time_since_access > 86400:
+                if node.layer in (LAYER_WORKING, LAYER_SHORT_TERM):
+                    node.layer = LAYER_LONG_TERM
+                    nodes_to_serialize.append(node)
+                    continue
 
             if node.layer == LAYER_WORKING:
                 if age > self.working_ttl:

@@ -1,236 +1,238 @@
 {
-  "engines": [
-    {
-      "engine_id": "solomon_joe_bridge",
-      "display_name": "J.O.E. Blueprint Queue",
-      "source_path": "services/solomon_joe_bridge.py",
-      "owner_family": "joe_jules",
-      "status_class": "approval_blocked",
-      "entrypoint": "JoeOmegaEngine",
-      "route_paths": [
-        "/api/joe/status",
-        "/api/joe/queue-blueprint"
-      ],
-      "readiness_keys": [],
-      "parent_surface": "templates/joe_chat.html",
-      "doc_path": "docs/solomon_joe_bridge.md",
-      "test_paths": [
-        "tests/integration/solomon_joe_bridge_smoke.py"
-      ],
-      "approval_required": true,
-      "mutates_state": true,
-      "execution_capable": true,
-      "network_capable": true,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [
-        "duplicate backend/services import collision",
-        "subprocess launches jules CLI",
-        "repo allowlist missing"
-      ],
-      "output_contract": "solomon.joe.blueprint_queue.v1",
-      "memory_writeback": [
-        "lesson_on_completed_packet",
-        "failure_pattern_on_refusal_or_error"
-      ],
-      "refusal_behavior": "Returns blocked status and requires human approval before execution."
-    },
-    {
-      "engine_id": "joe_blueprint_facade",
-      "display_name": "J.O.E. Blueprint Facade",
-      "source_path": "backend/services/joe_blueprint_facade.py",
-      "owner_family": "joe_jules",
-      "status_class": "active_route",
-      "entrypoint": "JoeBlueprintFacade",
-      "route_paths": [
-        "/api/joe/queue-blueprint"
-      ],
-      "readiness_keys": [],
-      "parent_surface": null,
-      "doc_path": "docs/joe_blueprint_facade.md",
-      "test_paths": [
-        "tests/test_joe_blueprint_facade.py"
-      ],
-      "approval_required": false,
-      "mutates_state": false,
-      "execution_capable": false,
-      "network_capable": false,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [],
-      "output_contract": "solomon.joe.blueprint_queue.v1",
-      "memory_writeback": []
-    },
-    {
-      "engine_id": "solomon_governance_approval_packet",
-      "display_name": "Governance Approval Lane",
-      "source_path": "services/solomon_governance_approval_packet.py",
-      "owner_family": "governance",
-      "status_class": "active_route",
-      "entrypoint": "GovernanceApprovalLane",
-      "route_paths": [
-        "/api/governance/review"
-      ],
-      "readiness_keys": [],
-      "parent_surface": null,
-      "doc_path": "docs/solomon_governance_approval_packet.md",
-      "test_paths": [
-        "tests/test_governance_approval.py"
-      ],
-      "approval_required": true,
-      "mutates_state": true,
-      "execution_capable": false,
-      "network_capable": false,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [],
-      "output_contract": "solomon.governance.v1",
-      "memory_writeback": []
-    },
-    {
-      "engine_id": "run_daily_scan",
-      "display_name": "Daily Scan",
-      "source_path": "scripts/run_daily_scan.py",
-      "owner_family": "loki",
-      "status_class": "generated_artifact",
-      "entrypoint": "run_scan",
-      "route_paths": [],
-      "readiness_keys": [],
-      "parent_surface": null,
-      "doc_path": null,
-      "test_paths": [
-        "tests/test_run_daily_scan.py"
-      ],
-      "approval_required": false,
-      "mutates_state": false,
-      "execution_capable": true,
-      "network_capable": false,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [],
-      "output_contract": "solomon.loki.v1",
-      "memory_writeback": []
-    },
-    {
-      "engine_id": "solomon_learning_writeback",
-      "display_name": "Learning Writeback",
-      "source_path": "services/solomon_learning_writeback.py",
-      "owner_family": "learning",
-      "status_class": "active_route",
-      "entrypoint": "LearningWriteback",
-      "route_paths": [
-        "/api/learning/writeback"
-      ],
-      "readiness_keys": [],
-      "parent_surface": null,
-      "doc_path": "docs/solomon_learning_writeback.md",
-      "test_paths": [
-        "tests/test_learning_writeback.py"
-      ],
-      "approval_required": false,
-      "mutates_state": true,
-      "execution_capable": false,
-      "network_capable": false,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [],
-      "output_contract": "solomon.learning.v1",
-      "memory_writeback": []
-    },
-    {
-      "engine_id": "solomon_futures_engine",
-      "display_name": "Futures Engine",
-      "source_path": "services/solomon_futures_engine.py",
-      "owner_family": "loki",
-      "status_class": "active_readiness",
-      "entrypoint": "FuturesEngine",
-      "route_paths": [],
-      "readiness_keys": [
-        "futures_ready"
-      ],
-      "parent_surface": null,
-      "doc_path": "docs/solomon_futures_engine.md",
-      "test_paths": [
-        "tests/futures/test_threshold_logic.py"
-      ],
-      "approval_required": true,
-      "mutates_state": true,
-      "execution_capable": true,
-      "network_capable": false,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [],
-      "output_contract": "solomon.futures.v1",
-      "memory_writeback": [
-        "futures_memory_outbox"
-      ]
-    },
-    {
-      "engine_id": "futures_dashboard_backend",
-      "display_name": "Futures Dashboard Backend",
-      "source_path": "backend/services/futures_dashboard_backend.py",
-      "owner_family": "loki",
-      "status_class": "active_route",
-      "entrypoint": "FuturesDashboardBackend",
-      "route_paths": [
-        "/api/futures/dashboard"
-      ],
-      "readiness_keys": [],
-      "parent_surface": "templates/futures_dashboard.html",
-      "doc_path": "docs/futures_dashboard_backend.md",
-      "test_paths": [
-        "tests/futures/test_threshold_logic.py"
-      ],
-      "approval_required": false,
-      "mutates_state": false,
-      "execution_capable": false,
-      "network_capable": false,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [],
-      "output_contract": "solomon.futures.dashboard.v1",
-      "memory_writeback": []
-    },
-    {
-      "engine_id": "futures_memory_outbox",
-      "display_name": "Futures Memory Reconciler",
-      "source_path": "services/solomon_futures_memory.py",
-      "owner_family": "loki",
-      "status_class": "active_readiness",
-      "entrypoint": "FuturesOutcomeReconciler",
-      "route_paths": [],
-      "readiness_keys": [
-        "futures_memory_ready"
-      ],
-      "parent_surface": null,
-      "doc_path": "docs/solomon_futures_engine.md",
-      "test_paths": [
-        "tests/futures/test_threshold_logic.py"
-      ],
-      "approval_required": true,
-      "mutates_state": true,
-      "execution_capable": false,
-      "network_capable": false,
-      "ss1_touching": false,
-      "human_approval_authority": "Mark",
-      "safe_default": "dry_run",
-      "known_blockers": [],
-      "output_contract": "solomon.futures.memory.v1",
-      "memory_writeback": []
-    }
-  ],
-  "exclusions": [
-    "solomon_api/gpt_readiness_snapshot.py",
-    "solomon_api/gpt_route_index.py",
-    "solomon_api/capabilities_manifest.py",
-    "services/soss_workspace_status.py",
-    "backend/main.py"
-  ]
+    "engines": [
+        {
+            "engine_id": "solomon_joe_bridge",
+            "display_name": "J.O.E. Blueprint Queue",
+            "source_path": "services/solomon_joe_bridge.py",
+            "owner_family": "joe_jules",
+            "status_class": "approval_blocked",
+            "entrypoint": "JoeOmegaEngine",
+            "route_paths": [
+                "/api/joe/status",
+                "/api/joe/queue-blueprint"
+            ],
+            "readiness_keys": [],
+            "parent_surface": "templates/joe_chat.html",
+            "doc_path": "docs/solomon_joe_bridge.md",
+            "test_paths": [
+                "tests/integration/solomon_joe_bridge_smoke.py"
+            ],
+            "approval_required": true,
+            "mutates_state": true,
+            "execution_capable": true,
+            "network_capable": true,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [
+                "duplicate backend/services import collision",
+                "subprocess launches jules CLI",
+                "repo allowlist missing"
+            ],
+            "output_contract": "solomon.joe.blueprint_queue.v1",
+            "memory_writeback": [
+                "lesson_on_completed_packet",
+                "failure_pattern_on_refusal_or_error"
+            ],
+            "refusal_behavior": "Returns blocked status and requires human approval before execution."
+        },
+        {
+            "engine_id": "joe_blueprint_facade",
+            "display_name": "J.O.E. Blueprint Facade",
+            "source_path": "backend/services/joe_blueprint_facade.py",
+            "owner_family": "joe_jules",
+            "status_class": "active_route",
+            "entrypoint": "JoeBlueprintFacade",
+            "route_paths": [
+                "/api/joe/queue-blueprint"
+            ],
+            "readiness_keys": [],
+            "parent_surface": null,
+            "doc_path": "docs/joe_blueprint_facade.md",
+            "test_paths": [
+                "tests/test_joe_blueprint_facade.py"
+            ],
+            "approval_required": false,
+            "mutates_state": false,
+            "execution_capable": false,
+            "network_capable": false,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [],
+            "output_contract": "solomon.joe.blueprint_queue.v1",
+            "memory_writeback": []
+        },
+        {
+            "engine_id": "solomon_governance_approval_packet",
+            "display_name": "Governance Approval Lane",
+            "source_path": "services/solomon_governance_approval_packet.py",
+            "owner_family": "governance",
+            "status_class": "active_route",
+            "entrypoint": "GovernanceApprovalLane",
+            "route_paths": [
+                "/api/governance/review"
+            ],
+            "readiness_keys": [],
+            "parent_surface": null,
+            "doc_path": "docs/solomon_governance_approval_packet.md",
+            "test_paths": [
+                "tests/test_governance_approval.py"
+            ],
+            "approval_required": true,
+            "mutates_state": true,
+            "execution_capable": false,
+            "network_capable": false,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [],
+            "output_contract": "solomon.governance.v1",
+            "memory_writeback": []
+        },
+        {
+            "engine_id": "run_daily_scan",
+            "display_name": "Daily Scan",
+            "source_path": "scripts/run_daily_scan.py",
+            "owner_family": "loki",
+            "status_class": "generated_artifact",
+            "entrypoint": "run_scan",
+            "route_paths": [],
+            "readiness_keys": [],
+            "parent_surface": null,
+            "doc_path": null,
+            "test_paths": [
+                "tests/test_run_daily_scan.py"
+            ],
+            "approval_required": false,
+            "mutates_state": false,
+            "execution_capable": true,
+            "network_capable": false,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [],
+            "output_contract": "solomon.loki.v1",
+            "memory_writeback": []
+        },
+        {
+            "engine_id": "solomon_learning_writeback",
+            "display_name": "Learning Writeback",
+            "source_path": "services/solomon_learning_writeback.py",
+            "owner_family": "learning",
+            "status_class": "active_route",
+            "entrypoint": "LearningWriteback",
+            "route_paths": [
+                "/api/learning/writeback"
+            ],
+            "readiness_keys": [],
+            "parent_surface": null,
+            "doc_path": "docs/solomon_learning_writeback.md",
+            "test_paths": [
+                "tests/test_learning_writeback.py"
+            ],
+            "approval_required": false,
+            "mutates_state": true,
+            "execution_capable": false,
+            "network_capable": false,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [],
+            "output_contract": "solomon.learning.v1",
+            "memory_writeback": []
+        },
+        {
+            "engine_id": "solomon_futures_engine",
+            "display_name": "Futures Engine",
+            "source_path": "services/solomon_futures_engine.py",
+            "owner_family": "loki",
+            "status_class": "active_readiness",
+            "entrypoint": "FuturesEngine",
+            "route_paths": [],
+            "readiness_keys": [
+                "futures_ready"
+            ],
+            "parent_surface": null,
+            "doc_path": "docs/solomon_futures_engine.md",
+            "test_paths": [
+                "tests/futures/test_threshold_logic.py"
+            ],
+            "approval_required": true,
+            "mutates_state": true,
+            "execution_capable": true,
+            "network_capable": false,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [],
+            "output_contract": "solomon.futures.v1",
+            "memory_writeback": [
+                "futures_memory_outbox"
+            ]
+        },
+        {
+            "engine_id": "futures_dashboard_backend",
+            "display_name": "Futures Dashboard Backend",
+            "source_path": "backend/services/futures_dashboard_backend.py",
+            "owner_family": "loki",
+            "status_class": "active_route",
+            "entrypoint": "FuturesDashboardBackend",
+            "route_paths": [
+                "/api/futures/dashboard"
+            ],
+            "readiness_keys": [],
+            "parent_surface": "templates/futures_dashboard.html",
+            "doc_path": "docs/futures_dashboard_backend.md",
+            "test_paths": [
+                "tests/futures/test_threshold_logic.py"
+            ],
+            "approval_required": false,
+            "mutates_state": false,
+            "execution_capable": false,
+            "network_capable": false,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [],
+            "output_contract": "solomon.futures.dashboard.v1",
+            "memory_writeback": []
+        },
+        {
+            "engine_id": "futures_memory_outbox",
+            "display_name": "Futures Memory Reconciler",
+            "source_path": "services/solomon_futures_memory.py",
+            "owner_family": "loki",
+            "status_class": "active_readiness",
+            "entrypoint": "FuturesOutcomeReconciler",
+            "route_paths": [],
+            "readiness_keys": [
+                "futures_memory_ready"
+            ],
+            "parent_surface": null,
+            "doc_path": "docs/solomon_futures_engine.md",
+            "test_paths": [
+                "tests/futures/test_threshold_logic.py"
+            ],
+            "approval_required": true,
+            "mutates_state": true,
+            "execution_capable": false,
+            "network_capable": false,
+            "ss1_touching": false,
+            "human_approval_authority": "Mark",
+            "safe_default": "dry_run",
+            "known_blockers": [],
+            "output_contract": "solomon.futures.memory.v1",
+            "memory_writeback": []
+        }
+    ],
+    "exclusions": [
+        "solomon_api/gpt_readiness_snapshot.py",
+        "solomon_api/gpt_route_index.py",
+        "solomon_api/capabilities_manifest.py",
+        "services/soss_workspace_status.py",
+        "backend/main.py",
+        "services/live_data_ingestion.py",
+        "services/renewable_worker.py"
+    ]
 }

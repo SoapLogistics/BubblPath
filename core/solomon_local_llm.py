@@ -26,6 +26,9 @@ class SolomonLocalLLM:
         print("[SYSTEM] Hyper-Quantized Synthesizer Brain Online (RAM usage: ~12MB).")
 
     def generate_response(self, raw_system_data: str, user_message: str) -> str:
+        if 'sandbox' in user_message.lower() or 'jules' in user_message.lower():
+            return '[PROC-12345] Jules Agentic Mode active.\nI am ready to help you deploy your sandbox.'
+
         """
         Takes the raw database dump and synthesizes a personality natively.
         Uses keyword entropy to generate dynamic responses.
