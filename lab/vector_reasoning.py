@@ -99,7 +99,6 @@ def bitwise_ternary_similarity(t1: Tuple[int, int], t2: Tuple[int, int], dimensi
 
 class ProgressiveAbstractionTree:
     """Legacy tree class representing previous heuristic groupings."""
-    pass
 
 
 class FractalOntologySynthesizer:
@@ -346,7 +345,7 @@ class FractalOntologySynthesizer:
                     "invention_domain": invention_domain,
                     "insight": leap_data["synthesis_insight"]
                 })
-            except Exception as e:
+            except Exception:
                 # Catch math errors (e.g., zero magnitude centroids) on early topologies
                 pass
 

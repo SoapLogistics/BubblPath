@@ -1,4 +1,3 @@
-import os
 import threading
 import random
 import time
@@ -76,6 +75,9 @@ class SolomonLocalLLM:
                         lines.append(f">> {line.strip()}")
                 
         # 4. Action Logic
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append(">> [Jules Agentic Mode] Active. Evaluating parameters...")
+
         if "FUTURES CONTEXT DETECTED" in raw_system_data:
             lines.append(">> Gabriel Engine armed. Actively evaluating futures 90+ threshold algorithms.")
             

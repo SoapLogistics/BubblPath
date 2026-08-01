@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 import time
 
 from solomon_meta_learner import MetaLearner
@@ -123,7 +123,7 @@ class PerpetualLearningEngine:
             results["subsystem_results"]["moe_route"] = route_result
 
         # ENHANCEMENT: Universal optimizer tick for every event
-        opt_tick = self.optimizer.run_optimization_cycle()
+        self.optimizer.run_optimization_cycle()
         results["subsystem_results"]["optimizer_tick"] = "completed"
 
         return results

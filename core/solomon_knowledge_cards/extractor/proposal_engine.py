@@ -2,7 +2,7 @@ import datetime
 import uuid
 import os
 import re
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
