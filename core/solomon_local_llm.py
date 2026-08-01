@@ -36,6 +36,9 @@ class SolomonLocalLLM:
         # 1. Dynamic Processing Hash
         hash_val = hashlib.md5(f"{time.time()}{user_message}".encode()).hexdigest()[:6].upper()
         lines.append(f"[PROC-{hash_val}] Processing matrix...")
+
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append("Activating [Jules Agentic Mode]")
         
         # 2. Greeting / Conversational Logic
         greetings = ["hi", "hello", "hey", "greetings", "sup", "howdy"]
