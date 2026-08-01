@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Scoring Calibration Fixture",
+  "type": "object",
+  "properties": {
+    "fixture_id": { "type": "string" },
+    "description": { "type": "string" },
+    "record": {
+      "type": "object",
+      "description": "A serialized KnowledgeCard"
+    },
+    "context": {
+      "type": "object",
+      "description": "External context for extraction"
+    },
+    "expected_score_range": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "expected_rank": { "type": "integer" }
+  },
+  "required": ["fixture_id", "record", "expected_score_range"]
+}

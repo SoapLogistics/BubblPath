@@ -1,0 +1,175 @@
+[
+  {
+    "fixture_id": "F1_PERFECT_UNCITED",
+    "description": "High utility, high specificity, but no evidence or corroboration.",
+    "record": {
+      "card_id": "f1-123",
+      "card_type": "KNOWLEDGE",
+      "schema_version": "1.0",
+      "title": "A perfectly formatted claim without evidence",
+      "summary": "This is a great claim.",
+      "body": "It solves all the problems perfectly. word word word word word word word word word word",
+      "status": "ACTIVE",
+      "confidence": 0.5,
+      "validation_state": "UNVALIDATED",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "created_by": "user1",
+      "source_type": "EXTERNAL",
+      "source_ids": [],
+      "parent_card_ids": [],
+      "related_card_ids": [],
+      "tags": [
+        "perfect",
+        "uncited"
+      ],
+      "security_classification": "UNCLASSIFIED",
+      "evidence": "None provided",
+      "why_created": "To test the lack of evidence.",
+      "problem_solved": "Solves testing problem."
+    },
+    "context": {
+      "evidence_verified": false,
+      "provenance_verified": false
+    },
+    "expected_score_range": [
+      0.0,
+      0.45
+    ],
+    "expected_rank": 3
+  },
+  {
+    "fixture_id": "F2_OLD_STABLE",
+    "description": "Old fact, well corroborated, verified, stable.",
+    "record": {
+      "card_id": "f2-123",
+      "card_type": "KNOWLEDGE",
+      "schema_version": "1.0",
+      "title": "Earth is round",
+      "summary": "The Earth is roughly spherical.",
+      "body": "Scientific consensus and observations show Earth is an oblate spheroid.",
+      "status": "ACTIVE",
+      "confidence": 0.9,
+      "validation_state": "VALID",
+      "created_at": "2020-01-01T00:00:00Z",
+      "updated_at": "2023-01-01T00:00:00Z",
+      "created_by": "system",
+      "source_type": "SYSTEM",
+      "source_ids": [
+        "wiki:earth"
+      ],
+      "parent_card_ids": [
+        "c1",
+        "c2",
+        "c3"
+      ],
+      "related_card_ids": [
+        "c4",
+        "c5"
+      ],
+      "tags": [
+        "science",
+        "geography",
+        "astronomy",
+        "physics"
+      ],
+      "security_classification": "UNCLASSIFIED",
+      "evidence": "Photos from space, gravity measurements, circumnavigation. data data data data data",
+      "why_created": "Fundamental knowledge.",
+      "problem_solved": "Navigation."
+    },
+    "context": {
+      "evidence_verified": true,
+      "provenance_verified": true,
+      "access_count": 1000,
+      "success_retrieval_count": 990,
+      "failure_retrieval_count": 10,
+      "time_since_last_access": 0.5
+    },
+    "expected_score_range": [
+      0.8,
+      1.0
+    ],
+    "expected_rank": 1
+  },
+  {
+    "fixture_id": "F3_FREQUENTLY_RETRIEVED_WRONG",
+    "description": "Often accessed but contradicted and invalidated.",
+    "record": {
+      "card_id": "f3-123",
+      "card_type": "KNOWLEDGE",
+      "schema_version": "1.0",
+      "title": "A popular myth",
+      "summary": "People think this is true but it's not.",
+      "body": "It's a widespread misconception.",
+      "status": "ACTIVE",
+      "confidence": 0.9,
+      "validation_state": "INVALID",
+      "created_at": "2023-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "created_by": "user2",
+      "source_type": "USER",
+      "source_ids": [],
+      "parent_card_ids": [],
+      "related_card_ids": [
+        "myth1",
+        "myth2"
+      ],
+      "tags": [
+        "myth",
+        "popular"
+      ],
+      "security_classification": "UNCLASSIFIED",
+      "evidence": "Heard it from a friend.",
+      "why_created": "Thought it was true."
+    },
+    "context": {
+      "contradiction_risk": 0.9,
+      "access_count": 500,
+      "success_retrieval_count": 100,
+      "failure_retrieval_count": 400
+    },
+    "expected_score_range": [
+      0.0,
+      0.2
+    ],
+    "expected_rank": 4
+  },
+  {
+    "fixture_id": "F4_VERIFIED_LOW_NOVELTY",
+    "description": "True, verified, but boring.",
+    "record": {
+      "card_id": "f4-123",
+      "card_type": "KNOWLEDGE",
+      "schema_version": "1.0",
+      "title": "Water is wet",
+      "summary": "Water makes things wet.",
+      "body": "This is a basic property of water.",
+      "status": "ACTIVE",
+      "confidence": 0.8,
+      "validation_state": "VALID",
+      "created_at": "2023-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "created_by": "user1",
+      "source_type": "USER",
+      "source_ids": [],
+      "parent_card_ids": [],
+      "related_card_ids": [],
+      "tags": [
+        "water"
+      ],
+      "security_classification": "UNCLASSIFIED",
+      "evidence": "Observed every day.",
+      "why_created": "Testing."
+    },
+    "context": {
+      "novelty_score": 0.1,
+      "evidence_verified": true
+    },
+    "expected_score_range": [
+      0.4,
+      0.7
+    ],
+    "expected_rank": 2
+  }
+]
