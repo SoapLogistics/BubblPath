@@ -1,0 +1,1 @@
+# OSWALD Curriculum Generator Package
