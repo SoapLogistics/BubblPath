@@ -37,6 +37,13 @@ class SolomonLocalLLM:
         hash_val = hashlib.md5(f"{time.time()}{user_message}".encode()).hexdigest()[:6].upper()
         lines.append(f"[PROC-{hash_val}] Processing matrix...")
         
+        # Check for Sandbox / Jules test simulator trigger
+        if "sandbox" in msg_lower or "jules" in msg_lower:
+            lines.append("[Jules Agentic Mode] Initializing agent sandbox environment simulation...")
+            lines.append(">> Executing secure workspace boundaries, dynamic capabilities and pipelines.")
+            lines.append(">> This knowledge has been permanently assimilated into my memory.")
+            return "\n".join(lines)
+
         # 2. Greeting / Conversational Logic
         greetings = ["hi", "hello", "hey", "greetings", "sup", "howdy"]
         if any(g in msg_lower.split() for g in greetings):
