@@ -231,6 +231,11 @@
     "solomon_api/gpt_route_index.py",
     "solomon_api/capabilities_manifest.py",
     "services/soss_workspace_status.py",
-    "backend/main.py"
+    "backend/main.py",
+    "services/live_data_ingestion.py",
+    "services/renewable_worker.py",
+    "backend/services/oswald/curriculum/models.py",
+    "backend/services/oswald/curriculum/planner.py",
+    "backend/services/oswald/curriculum/__init__.py"
   ]
 }
