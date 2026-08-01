@@ -27,10 +27,26 @@ class Candidate:
 
     def validate(self) -> List[str]:
         errors = []
+        if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
+            errors.append("INVALID_CANDIDATE_ID")
+        if not isinstance(self.event_id, str) or not self.event_id.strip():
+            errors.append("INVALID_EVENT_ID")
         if self.source_mode not in ["TEST", "SIMULATION", "SHADOW", "LIVE"]:
             errors.append("INVALID_SOURCE_MODE")
-        if self.pre_simulation_confidence < 0.0 or self.pre_simulation_confidence > 100.0:
+        if not isinstance(self.pre_simulation_confidence, (int, float)) or self.pre_simulation_confidence < 0.0 or self.pre_simulation_confidence > 100.0:
             errors.append("OUT_OF_RANGE_CONFIDENCE")
+        if not isinstance(self.data_quality_score, (int, float)) or self.data_quality_score < 0.0 or self.data_quality_score > 100.0:
+            errors.append("OUT_OF_RANGE_DATA_QUALITY")
+
+        # Rigorous feature validation
+        if not isinstance(self.features, dict):
+            errors.append("INVALID_FEATURES_TYPE")
+        else:
+            for key in ["base_prob", "win_prob", "volatility_index", "historical_support", "geopolitical_risk"]:
+                if key in self.features:
+                    val = self.features[key]
+                    if not isinstance(val, (int, float)) or val < 0.0 or val > 1.0:
+                        errors.append(f"INVALID_FEATURE_BOUNDS_{key.upper()}")
         return errors
 
 @dataclasses.dataclass
@@ -64,8 +80,17 @@ class WilsonInterval:
     def calculate(successes: int, trials: int, confidence: float = 0.95) -> Tuple[float, float]:
         if trials == 0:
             return 0.0, 0.0
-        # Z-score for 95% confidence is approx 1.96
-        z = 1.96
+
+        # Map explicit confidence level float parameters to corresponding Z-scores
+        z_scores = {
+            0.80: 1.282,
+            0.85: 1.440,
+            0.90: 1.645,
+            0.95: 1.960,
+            0.98: 2.326,
+            0.99: 2.576
+        }
+        z = z_scores.get(confidence, 1.960)
         p = successes / trials
 
         denominator = 1 + z**2 / trials
@@ -94,7 +119,9 @@ class UniversalFuturesAdapter:
     def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
         """Extracts multidimensional global metrics from the candidate features."""
         # Baseline probability of the event occurring (e.g. historical average)
-        base = candidate.features.get("base_prob", 0.5)
+        base = candidate.features.get("base_prob")
+        if base is None:
+            base = candidate.features.get("win_prob", 0.5)
         # Market/Domain volatility (0.0 to 1.0) - how wildly things swing
         volatility = candidate.features.get("volatility_index", 0.1)
         # Structural support (0.0 to 1.0) - resistance to crashing
