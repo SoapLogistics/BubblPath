@@ -123,6 +123,65 @@ class DatabaseManager:
                             (2, datetime.datetime.now(datetime.UTC).isoformat())
                         )
 
+                # Re-query current version to apply sequential migrations
+                cursor.execute("SELECT MAX(version) FROM schema_version")
+                current_version = cursor.fetchone()[0]
+
+                # Migration 3: Laboratory Core tables
+                if current_version < 3:
+                    with conn:
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS lab_hypotheses (
+                                id TEXT PRIMARY KEY,
+                                version TEXT NOT NULL,
+                                data TEXT NOT NULL,
+                                created_at TEXT NOT NULL
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS lab_experiment_designs (
+                                id TEXT PRIMARY KEY,
+                                hypothesis_id TEXT NOT NULL,
+                                version TEXT NOT NULL,
+                                data TEXT NOT NULL,
+                                created_at TEXT NOT NULL,
+                                FOREIGN KEY (hypothesis_id) REFERENCES lab_hypotheses(id)
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS lab_observations (
+                                id TEXT PRIMARY KEY,
+                                experiment_id TEXT NOT NULL,
+                                data TEXT NOT NULL,
+                                created_at TEXT NOT NULL,
+                                FOREIGN KEY (experiment_id) REFERENCES lab_experiment_designs(id)
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS lab_evaluation_results (
+                                id TEXT PRIMARY KEY,
+                                experiment_id TEXT NOT NULL,
+                                data TEXT NOT NULL,
+                                created_at TEXT NOT NULL,
+                                FOREIGN KEY (experiment_id) REFERENCES lab_experiment_designs(id)
+                            );
+                        """)
+                        conn.execute("""
+                            CREATE TABLE IF NOT EXISTS lab_belief_updates (
+                                id TEXT PRIMARY KEY,
+                                hypothesis_id TEXT NOT NULL,
+                                experiment_id TEXT NOT NULL,
+                                data TEXT NOT NULL,
+                                created_at TEXT NOT NULL,
+                                FOREIGN KEY (hypothesis_id) REFERENCES lab_hypotheses(id),
+                                FOREIGN KEY (experiment_id) REFERENCES lab_experiment_designs(id)
+                            );
+                        """)
+                        conn.execute(
+                            "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
+                            (3, datetime.datetime.now(datetime.UTC).isoformat())
+                        )
+
             finally:
                 conn.close()
 
