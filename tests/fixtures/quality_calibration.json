@@ -1,0 +1,56 @@
+[
+  {
+    "card_id": "cal-01",
+    "expected_min_score": 0.8,
+    "expected_reason_codes": ["HIGH_CONFIDENCE"],
+    "features": {
+      "evidence_strength": 1.0,
+      "provenance_reliability": 1.0,
+      "corroboration_count": 5,
+      "specificity_score": 0.9,
+      "freshness_days": 10.0,
+      "novelty_score": 0.8,
+      "utility_retrieval_count": 10,
+      "stability_score": 1.0,
+      "contradiction_risk": 0.0,
+      "verification_status": 1.0,
+      "domain": "default"
+    }
+  },
+  {
+    "card_id": "cal-02",
+    "expected_max_score": 0.4,
+    "expected_reason_codes": ["GATED_BY_VERIFICATION_STATUS"],
+    "features": {
+      "evidence_strength": 0.8,
+      "provenance_reliability": 0.8,
+      "corroboration_count": 3,
+      "specificity_score": 0.7,
+      "freshness_days": 5.0,
+      "novelty_score": 0.5,
+      "utility_retrieval_count": 5,
+      "stability_score": 0.8,
+      "contradiction_risk": 0.1,
+      "verification_status": 0.0,
+      "domain": "default"
+    }
+  },
+  {
+    "card_id": "cal-03",
+    "expected_max_score": 0.4,
+    "expected_reason_codes": ["GATED_BY_PROVENANCE"],
+    "features": {
+      "evidence_strength": 0.9,
+      "provenance_reliability": 0.0,
+      "corroboration_count": 5,
+      "specificity_score": 0.9,
+      "freshness_days": 1.0,
+      "novelty_score": 0.9,
+      "utility_retrieval_count": 10,
+      "stability_score": 1.0,
+      "contradiction_risk": 0.0,
+      "verification_status": 1.0,
+      "domain": "default"
+    }
+  }
+]
