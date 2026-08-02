@@ -76,6 +76,9 @@ class SolomonLocalLLM:
                         lines.append(f">> {line.strip()}")
                 
         # 4. Action Logic
+        if any(kw in msg_lower for kw in ["sandbox", "jules", "codex"]):
+            lines.append(">> Activating [Jules Agentic Mode]")
+
         if "FUTURES CONTEXT DETECTED" in raw_system_data:
             lines.append(">> Gabriel Engine armed. Actively evaluating futures 90+ threshold algorithms.")
             

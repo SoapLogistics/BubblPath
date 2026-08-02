@@ -22,7 +22,7 @@ class AcquisitionRecord:
         self.license_detected = license_detected
         self.allowed_actions = allowed_actions or []
         self.prohibited_actions = prohibited_actions or []
-        self.timestamp = timestamp or datetime.datetime.utcnow().isoformat()
+        self.timestamp = timestamp or datetime.datetime.now(datetime.UTC).isoformat()
         self.content_hash = content_hash
         self.aggressive_mode = aggressive_mode
 

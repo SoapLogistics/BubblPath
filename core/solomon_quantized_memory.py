@@ -7,6 +7,7 @@ import hashlib
 import threading
 import sqlite3
 import zlib
+import logging
 import numpy as np
 from scipy.sparse import lil_matrix, csr_matrix
 from typing import Dict, List, Any, Optional
@@ -220,8 +221,8 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Failed to access database during _fetch_node_direct: {e}")
         return None
 
     def recall(self, query: str, top_k: int = 5) -> List[Dict]:

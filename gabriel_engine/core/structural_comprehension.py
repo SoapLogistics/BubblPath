@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import logging
 from typing import List, Dict, Any, Set
 from gabriel_engine.core.models import ProgramAnatomyCard
 
@@ -136,8 +137,8 @@ class StructuralComprehensionEngine:
                 for im in import_matches:
                     if im not in ["os", "sys", "re", "json", "hashlib", "datetime", "typing", "time"]:
                         deps.add(im)
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Failed to parse source file {filepath} for imports: {e}")
 
     def _parse_requirements(self, filepath: str, deps: Set[str]):
         try:
@@ -149,8 +150,8 @@ class StructuralComprehensionEngine:
                         package = re.split(r'[<>=~]', line)[0].strip()
                         if package:
                             deps.add(package)
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Failed to parse requirements file {filepath}: {e}")
 
     def _parse_package_json(self, filepath: str, deps: Set[str]):
         try:
@@ -160,5 +161,5 @@ class StructuralComprehensionEngine:
                     if dep_type in data:
                         for dep_name in data[dep_type].keys():
                             deps.add(dep_name)
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Failed to parse package.json file {filepath}: {e}")

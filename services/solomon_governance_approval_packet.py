@@ -2,6 +2,7 @@
 import mmap
 import struct
 import os
+import logging
 
 route_key = "solomon_governance_approval_packet"
 
@@ -47,5 +48,5 @@ class GovernanceApprovalLane:
                         break
                 mm.flush()
                 mm.close()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"Governance log audit event failed: {e}")

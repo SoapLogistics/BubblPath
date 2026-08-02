@@ -1,6 +1,7 @@
 import os
 import hashlib
 import json
+import logging
 from typing import List, Dict, Any, Tuple
 from gabriel_engine.core.models import AcquisitionRecord
 
@@ -31,8 +32,8 @@ class AcquisitionEngine:
                     with open(file_path, "rb") as f:
                         for chunk in iter(lambda: f.read(4096), b""):
                             hash_sha256.update(chunk)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logging.error(f"Failed to hash chunk for {file_path}: {e}")
         return hash_sha256.hexdigest()
 
     @staticmethod
@@ -69,8 +70,8 @@ class AcquisitionEngine:
                                 detected = "BSD-3-Clause"
                             elif "proprietary" in content or "copyright" in content:
                                 detected = "Proprietary"
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logging.error(f"Failed to read license file {file_path}: {e}")
         else:
             # Simple heuristic for simulated string/paths
             lower_path = directory_path.lower()
