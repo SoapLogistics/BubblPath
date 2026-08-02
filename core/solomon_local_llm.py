@@ -38,6 +38,9 @@ class SolomonLocalLLM:
         lines.append(f"[PROC-{hash_val}] Processing matrix...")
         
         # 2. Greeting / Conversational Logic
+        if any(keyword in msg_lower for keyword in ["sandbox", "jules"]):
+            lines.append("Activating [Jules Agentic Mode]...")
+            lines.append(">> This knowledge has been permanently assimilated into my memory.")
         greetings = ["hi", "hello", "hey", "greetings", "sup", "howdy"]
         if any(g in msg_lower.split() for g in greetings):
             greet_responses = [
