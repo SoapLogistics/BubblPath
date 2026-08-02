@@ -231,6 +231,8 @@
     "solomon_api/gpt_route_index.py",
     "solomon_api/capabilities_manifest.py",
     "services/soss_workspace_status.py",
+    "services/live_data_ingestion.py",
+    "services/renewable_worker.py",
     "backend/main.py"
   ]
 }
