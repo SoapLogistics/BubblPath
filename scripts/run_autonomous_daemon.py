@@ -7,7 +7,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from solomon_ingest.connectors.omni_rss_connector import OmniRSSConnector
 from core.solomon_quantized_memory import QuantizedBrainMap
-from core.agentic_claw import SolomonAgenticClaw
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [DAEMON] %(message)s")
 logger = logging.getLogger("autonomous_daemon")

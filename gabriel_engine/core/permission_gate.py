@@ -1,4 +1,4 @@
-from typing import Dict, Any, Tuple
+from typing import Tuple
 from gabriel_engine.core.models import AcquisitionRecord
 
 class PermissionGate:
