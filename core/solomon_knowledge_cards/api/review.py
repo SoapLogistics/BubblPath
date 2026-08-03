@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Optional, Dict, Any
+from typing import Optional
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
 

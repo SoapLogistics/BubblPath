@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from solomon_knowledge_cards.api.repository import CardRepository
 
 class ToolArbiter:

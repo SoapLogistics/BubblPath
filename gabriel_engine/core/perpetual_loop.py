@@ -1,8 +1,8 @@
-import os
 import time
 import logging
 from typing import List, Dict, Any, Optional
 
+from gabriel_engine.learning.pipeline import GabrielLearningPipeline
 from gabriel_engine.core.models import (
     AcquisitionRecord,
     ProgramAnatomyCard,
@@ -57,6 +57,7 @@ class GabrielPerpetualLoop:
 
         # Self-improvement statistics for Step 10 (Continuous learning)
         self.assimilation_history: List[Dict[str, Any]] = []
+        self.learning_pipeline = GabrielLearningPipeline()
 
     def assimilate_project(
         self,
@@ -281,7 +282,8 @@ class GabrielPerpetualLoop:
             logger.error(f"Logging history stats failed: {str(log_err)}")
             loop_log = {"status": "error", "message": str(log_err)}
 
-        return {
+        # Invoke Learning Pipeline
+        assimilation_result_dict = {
             "status": "success",
             "project_name": project_name,
             "acquisition_record": record.to_dict(),
@@ -293,6 +295,16 @@ class GabrielPerpetualLoop:
             "assimilation_details": results_list,
             "loop_learning_summary": loop_log
         }
+
+        try:
+            learning_record = self.learning_pipeline.process_assimilation_result(assimilation_result_dict)
+            loop_log.setdefault("learnings_recorded", {})["learning_record_id"] = learning_record.id
+            loop_log.setdefault("learnings_recorded", {})["confidence"] = learning_record.confidence
+            assimilation_result_dict["learning_record"] = learning_record.model_dump()
+        except Exception as e:
+            logger.error(f"Learning pipeline extraction failed: {str(e)}")
+
+        return assimilation_result_dict
 
     def deconstruct_and_rebuild_binary(self, binary_name: str) -> Dict[str, Any]:
         """

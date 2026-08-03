@@ -2,7 +2,7 @@ import datetime
 import uuid
 import os
 import re
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
@@ -138,7 +138,7 @@ class ProposalEngine:
         # Extract target file path from body using robust regex allowing bold markdown formatting asterisks
         match = re.search(r"Target Document:.*?`([^`]+)`", proposal.body)
         if not match:
-            print(f"[ProposalEngine] File path parsing failed from proposal body.")
+            print("[ProposalEngine] File path parsing failed from proposal body.")
             return False
 
         target_file_path = match.group(1)
@@ -147,7 +147,7 @@ class ProposalEngine:
             os.makedirs(os.path.dirname(target_file_path), exist_ok=True)
             # Create a basic stub to write to
             with open(target_file_path, "w", encoding="utf-8") as f:
-                f.write(f"# Procedure Card\n")
+                f.write("# Procedure Card\n")
 
         # Read original text
         with open(target_file_path, "r", encoding="utf-8") as f:
@@ -156,7 +156,7 @@ class ProposalEngine:
         # Safely append the proposed section at the end of the file (or merge)
         proposed_block_match = re.search(r"```markdown\n(.*?)\n```", proposal.body, re.DOTALL)
         if not proposed_block_match:
-            print(f"[ProposalEngine] Proposed markdown block parsing failed from proposal body.")
+            print("[ProposalEngine] Proposed markdown block parsing failed from proposal body.")
             return False
 
         proposed_block = proposed_block_match.group(1)

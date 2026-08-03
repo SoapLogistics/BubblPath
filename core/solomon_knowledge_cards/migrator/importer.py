@@ -1,7 +1,7 @@
 import os
 import re
 import datetime
-from typing import List, Dict, Any
+from typing import List
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
