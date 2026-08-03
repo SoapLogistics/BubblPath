@@ -1,8 +1,7 @@
+import hashlib
+import math
 import os
 import re
-import math
-import hashlib
-from typing import List, Dict, Any, Optional
 
 try:
     import openai
@@ -14,7 +13,7 @@ class SemanticEmbedder:
         self.dimension = dimension
         self.api_key = os.environ.get("OPENAI_API_KEY")
 
-    def _generate_hash_vector(self, text: str) -> List[float]:
+    def _generate_hash_vector(self, text: str) -> list[float]:
         """
         Fallback feature hashing vectorizer (Hashing Trick) in pure Python.
         Deterministic, fixed-dimension, normalized frequency representation.
@@ -38,7 +37,7 @@ class SemanticEmbedder:
 
         return vector
 
-    def get_embedding(self, text: str) -> List[float]:
+    def get_embedding(self, text: str) -> list[float]:
         """
         Retrieves embedding. Uses OpenAI API if configured and available,
         otherwise falls back to deterministic feature hashing vectorizer.
@@ -69,7 +68,7 @@ class SemanticEmbedder:
 
         return self._generate_hash_vector(text)
 
-    def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
+    def cosine_similarity(self, vec_a: list[float], vec_b: list[float]) -> float:
         """Computes cosine similarity between two numeric lists."""
         if len(vec_a) != len(vec_b) or not vec_a or not vec_b:
             return 0.0

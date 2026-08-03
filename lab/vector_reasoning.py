@@ -1,10 +1,10 @@
+import logging
 import math
 import random
 import threading
 import time
-import logging
-from typing import Dict, List, Tuple, Any
 from collections import OrderedDict
+from typing import Any
 
 # Set up local logger for background tasks
 logging.basicConfig(level=logging.INFO)
@@ -12,9 +12,9 @@ logger = logging.getLogger("FractalDream")
 
 # Fast immutable vector using pure Python tuples.
 # Note: For ternary math, vectors are returned as bit-packed integers for O(1) ops.
-Vector = Tuple[float, ...]
+Vector = tuple[float, ...]
 
-def quantize_to_ternary(v: Vector, threshold: float = 0.3) -> Tuple[int, int]:
+def quantize_to_ternary(v: Vector, threshold: float = 0.3) -> tuple[int, int]:
     """
     Compresses a float vector into a ternary representation (-1, 0, 1).
     To achieve extreme bitwise efficiency (Phase 1), we pack the entire vector into two integers:
@@ -31,7 +31,7 @@ def quantize_to_ternary(v: Vector, threshold: float = 0.3) -> Tuple[int, int]:
             neg_mask |= (1 << i)
     return (pos_mask, neg_mask)
 
-def dequantize_from_ternary(packed: Tuple[int, int], dimensions: int) -> Vector:
+def dequantize_from_ternary(packed: tuple[int, int], dimensions: int) -> Vector:
     """Expands a (pos_mask, neg_mask) tuple back to a standard Vector for float math."""
     pos_mask, neg_mask = packed
     vec = []
@@ -66,7 +66,7 @@ def cosine_similarity(v1: Vector, v2: Vector) -> float:
         return 0.0
     return dot_product(v1, v2) / (mag1 * mag2)
 
-def bitwise_ternary_similarity(t1: Tuple[int, int], t2: Tuple[int, int], dimensions: int) -> float:
+def bitwise_ternary_similarity(t1: tuple[int, int], t2: tuple[int, int], dimensions: int) -> float:
     """
     O(1) semantic similarity using XOR and POPCOUNT logic on bit-packed masks.
     This replaces float-based cosine_similarity for extreme speed.
@@ -99,7 +99,6 @@ def bitwise_ternary_similarity(t1: Tuple[int, int], t2: Tuple[int, int], dimensi
 
 class ProgressiveAbstractionTree:
     """Legacy tree class representing previous heuristic groupings."""
-    pass
 
 
 class FractalOntologySynthesizer:
@@ -113,9 +112,9 @@ class FractalOntologySynthesizer:
         self.max_concepts = max_concepts
         # Concepts now store either standard vectors or extremely packed ternary tuples (pos_mask, neg_mask)
         self.concepts: OrderedDict[str, Any] = OrderedDict()
-        self.domains: Dict[str, List[str]] = {}
+        self.domains: dict[str, list[str]] = {}
         # Context Shadows (Phase 4): stores secondary vectors representing contextual origin
-        self.context_shadows: Dict[str, Vector] = {}
+        self.context_shadows: dict[str, Vector] = {}
 
         # Thread safety for concurrent API/Dream operations
         self.lock = threading.Lock()
@@ -123,7 +122,7 @@ class FractalOntologySynthesizer:
         self._dream_thread = None
 
         # Advanced Modules Integration
-        self.quantum_registry: Dict[str, Any] = {} # For Phase 5
+        self.quantum_registry: dict[str, Any] = {} # For Phase 5
 
     def _generate_orthogonal_base(self, seed_string: str) -> Vector:
         """Generates a deterministic vector based on string seeding."""
@@ -171,7 +170,7 @@ class FractalOntologySynthesizer:
                 self.domains[domain].append(concept_name)
 
     # --- Phase 5: Quantum Superposition Integration ---
-    def establish_quantum_concept(self, concept_name: str, superpositions: Dict[str, float]) -> None:
+    def establish_quantum_concept(self, concept_name: str, superpositions: dict[str, float]) -> None:
         """
         Creates a concept in quantum superposition across multiple domains.
         The concept does not exist as a physical vector until observed.
@@ -200,7 +199,7 @@ class FractalOntologySynthesizer:
         return chosen_domain
 
     # --- Phase 6: Holographic HRR Integration ---
-    def synthesize_holographic_cluster(self, concept_names: List[str]) -> Tuple[str, Vector]:
+    def synthesize_holographic_cluster(self, concept_names: list[str]) -> tuple[str, Vector]:
         """
         Uses circular convolution to compress an infinite number of concepts
         into a single interference pattern of the same topological size (O(1) memory).
@@ -261,7 +260,7 @@ class FractalOntologySynthesizer:
 
         return vector_mul(sum_vec, 1.0 / len(self.domains[domain]))
 
-    def synthesize_cross_domain_leap(self, source_concept: str, source_domain: str, target_domain: str) -> Dict[str, Any]:
+    def synthesize_cross_domain_leap(self, source_concept: str, source_domain: str, target_domain: str) -> dict[str, Any]:
         """
         Mathematically map an abstraction and force it into another domain.
         Operation: Target_Space = Source_Concept - Source_Centroid + Target_Centroid
@@ -301,7 +300,7 @@ class FractalOntologySynthesizer:
             )
         }
 
-    def run_infinite_learning_cycle(self, iterations: int = 1) -> List[Dict[str, Any]]:
+    def run_infinite_learning_cycle(self, iterations: int = 1) -> list[dict[str, Any]]:
         """
         Autonomously selects concepts and synthesizes cross-domain leaps.
         Permanently learns the synthesized hybrid concepts, endlessly expanding capability.
@@ -346,13 +345,13 @@ class FractalOntologySynthesizer:
                     "invention_domain": invention_domain,
                     "insight": leap_data["synthesis_insight"]
                 })
-            except Exception as e:
+            except Exception:
                 # Catch math errors (e.g., zero magnitude centroids) on early topologies
                 pass
 
         return insights
 
-    def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: List[str] = None, top_k: int = 5) -> List[Tuple[str, float]]:
+    def find_nearest_concepts(self, target_vector: Vector, domain_filter: str = None, exclude: list[str] = None, top_k: int = 5) -> list[tuple[str, float]]:
         """
         Find concepts closest to the given vector.
         Automatically utilizes bitwise XOR similarity for packed vectors to drastically reduce compute time.
@@ -407,7 +406,7 @@ class FractalOntologySynthesizer:
                         logger.info(f"[Dream] Synthesized {len(insights)} new concepts autonomously.")
                 except Exception as e:
                     # Log appropriately rather than swallowing blindly
-                    logger.error(f"[Dream] Mathematical anomaly encountered: {str(e)}", exc_info=True)
+                    logger.error(f"[Dream] Mathematical anomaly encountered: {e!s}", exc_info=True)
 
                 time.sleep(cycle_interval_seconds)
 

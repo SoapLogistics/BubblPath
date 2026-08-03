@@ -1,5 +1,5 @@
-import pytest
-from services.solomon_futures_engine import Candidate, FuturesEngine, WilsonInterval, SimulationConfig
+from services.solomon_futures_engine import Candidate, FuturesEngine, WilsonInterval
+
 
 def test_wilson_interval():
     lower, upper = WilsonInterval.calculate(900, 1000, 0.95)
@@ -37,7 +37,7 @@ def test_full_simulation_gate_b_confirmation():
         candidate_id="c3", event_id="e3", domain="sports", source_name="src",
         source_record_id="rec3", source_mode="SHADOW", source_timestamp="2026-07-26",
         ingested_at="2026-07-26", pre_simulation_confidence=95.0, data_quality_score=95.0,
-        features={"win_prob": 0.95} # High probability ensuring Wilson lower bound > 0.90
+        features={"base_prob": 0.95} # High probability ensuring Wilson lower bound > 0.90
     )
 
     result = engine.process_candidate(c, seed=42)

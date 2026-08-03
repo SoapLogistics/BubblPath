@@ -1,6 +1,5 @@
-import json
 import sqlite3
-from typing import Dict, Any
+from typing import Any
 
 route_key = "futures_dashboard_backend"
 
@@ -8,7 +7,7 @@ class FuturesDashboardBackend:
     def __init__(self, db_path="solomon_soss.db"):
         self.db_path = db_path
 
-    def get_dashboard_data(self) -> Dict[str, Any]:
+    def get_dashboard_data(self) -> dict[str, Any]:
         """
         GET /api/futures/dashboard logic
         """

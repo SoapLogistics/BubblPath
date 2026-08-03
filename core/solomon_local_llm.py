@@ -1,9 +1,10 @@
-import os
-import threading
-import random
-import time
 import hashlib
+import random
+import threading
+import time
+
 from core.solomon_web_crawler import SolomonWebCrawler
+
 
 class SolomonLocalLLM:
     """
@@ -17,7 +18,7 @@ class SolomonLocalLLM:
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = super(SolomonLocalLLM, cls).__new__(cls)
+                cls._instance = super().__new__(cls)
                 cls._instance._initialize()
             return cls._instance
 
@@ -76,6 +77,9 @@ class SolomonLocalLLM:
                         lines.append(f">> {line.strip()}")
                 
         # 4. Action Logic
+        if "sandbox" in msg_lower or "jules" in msg_lower or "codex" in msg_lower:
+            lines.append("Activating [Jules Agentic Mode]")
+
         if "FUTURES CONTEXT DETECTED" in raw_system_data:
             lines.append(">> Gabriel Engine armed. Actively evaluating futures 90+ threshold algorithms.")
             

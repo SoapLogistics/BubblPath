@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger("SPLE_MetaLearner")
 
@@ -9,7 +9,7 @@ class MetaLearner:
     Algorithms that improve their own learning algorithms based on experience.
     """
     def __init__(self):
-        self.prompt_history: List[Dict[str, Any]] = []
+        self.prompt_history: list[dict[str, Any]] = []
         self.retrieval_configs = {
              "default": {"top_k": 5, "similarity_threshold": 0.75}
         }
@@ -47,7 +47,7 @@ class MetaLearner:
             self.retrieval_configs[task_type]["similarity_threshold"] -= 0.05
             logger.info(f"Adjusted configs for {task_type}: {self.retrieval_configs[task_type]}")
 
-    def analyze_failure_patterns(self, execution_logs: List[Dict[str, Any]]) -> List[str]:
+    def analyze_failure_patterns(self, execution_logs: list[dict[str, Any]]) -> list[str]:
         """
         Analyzes past failures to identify recurring logical fallacies.
         (Simulated AST self-correction loop feedback).
