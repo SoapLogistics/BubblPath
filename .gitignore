@@ -14,3 +14,4 @@ __pycache__/
 venv/
 services/auto_generated_capability_*.py
 services/predictive_algo_alpha_*.py
+mnemosyne.sqlite

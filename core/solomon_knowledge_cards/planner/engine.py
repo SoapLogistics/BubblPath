@@ -1,8 +1,8 @@
 import datetime
 import uuid
 from typing import List, Dict, Any, Tuple
-from solomon_knowledge_cards.api.repository import CardRepository
-from solomon_knowledge_cards.planner.models import TaskPlan
+from core.solomon_knowledge_cards.api.repository import CardRepository
+from core.solomon_knowledge_cards.planner.models import TaskPlan
 
 class DynamicPlanner:
     def __init__(self, repository: CardRepository):
@@ -19,20 +19,52 @@ class DynamicPlanner:
         # 1. Search memory database for relevant prior experiences
         memories = self.repository.search(objective)
 
-        # Only use APPROVED or ACTIVE cards as trusted context
+        # Only use APPROVED or ACTIVE cards as trusted context, or LESSONS representing learned records
         trusted_memories = [
             m for m in memories
-            if m["card"]["status"] in ("APPROVED", "ACTIVE")
+            if m["card"]["status"] in ("APPROVED", "ACTIVE", "REVIEWED") or (m["card_type"] == "LESSON" and m["card"]["status"] != "DEPRECATED")
         ]
 
         retrieved_ids = [m["card_id"] for m in trusted_memories]
 
-        # 2. Extract failures and repairs to synthesize safeguards
+        # 2. Extract failures, repairs, and lessons to synthesize safeguards and procedure rules
         failures = [m for m in trusted_memories if m["card_type"] == "FAILURE"]
         repairs = [m for m in trusted_memories if m["card_type"] == "REPAIR"]
+        lessons = [m for m in trusted_memories if m["card_type"] == "LESSON"]
 
         injected_safeguards = []
         pre_emptive_steps = []
+
+        # Inject context from learned procedures (Lessons)
+        for lesson_match in lessons:
+            card_data = lesson_match["card"]
+            extra_meta = card_data.get("extra_metadata", {})
+            if extra_meta.get("learning_record"):
+                procedure_id = extra_meta.get("procedure_id", "unknown")
+                outcome = extra_meta.get("outcome", "unknown")
+
+                # We modify the plan based on the learning record
+                if outcome == "FAILURE":
+                    # Avoid this procedure
+                    safeguard_record = {
+                        "safeguard_id": f"SG-{uuid.uuid4().hex[:6].upper()}",
+                        "triggered_by_repair": card_data["card_id"],
+                        "remediation_instruction": f"Avoid using {procedure_id} as previous attempts resulted in FAILURE.",
+                        "reason": card_data["summary"]
+                    }
+                    injected_safeguards.append(safeguard_record)
+                    pre_emptive_steps.append({
+                        "action": f"PRE-EMPTIVE SAFEGUARD (from LearningRecord {card_data['card_id']}): Ensure alternative to {procedure_id} is used.",
+                        "tool": "bash_run",
+                        "expected_outcome": f"Plan explicitly avoids known failure {procedure_id} based on learned record."
+                    })
+                elif outcome == "SUCCESS":
+                    # Encourage this procedure
+                    pre_emptive_steps.append({
+                        "action": f"LEARNED PROCEDURE (from LearningRecord {card_data['card_id']}): Leverage {procedure_id} for higher success probability.",
+                        "tool": "bash_run",
+                        "expected_outcome": f"Plan correctly incorporates proven procedure {procedure_id}."
+                    })
 
         # Synthesize safeguards from historical repairs
         for r_match in repairs:

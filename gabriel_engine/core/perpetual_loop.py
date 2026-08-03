@@ -23,6 +23,9 @@ from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
 from gabriel_engine.core.ast_injector import ASTCodeInjector
 from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
 from gabriel_engine.core.observational_simulator import ObservationalSandboxSimulator
+from gabriel_engine.learning.pipeline import GabrielLearningPipeline
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +60,13 @@ class GabrielPerpetualLoop:
 
         # Self-improvement statistics for Step 10 (Continuous learning)
         self.assimilation_history: List[Dict[str, Any]] = []
+
+        # Init learning pipeline
+        # Use an in-memory db if not specified for testing, or standard path in prod
+        db_path = os.environ.get("MNEMOSYNE_DB_PATH", "mnemosyne.sqlite")
+        self.db_manager = DatabaseManager(db_path)
+        self.learning_pipeline = GabrielLearningPipeline(self.db_manager)
+
 
     def assimilate_project(
         self,
@@ -277,8 +287,17 @@ class GabrielPerpetualLoop:
                 }
             }
             self.assimilation_history.append(loop_log)
+
+            # Formally generate LearningRecords and persist to Mnemosyne
+            learning_records = self.learning_pipeline.process_assimilation_result(
+                project_name=project_name,
+                assimilation_details=results_list,
+                loop_log=loop_log
+            )
+            loop_log["learning_records_generated"] = len(learning_records)
+
         except Exception as log_err:
-            logger.error(f"Logging history stats failed: {str(log_err)}")
+            logger.error(f"Logging history stats and learning pipeline failed: {str(log_err)}")
             loop_log = {"status": "error", "message": str(log_err)}
 
         return {
