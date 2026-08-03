@@ -1,7 +1,6 @@
 import os
 import shutil
-import tempfile
-from typing import Dict, Any, List
+from typing import Dict
 
 class CodexParallelWorktrees:
     """

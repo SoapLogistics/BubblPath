@@ -5,12 +5,12 @@ import threading
 import time
 import subprocess
 import sys
+import logging
 from flask import Flask, request, jsonify, render_template
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 from core.solomon_quantized_memory import QuantizedBrainMap
 from backend.services.futures_dashboard_backend import FuturesDashboardBackend
-from core.solomon_web_crawler import SolomonWebCrawler
 from core.agentic_claw import SolomonAgenticClaw
 from core.solomon_local_llm import SolomonLocalLLM
 
@@ -48,8 +48,8 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_parallel_worktrees", code)
             module = gabriel_loop.registry.load_capability("codex_parallel_worktrees")
             codex_worktree_instance = module.CodexParallelWorktrees()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to dynamically load/instantiate codex_parallel_worktrees: {e}", exc_info=True)
 
     # 2. Instantiation of Kanban / Task Board
     if not codex_kanban_instance:
@@ -58,8 +58,8 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_kanban", code)
             module = gabriel_loop.registry.load_capability("codex_kanban")
             codex_kanban_instance = module.RenewableWorkerLease()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to dynamically load/instantiate codex_kanban: {e}", exc_info=True)
 
     # 3. Instantiation of MCP Bridge
     if not codex_mcp_instance:
@@ -68,8 +68,8 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_mcp_bridge", code)
             module = gabriel_loop.registry.load_capability("codex_mcp_bridge")
             codex_mcp_instance = module.CodexMCPBridge()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to dynamically load/instantiate codex_mcp_bridge: {e}", exc_info=True)
 
     # 4. Instantiation of Issue-to-PR Pipeline (Jules)
     if not codex_pipeline_instance:
@@ -81,8 +81,8 @@ def get_or_create_codex_components():
                 worktree_manager=codex_worktree_instance,
                 mcp_bridge=codex_mcp_instance
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to dynamically load/instantiate codex_issue_to_pr_pipeline: {e}", exc_info=True)
 
 
 def get_or_create_jules_components():
@@ -99,8 +99,8 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_dependency_installer", code)
             module = gabriel_loop.registry.load_capability("jules_dependency_installer")
             jules_installer_instance = module.JulesDependencyInstaller()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to dynamically load/instantiate jules_dependency_installer: {e}", exc_info=True)
 
     # 2. Instantiation of Code Patcher
     if not jules_patcher_instance:
@@ -109,8 +109,8 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_code_patcher", code)
             module = gabriel_loop.registry.load_capability("jules_code_patcher")
             jules_patcher_instance = module.JulesCodePatcher()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to dynamically load/instantiate jules_code_patcher: {e}", exc_info=True)
 
     # 3. Instantiation of Test Runner Loop
     if not jules_test_loop_instance:
@@ -119,8 +119,8 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_test_runner_loop", code)
             module = gabriel_loop.registry.load_capability("jules_test_runner_loop")
             jules_test_loop_instance = module.JulesTestRunnerLoop()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to dynamically load/instantiate jules_test_runner_loop: {e}", exc_info=True)
 
 
 @app.errorhandler(Exception)
@@ -190,12 +190,14 @@ def chat():
         response_lines.append("[ACTION] ASSIMILATION KEYWORD DETECTED. Gabriel Engine standing by for coordinates.")
     elif "futures" in user_message.lower():
         response_lines.append("[ACTION] FUTURES CONTEXT DETECTED. Loki workspace evaluating 90+ threshold algorithms.")
-    elif any(kw in user_message.lower() for kw in ["build", "code", "create"]):
+    elif any(kw in user_message.lower() for kw in ["build", "code", "create", "sandbox", "jules", "codex"]):
         response_lines.append("[ACTION] AGENTIC ACTION DETECTED. Deploying Agentic Claw...")
         claw = SolomonAgenticClaw()
         # Derive a quick feature name from the message (for demonstration)
         words = user_message.lower().split()
-        feature_idx = words.index("build") if "build" in words else (words.index("code") if "code" in words else words.index("create"))
+        # Find index of any of the keywords
+        matched_kw = next((kw for kw in ["build", "code", "create", "sandbox", "jules", "codex"] if kw in words), None)
+        feature_idx = words.index(matched_kw) if matched_kw in words else 0
         feature_name = "_".join(words[feature_idx+1:feature_idx+3]) if feature_idx + 2 < len(words) else "new_feature"
         
         claw_res = claw.self_scaffold_feature(feature_name=feature_name, objective=user_message)
@@ -742,7 +744,6 @@ def futures_dashboard():
 
 @app.route("/api/futures/dashboard")
 def api_futures_dashboard():
-    from backend.services.futures_dashboard_backend import FuturesDashboardBackend
     backend = FuturesDashboardBackend()
     return jsonify(backend.get_dashboard_data())
 

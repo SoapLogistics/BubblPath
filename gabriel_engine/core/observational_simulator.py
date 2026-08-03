@@ -1,6 +1,5 @@
-import os
 import time
-import subprocess
+import logging
 from typing import Dict, Any, List, Optional
 
 class ObservationalSandboxSimulator:
@@ -68,8 +67,8 @@ Provide a Flask-compatible API and SQLite connection worker capable of:
             try:
                 with open(mock_output_file, "w", encoding="utf-8") as f:
                     f.write(behavioral_spec)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.error(f"[ERROR] Failed to write behavioral spec to {mock_output_file}: {e}")
 
         return {
             "target": binary_name,

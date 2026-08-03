@@ -1,4 +1,3 @@
-import os
 import threading
 import random
 import time
@@ -83,6 +82,7 @@ class SolomonLocalLLM:
             lines.append(">> Code Thief claws are standing by. Provide the target binary or coordinate.")
             
         elif "AGENTIC ACTION DETECTED" in raw_system_data:
+            lines.append("Activating [Jules Agentic Mode]...")
             lines.append(">> [AGENTIC STATE ACTIVE] Accessing physical file system and terminal resources...")
             # If the raw system data contains the Claw output, print it
             for line in raw_system_data.split('\n'):

@@ -1,5 +1,4 @@
 import time
-import uuid
 import sqlite3
 import threading
 from typing import Optional, Dict, Any

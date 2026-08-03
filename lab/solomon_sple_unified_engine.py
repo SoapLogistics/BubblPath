@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 import time
 
 from solomon_meta_learner import MetaLearner
@@ -99,7 +99,7 @@ class PerpetualLearningEngine:
 
         # 6. Meta-Learning Optimization
         if "prompt" in event_data and "success_score" in event_data:
-            optimized_prompt = self.meta_learner.optimize_prompt(
+            self.meta_learner.optimize_prompt(
                 event_data["prompt"],
                 event_data.get("context", ""),
                 event_data["success_score"]
@@ -123,7 +123,7 @@ class PerpetualLearningEngine:
             results["subsystem_results"]["moe_route"] = route_result
 
         # ENHANCEMENT: Universal optimizer tick for every event
-        opt_tick = self.optimizer.run_optimization_cycle()
+        self.optimizer.run_optimization_cycle()
         results["subsystem_results"]["optimizer_tick"] = "completed"
 
         return results

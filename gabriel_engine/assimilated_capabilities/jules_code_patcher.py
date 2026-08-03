@@ -1,5 +1,4 @@
-import re
-from typing import Dict, Any, Tuple
+from typing import Tuple
 
 class JulesCodePatcher:
     """

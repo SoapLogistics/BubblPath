@@ -5,10 +5,11 @@ import struct
 import random
 import hashlib
 import threading
+import logging
 import sqlite3
 import zlib
 import numpy as np
-from scipy.sparse import lil_matrix, csr_matrix
+from scipy.sparse import lil_matrix
 from typing import Dict, List, Any, Optional
 
 # Constants for Layers to save memory
@@ -220,8 +221,8 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
-        except Exception:
-            pass
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to unpack binary metadata blob: {e}", exc_info=True)
         return None
 
     def recall(self, query: str, top_k: int = 5) -> List[Dict]:
