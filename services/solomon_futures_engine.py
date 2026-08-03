@@ -1,9 +1,8 @@
 import dataclasses
 import hashlib
-import json
 import math
 import time
-from typing import Any, Dict, List, Optional, Tuple, Protocol
+from typing import Any, Protocol
 
 route_key = "solomon_futures_engine"
 
@@ -23,9 +22,9 @@ class Candidate:
     ingested_at: str
     pre_simulation_confidence: float
     data_quality_score: float
-    features: Dict[str, Any]
+    features: dict[str, Any]
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         errors = []
         if self.source_mode not in ["TEST", "SIMULATION", "SHADOW", "LIVE"]:
             errors.append("INVALID_SOURCE_MODE")
@@ -46,7 +45,7 @@ class SimulationConfig:
 @dataclasses.dataclass
 class QualificationResult:
     pre_simulation_qualified: bool
-    reasons: List[str]
+    reasons: list[str]
 
 @dataclasses.dataclass
 class SimulationResult:
@@ -55,13 +54,13 @@ class SimulationResult:
     status: str
     source_mode: str
     qualification: QualificationResult
-    simulation: Dict[str, Any]
-    audit: Dict[str, Any]
+    simulation: dict[str, Any]
+    audit: dict[str, Any]
     created_at: str
 
 class WilsonInterval:
     @staticmethod
-    def calculate(successes: int, trials: int, confidence: float = 0.95) -> Tuple[float, float]:
+    def calculate(successes: int, trials: int, confidence: float = 0.95) -> tuple[float, float]:
         if trials == 0:
             return 0.0, 0.0
         # Z-score for 95% confidence is approx 1.96
@@ -83,18 +82,19 @@ class WilsonInterval:
 class SimulationAdapter(Protocol):
     name: str
     version: str
-    def build_scenario(self, candidate: Candidate) -> Dict[str, Any]: ...
-    def simulate_trial(self, scenario: Dict[str, Any], rng_seed: int) -> bool: ...
-    def sensitivity_variants(self, scenario: Dict[str, Any]) -> List[Dict[str, Any]]: ...
+    def build_scenario(self, candidate: Candidate) -> dict[str, Any]: ...
+    def simulate_trial(self, scenario: dict[str, Any], rng_seed: int) -> bool: ...
+    def sensitivity_variants(self, scenario: dict[str, Any]) -> list[dict[str, Any]]: ...
 
 class UniversalFuturesAdapter:
     name = "universal_omni"
     version = "2.0.0"
 
-    def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
+    def build_scenario(self, candidate: Candidate) -> dict[str, Any]:
         """Extracts multidimensional global metrics from the candidate features."""
         # Baseline probability of the event occurring (e.g. historical average)
-        base = candidate.features.get("base_prob", 0.5)
+        # Fallback to win_prob if base_prob is absent
+        base = candidate.features.get("base_prob", candidate.features.get("win_prob", 0.5))
         # Market/Domain volatility (0.0 to 1.0) - how wildly things swing
         volatility = candidate.features.get("volatility_index", 0.1)
         # Structural support (0.0 to 1.0) - resistance to crashing
@@ -109,7 +109,7 @@ class UniversalFuturesAdapter:
             "chaos_risk": chaos_risk
         }
 
-    def simulate_trial(self, scenario: Dict[str, Any], rng_seed: int) -> bool:
+    def simulate_trial(self, scenario: dict[str, Any], rng_seed: int) -> bool:
         """
         Multi-Dimensional Monte Carlo Step.
         Calculates a highly complex probabilistic outcome rather than a simple coin flip.
@@ -139,7 +139,7 @@ class UniversalFuturesAdapter:
         # If the final calculated value is below the base probability threshold, the event "fails" to trigger/win
         return final_outcome_value < scenario["base_prob"]
 
-    def sensitivity_variants(self, scenario: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def sensitivity_variants(self, scenario: dict[str, Any]) -> list[dict[str, Any]]:
         """Stress-tests the scenario by increasing chaos and volatility."""
         return [
             {
@@ -151,7 +151,7 @@ class UniversalFuturesAdapter:
         ]
 
 class FuturesEngine:
-    def __init__(self, config: Optional[SimulationConfig] = None):
+    def __init__(self, config: SimulationConfig | None = None):
         self.config = config or SimulationConfig()
         self.adapters = {"universal_omni": UniversalFuturesAdapter()}
 
@@ -215,9 +215,7 @@ class FuturesEngine:
 
         # Gate B
         status = "CONFIRMED_90_PLUS"
-        if prob < self.config.simulated_probability_min:
-            status = "NOT_CONFIRMED_90_PLUS"
-        elif lower < self.config.confidence_interval_lower_bound_min:
+        if prob < self.config.simulated_probability_min or lower < self.config.confidence_interval_lower_bound_min:
             status = "NOT_CONFIRMED_90_PLUS"
         elif min_variant_prob < self.config.sensitivity_floor:
             status = "SENSITIVITY_FLOOR_FAILED"
@@ -247,17 +245,17 @@ class FuturesEngine:
 import sqlite3
 from contextlib import closing
 
+
 class FuturesRepository:
     def __init__(self, db_path="solomon_soss.db"):
         self.db_path = db_path
         self._init_db()
 
     def _init_db(self):
-        with closing(sqlite3.connect(self.db_path)) as conn:
-            with conn:
-                # Use canonical WAL journal mode
-                conn.execute("PRAGMA journal_mode=WAL")
-                conn.execute("""
+        with closing(sqlite3.connect(self.db_path)) as conn, conn:
+            # Use canonical WAL journal mode
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("""
                     CREATE TABLE IF NOT EXISTS futures_simulation_runs (
                         run_id TEXT PRIMARY KEY,
                         candidate_id TEXT,

@@ -1,8 +1,8 @@
-import os
 import hashlib
-import json
-from typing import List, Dict, Any, Tuple
+import os
+
 from gabriel_engine.core.models import AcquisitionRecord
+
 
 class AcquisitionEngine:
     """
@@ -39,7 +39,7 @@ class AcquisitionEngine:
     def detect_license_and_actions(
         directory_path: str,
         aggressive_mode: bool = True
-    ) -> Tuple[str, List[str], List[str]]:
+    ) -> tuple[str, list[str], list[str]]:
         """
         Detects software license from files inside directory_path.
         Returns Tuple (license_name, allowed_actions, prohibited_actions).

@@ -1,10 +1,12 @@
-import sqlite3
+import datetime
 import json
 import os
-import datetime
+import sqlite3
 import threading
-from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
+from typing import Any
+
+from solomon_knowledge_cards.models.card import KnowledgeCard
+
 
 class DatabaseManager:
     def __init__(self, db_path: str):
@@ -126,7 +128,7 @@ class DatabaseManager:
             finally:
                 conn.close()
 
-    def store_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
+    def store_card(self, card: KnowledgeCard, updater: str = "system", reason: str | None = None) -> None:
         """Atomically inserts or updates a card and logs a revision."""
         # Validate first
         card.validate()
@@ -218,7 +220,7 @@ class DatabaseManager:
             finally:
                 conn.close()
 
-    def get_card(self, card_id: str, include_deleted: bool = False) -> Optional[KnowledgeCard]:
+    def get_card(self, card_id: str, include_deleted: bool = False) -> KnowledgeCard | None:
         """Retrieves a card by ID."""
         with self._lock:
             conn = self._get_connection()
@@ -253,14 +255,14 @@ class DatabaseManager:
                 card_data["extra_metadata"] = json.loads(card_data["extra_metadata"]) if card_data.get("extra_metadata") else {}
 
                 # Retrieve embedding column if present and populate in extra_metadata
-                if "embedding" in card_data and card_data["embedding"]:
+                if card_data.get("embedding"):
                     card_data["extra_metadata"]["embedding"] = json.loads(card_data["embedding"])
 
                 return KnowledgeCard.from_dict(card_data)
             finally:
                 conn.close()
 
-    def get_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
+    def get_revision_history(self, card_id: str) -> list[dict[str, Any]]:
         """Returns the complete list of revisions for a given card."""
         with self._lock:
             conn = self._get_connection()
@@ -283,7 +285,7 @@ class DatabaseManager:
             finally:
                 conn.close()
 
-    def soft_delete_card(self, card_id: str, updater: str = "system", reason: Optional[str] = None) -> bool:
+    def soft_delete_card(self, card_id: str, updater: str = "system", reason: str | None = None) -> bool:
         """Soft deletes (deprecates/marks as deleted) a card."""
         with self._lock:
             card = self.get_card(card_id)
@@ -317,7 +319,7 @@ class DatabaseManager:
             finally:
                 conn.close()
 
-    def list_all_cards(self, include_deleted: bool = False) -> List[KnowledgeCard]:
+    def list_all_cards(self, include_deleted: bool = False) -> list[KnowledgeCard]:
         """Returns all non-deleted cards."""
         with self._lock:
             conn = self._get_connection()

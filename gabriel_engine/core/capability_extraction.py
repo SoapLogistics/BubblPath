@@ -1,5 +1,7 @@
-from typing import List, Dict, Any
-from gabriel_engine.core.models import ProgramAnatomyCard, CapabilityMemoryCard
+from typing import Any
+
+from gabriel_engine.core.models import CapabilityMemoryCard, ProgramAnatomyCard
+
 
 class CapabilityExtractionEngine:
     """
@@ -10,14 +12,14 @@ class CapabilityExtractionEngine:
     def extract_capabilities(
         self,
         anatomy: ProgramAnatomyCard,
-        experiment_results: Dict[str, Any],
+        experiment_results: dict[str, Any],
         source_project: str = "Unknown",
         source_license: str = "Unknown"
-    ) -> List[CapabilityMemoryCard]:
+    ) -> list[CapabilityMemoryCard]:
         """
         Translates architectural anatomy and experiment data into CapabilityMemoryCards.
         """
-        capabilities: List[CapabilityMemoryCard] = []
+        capabilities: list[CapabilityMemoryCard] = []
 
         # Extract "Timed Worker Lease" capability if queue leasing or timed lease patterns exist
         has_lease = any("lease" in pat.lower() or "queue" in pat.lower() for pat in anatomy.valuable_patterns)
