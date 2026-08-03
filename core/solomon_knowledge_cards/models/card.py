@@ -1,6 +1,4 @@
 import datetime
-import uuid
-import re
 from typing import List, Dict, Any, Optional
 
 # Supported card types

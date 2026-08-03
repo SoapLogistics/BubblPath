@@ -1,6 +1,5 @@
 import dataclasses
 import hashlib
-import json
 import math
 import time
 from typing import Any, Dict, List, Optional, Tuple, Protocol
@@ -94,7 +93,7 @@ class UniversalFuturesAdapter:
     def build_scenario(self, candidate: Candidate) -> Dict[str, Any]:
         """Extracts multidimensional global metrics from the candidate features."""
         # Baseline probability of the event occurring (e.g. historical average)
-        base = candidate.features.get("base_prob", 0.5)
+        base = candidate.features.get("base_prob", candidate.features.get("win_prob", 0.5))
         # Market/Domain volatility (0.0 to 1.0) - how wildly things swing
         volatility = candidate.features.get("volatility_index", 0.1)
         # Structural support (0.0 to 1.0) - resistance to crashing

@@ -82,8 +82,8 @@ class SolomonLocalLLM:
         elif "ASSIMILATION KEYWORD DETECTED" in raw_system_data:
             lines.append(">> Code Thief claws are standing by. Provide the target binary or coordinate.")
             
-        elif "AGENTIC ACTION DETECTED" in raw_system_data:
-            lines.append(">> [AGENTIC STATE ACTIVE] Accessing physical file system and terminal resources...")
+        elif "AGENTIC ACTION DETECTED" in raw_system_data or any(kw in msg_lower for kw in ["sandbox", "jules", "codex"]):
+            lines.append(">> [AGENTIC STATE ACTIVE] Accessing physical file system and terminal resources...\nActivating [Jules Agentic Mode]")
             # If the raw system data contains the Claw output, print it
             for line in raw_system_data.split('\n'):
                 if "[AGENTIC CLAW]" in line:
