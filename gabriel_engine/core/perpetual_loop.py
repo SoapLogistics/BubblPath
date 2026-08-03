@@ -23,6 +23,7 @@ from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
 from gabriel_engine.core.ast_injector import ASTCodeInjector
 from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
 from gabriel_engine.core.observational_simulator import ObservationalSandboxSimulator
+from gabriel_engine.learning.pipeline import LearningPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,8 @@ class GabrielPerpetualLoop:
         self.ast_injector = ASTCodeInjector()
         self.recursive_optimizer = RecursiveCrucibleOptimizer()
         self.observational_simulator = ObservationalSandboxSimulator()
+
+        self.learning_pipeline = LearningPipeline()
 
         # Database state mirrors
         self.acquisition_records: Dict[str, AcquisitionRecord] = {}
@@ -277,6 +280,27 @@ class GabrielPerpetualLoop:
                 }
             }
             self.assimilation_history.append(loop_log)
+
+            # Send outcome data to the Learning Engine
+            self.learning_pipeline.ingestor.ingest(
+                source="gabriel_perpetual_loop",
+                raw_data={
+                    "success": all(res.get("chosen_action") != "REJECT" for res in results_list) if results_list else False,
+                    "event_type": "project_assimilation",
+                    "context": {
+                        "project_name": project_name,
+                        "lane": lane,
+                        "capabilities_count": len(extracted_caps)
+                    },
+                    "metrics": {
+                        "execution_time_sec": round(execution_time, 4)
+                    }
+                }
+            )
+            # Run the learning cycle to process pending outcomes
+            learning_results = self.learning_pipeline.run_cycle()
+            loop_log["learning_engine_results"] = learning_results
+
         except Exception as log_err:
             logger.error(f"Logging history stats failed: {str(log_err)}")
             loop_log = {"status": "error", "message": str(log_err)}
