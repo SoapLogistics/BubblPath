@@ -1,16 +1,1 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.DS_Store
-
-# Dynamic Solomon Files
-*.db
-*.db-shm
-*.db-wal
-*.bin
-*.log
-venv/
-services/auto_generated_capability_*.py
-services/predictive_algo_alpha_*.py
+daily_inventory/
