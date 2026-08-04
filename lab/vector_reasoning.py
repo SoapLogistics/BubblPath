@@ -346,7 +346,7 @@ class FractalOntologySynthesizer:
                     "invention_domain": invention_domain,
                     "insight": leap_data["synthesis_insight"]
                 })
-            except Exception as e:
+            except Exception:
                 # Catch math errors (e.g., zero magnitude centroids) on early topologies
                 pass
 

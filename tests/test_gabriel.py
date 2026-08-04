@@ -1,15 +1,13 @@
 import os
 import tempfile
 import json
-import pytest
 from app import app, gabriel_loop
 
 # Import our core components
 from gabriel_engine.core.models import (
     AcquisitionRecord,
     ProgramAnatomyCard,
-    CapabilityMemoryCard,
-    CrucibleReport
+    CapabilityMemoryCard
 )
 from gabriel_engine.core.acquisition import AcquisitionEngine
 from gabriel_engine.core.permission_gate import PermissionGate

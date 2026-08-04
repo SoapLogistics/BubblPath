@@ -1,4 +1,3 @@
-import os
 import threading
 import random
 import time
@@ -88,5 +87,9 @@ class SolomonLocalLLM:
             for line in raw_system_data.split('\n'):
                 if "[AGENTIC CLAW]" in line:
                     lines.append(line.strip())
+
+        # Jules Agentic Mode mock check
+        if any(kw in msg_lower for kw in ["sandbox", "jules", "codex"]):
+            lines.append("Activating [Jules Agentic Mode]")
 
         return "\n".join(lines)

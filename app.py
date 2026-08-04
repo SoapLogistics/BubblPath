@@ -10,7 +10,6 @@ from flask import Flask, request, jsonify, render_template
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 from core.solomon_quantized_memory import QuantizedBrainMap
 from backend.services.futures_dashboard_backend import FuturesDashboardBackend
-from core.solomon_web_crawler import SolomonWebCrawler
 from core.agentic_claw import SolomonAgenticClaw
 from core.solomon_local_llm import SolomonLocalLLM
 
@@ -742,7 +741,6 @@ def futures_dashboard():
 
 @app.route("/api/futures/dashboard")
 def api_futures_dashboard():
-    from backend.services.futures_dashboard_backend import FuturesDashboardBackend
     backend = FuturesDashboardBackend()
     return jsonify(backend.get_dashboard_data())
 
