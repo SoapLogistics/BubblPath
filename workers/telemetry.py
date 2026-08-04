@@ -1,9 +1,10 @@
-import struct
+import hashlib
 import mmap
 import os
+import struct
 import time
-import hashlib
-from typing import Dict, Any, List
+from typing import Any
+
 
 class SolomonMetricsEngine:
     """
@@ -69,7 +70,7 @@ class SolomonMetricsEngine:
 
         self.head = (self.head + 1) % self.max_records
 
-    def get_all_records(self) -> List[Dict[str, Any]]:
+    def get_all_records(self) -> list[dict[str, Any]]:
         """Reads all valid records from the mmap."""
         records = []
         for i in range(self.max_records):

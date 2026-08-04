@@ -1,4 +1,5 @@
-from typing import Dict, Any, Tuple
+from typing import Any
+
 
 class AssimilationDecisionEngine:
     """
@@ -23,7 +24,7 @@ class AssimilationDecisionEngine:
         complexity: float = 3.0,
         resource_cost: float = 3.0,
         aggressive_mode: bool = True
-    ) -> Tuple[float, str, Dict[str, Any]]:
+    ) -> tuple[float, str, dict[str, Any]]:
         """
         Calculates the score and chooses an assimilation action:
           - USE (score > 10.0 and legal_risk low)

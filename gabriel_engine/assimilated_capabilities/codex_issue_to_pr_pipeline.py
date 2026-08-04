@@ -1,5 +1,6 @@
 import time
-from typing import Dict, Any
+from typing import Any
+
 
 class CodexIssueToPRPipeline:
     """
@@ -11,7 +12,7 @@ class CodexIssueToPRPipeline:
         self.worktrees = worktree_manager
         self.mcp = mcp_bridge
 
-    def process_issue(self, issue_id: str, description: str, codebase_path: str) -> Dict[str, Any]:
+    def process_issue(self, issue_id: str, description: str, codebase_path: str) -> dict[str, Any]:
         """
         Executes autonomous issue-fixing logic.
         """
@@ -36,8 +37,12 @@ def resolved_issue_handler():
         
         # 3. Engage Jules Autonomous Test Loop
         try:
-            from gabriel_engine.assimilated_capabilities.jules_test_runner_loop import JulesTestRunnerLoop
-            from gabriel_engine.assimilated_capabilities.jules_code_patcher import JulesCodePatcher
+            from gabriel_engine.assimilated_capabilities.jules_code_patcher import (
+                JulesCodePatcher,
+            )
+            from gabriel_engine.assimilated_capabilities.jules_test_runner_loop import (
+                JulesTestRunnerLoop,
+            )
             
             jules_runner = JulesTestRunnerLoop()
             jules_patcher = JulesCodePatcher()

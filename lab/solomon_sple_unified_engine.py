@@ -1,19 +1,19 @@
 import logging
-from typing import Dict, Any, List
 import time
+from typing import Any
 
-from solomon_meta_learner import MetaLearner
 from solomon_curiosity_engine import CuriosityEngine
-from solomon_sple_memory import SPLEMemoryManager
+from solomon_meta_learner import MetaLearner
 from solomon_sple_capability import CapabilityAssimilator
-from solomon_sple_self_eval import SelfEvaluationEngine
-from solomon_sple_pat_memory import ProgressiveAbstractionTree
-from solomon_sple_optimizer import SPLEOptimizer
-from solomon_sple_efficiency import LearningEfficiencyEngine
-from solomon_sple_world_model import WorldModelSimulator
-from solomon_sple_roadmap import EvolutionaryRoadmapPlanner
 from solomon_sple_distributed import DistributedSwarmManager
+from solomon_sple_efficiency import LearningEfficiencyEngine
+from solomon_sple_memory import SPLEMemoryManager
+from solomon_sple_optimizer import SPLEOptimizer
+from solomon_sple_pat_memory import ProgressiveAbstractionTree
 from solomon_sple_research_horizon import ResearchHorizonPredictor
+from solomon_sple_roadmap import EvolutionaryRoadmapPlanner
+from solomon_sple_self_eval import SelfEvaluationEngine
+from solomon_sple_world_model import WorldModelSimulator
 
 logger = logging.getLogger("PerpetualLearningEngine")
 
@@ -38,7 +38,7 @@ class PerpetualLearningEngine:
         self.research_horizon = ResearchHorizonPredictor()
         logger.info("PerpetualLearningEngine (Unified Pipeline) initialized.")
 
-    def process_learning_event(self, event_type: str, event_data: Dict[str, Any]) -> Dict[str, Any]:
+    def process_learning_event(self, event_type: str, event_data: dict[str, Any]) -> dict[str, Any]:
         """
         The single entry point for all learning events.
         """

@@ -1,13 +1,13 @@
-import os
-import sys
-import uuid
-import time
 import json
 import logging
+import os
+import sys
+import time
+import uuid
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from services.solomon_futures_engine import FuturesEngine, Candidate, FuturesRepository
 from services.live_data_ingestion import OmniDataRouter
+from services.solomon_futures_engine import Candidate, FuturesEngine, FuturesRepository
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [FUTURES_SCAN] %(message)s")
 logger = logging.getLogger("futures_scan")

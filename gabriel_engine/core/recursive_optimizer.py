@@ -1,5 +1,6 @@
 import re
-from typing import Dict, Any, Tuple
+from typing import Any
+
 
 class RecursiveCrucibleOptimizer:
     """
@@ -13,10 +14,10 @@ class RecursiveCrucibleOptimizer:
         self,
         capability_name: str,
         original_code: str,
-        crucible_metrics: Dict[str, Any],
+        crucible_metrics: dict[str, Any],
         target_latency_ms: float = 100.0,
         max_recursive_rounds: int = 3
-    ) -> Tuple[str, Dict[str, Any], int]:
+    ) -> tuple[str, dict[str, Any], int]:
         """
         Recursively refactors original_code based on crucible_metrics.
         Returns the optimized code, optimized metrics, and the number of optimization rounds completed.

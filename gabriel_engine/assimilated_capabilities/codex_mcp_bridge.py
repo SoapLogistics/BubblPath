@@ -1,6 +1,5 @@
-import json
-import subprocess
-from typing import Dict, Any, List
+from typing import Any
+
 
 class CodexMCPBridge:
     """
@@ -9,7 +8,7 @@ class CodexMCPBridge:
     query system states, and register custom tools on-the-fly.
     """
     def __init__(self):
-        self.registered_tools: Dict[str, Dict[str, Any]] = {}
+        self.registered_tools: dict[str, dict[str, Any]] = {}
         self._register_default_tools()
 
     def _register_default_tools(self):
@@ -22,7 +21,7 @@ class CodexMCPBridge:
             "parameters": ["path", "content"]
         }
 
-    def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         """
         Invokes an MCP tool command and returns standard JSON payload.
         """

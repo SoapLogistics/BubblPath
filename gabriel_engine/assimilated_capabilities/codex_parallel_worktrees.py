@@ -1,7 +1,6 @@
 import os
 import shutil
-import tempfile
-from typing import Dict, Any, List
+
 
 class CodexParallelWorktrees:
     """
@@ -12,7 +11,7 @@ class CodexParallelWorktrees:
     def __init__(self, root_dir: str = "/tmp/codex_workspaces"):
         self.root_dir = root_dir
         os.makedirs(self.root_dir, exist_ok=True)
-        self.active_worktrees: Dict[str, str] = {}
+        self.active_worktrees: dict[str, str] = {}
 
     def create_worktree(self, task_id: str, origin_src_dir: str) -> str:
         """

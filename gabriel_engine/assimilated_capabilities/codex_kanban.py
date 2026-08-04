@@ -1,8 +1,8 @@
-import time
-import uuid
-import threading
 import json
-from typing import List, Dict, Any
+import threading
+import uuid
+from typing import Any
+
 
 class CodexKanban:
     """
@@ -12,10 +12,16 @@ class CodexKanban:
     def __init__(self, workspace_root: str = ""):
         self.workspace_root = workspace_root
         
-    def run_swarm(self, issues: List[Dict[str, str]]) -> List[Dict[str, Any]]:
-        from gabriel_engine.assimilated_capabilities.renewable_worker_lease import RenewableWorkerLease
-        from gabriel_engine.assimilated_capabilities.codex_parallel_worktrees import CodexParallelWorktrees
-        from gabriel_engine.assimilated_capabilities.codex_issue_to_pr_pipeline import CodexIssueToPRPipeline
+    def run_swarm(self, issues: list[dict[str, str]]) -> list[dict[str, Any]]:
+        from gabriel_engine.assimilated_capabilities.codex_issue_to_pr_pipeline import (
+            CodexIssueToPRPipeline,
+        )
+        from gabriel_engine.assimilated_capabilities.codex_parallel_worktrees import (
+            CodexParallelWorktrees,
+        )
+        from gabriel_engine.assimilated_capabilities.renewable_worker_lease import (
+            RenewableWorkerLease,
+        )
 
         # Initialize Swarm dependencies
         lease_manager = RenewableWorkerLease(db_path=":memory:", lease_duration_sec=30)

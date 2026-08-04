@@ -1,4 +1,3 @@
-from typing import Dict, Any, Tuple
 
 class CleanRoomBuilder:
     """
@@ -34,7 +33,7 @@ CONSTRAINTS:
 """
         return packet
 
-    def build_native_capability(self, capability_name: str, concept_summary: str) -> Tuple[str, str]:
+    def build_native_capability(self, capability_name: str, concept_summary: str) -> tuple[str, str]:
         """
         Generates the Requirements Packet AND compiles an actual, premium, functional
         Solomon-native Python implementation of the capability.
