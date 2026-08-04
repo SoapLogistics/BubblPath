@@ -5,6 +5,7 @@ route_key = "joe_blueprint_facade"
 
 from services.solomon_joe_bridge import JoeOmegaEngine
 
+
 class JoeBlueprintFacade:
     def __init__(self):
         self.engine = JoeOmegaEngine()

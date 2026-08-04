@@ -1,5 +1,5 @@
 import ast
-from typing import Optional
+
 
 class ASTCodeInjector:
     """
@@ -13,7 +13,7 @@ class ASTCodeInjector:
         file_path: str,
         class_name: str,
         function_source: str,
-        output_path: Optional[str] = None
+        output_path: str | None = None
     ) -> str:
         """
         Parses a Python file, locates the class `class_name`, parses `function_source`
@@ -71,7 +71,7 @@ class ASTCodeInjector:
     def inject_to_module_body(
         file_path: str,
         code_source: str,
-        output_path: Optional[str] = None
+        output_path: str | None = None
     ) -> str:
         """
         Parses a Python file and appends the parsed `code_source` node structure

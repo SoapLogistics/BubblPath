@@ -1,9 +1,10 @@
-import os
-import threading
-import random
-import time
 import hashlib
+import random
+import threading
+import time
+
 from core.solomon_web_crawler import SolomonWebCrawler
+
 
 class SolomonLocalLLM:
     """
@@ -17,7 +18,7 @@ class SolomonLocalLLM:
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = super(SolomonLocalLLM, cls).__new__(cls)
+                cls._instance = super().__new__(cls)
                 cls._instance._initialize()
             return cls._instance
 
@@ -36,6 +37,10 @@ class SolomonLocalLLM:
         # 1. Dynamic Processing Hash
         hash_val = hashlib.md5(f"{time.time()}{user_message}".encode()).hexdigest()[:6].upper()
         lines.append(f"[PROC-{hash_val}] Processing matrix...")
+
+        # 1b. Simulate Jules Agentic Mode for key keywords
+        if any(kw in msg_lower for kw in ["sandbox", "jules", "codex"]):
+            lines.append("Activating [Jules Agentic Mode]")
         
         # 2. Greeting / Conversational Logic
         greetings = ["hi", "hello", "hey", "greetings", "sup", "howdy"]
