@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from typing import List, Dict, Any, Set
+from typing import List, Set
 from gabriel_engine.core.models import ProgramAnatomyCard
 
 class StructuralComprehensionEngine:

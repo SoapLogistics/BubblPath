@@ -4,8 +4,6 @@ import logging
 import json
 import os
 from typing import List, Dict, Any
-import logging
-from typing import List, Dict, Any
 
 from solomon_ingest.core.connector import SourceConnector
 

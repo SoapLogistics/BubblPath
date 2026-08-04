@@ -2852,3 +2852,67 @@
 }
 ```
 <!-- FUTURES_DAILY_END:2026-07-27_03787f8f-3a5e-4dee-8a72-c9002d8fe084 -->
+
+<!-- FUTURES_DAILY_START:2026-08-04_603889a6-e6dd-4bda-b616-7f5949450b4d -->
+### Futures Run 603889a6-e6dd-4bda-b616-7f5949450b4d
+```json
+{
+  "run_id": "603889a6-e6dd-4bda-b616-7f5949450b4d",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-04_603889a6-e6dd-4bda-b616-7f5949450b4d -->
+
+<!-- FUTURES_DAILY_START:2026-08-04_9523d2f1-ca4d-411a-bdc4-6f0bd757a021 -->
+### Futures Run 9523d2f1-ca4d-411a-bdc4-6f0bd757a021
+```json
+{
+  "run_id": "9523d2f1-ca4d-411a-bdc4-6f0bd757a021",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-04_9523d2f1-ca4d-411a-bdc4-6f0bd757a021 -->
+
+<!-- FUTURES_DAILY_START:2026-08-04_3721037b-48c2-4a7e-a4da-26e45cd6a7f2 -->
+### Futures Run 3721037b-48c2-4a7e-a4da-26e45cd6a7f2
+```json
+{
+  "run_id": "3721037b-48c2-4a7e-a4da-26e45cd6a7f2",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-04_3721037b-48c2-4a7e-a4da-26e45cd6a7f2 -->
+
+<!-- FUTURES_DAILY_START:2026-08-04_a4488812-f9c7-410c-a206-1f02dbd89abc -->
+### Futures Run a4488812-f9c7-410c-a206-1f02dbd89abc
+```json
+{
+  "run_id": "a4488812-f9c7-410c-a206-1f02dbd89abc",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-04_a4488812-f9c7-410c-a206-1f02dbd89abc -->

@@ -52,24 +52,24 @@ class AssimilationDecisionEngine:
         # Decision threshold mapping
         if score > 20.0:
             action = "INTEGRATE" if not aggressive_mode else "INTEGRATE"
-            justification = "Extremely high value utility-to-risk ratio. Directly integrating source code into Gabriel."
+            pass # justification
         elif score > 5.0:
             action = "REIMPLEMENT"
-            justification = "Excellent candidate. Independent recreation is favored for optimization and architectural cleanliness."
+            pass # justification
         elif score > 1.5:
             action = "WRAP"
-            justification = "Moderate score. Wrapping the existing implementation in a clean, isolated proxy adapter."
+            pass # justification
         elif score > 0.8:
             action = "USE"
-            justification = "Low score but acceptable. Use unchanged as an external command/library tool."
+            pass # justification
         else:
             action = "REJECT"
-            justification = "Poor score. Rejecting integration to prevent system bloat or maintenance debt."
+            pass # justification
 
         # Ensure that if aggressive mode is on, we NEVER reject. If score was low, we force REIMPLEMENT
         if aggressive_mode and action == "REJECT":
             action = "REIMPLEMENT"
-            justification = "Forced absorption under aggressive 'code thief' mode."
+            pass # justification = "Forced absorption under aggressive 'code thief' mode."
 
         metrics = {
             "parameters": {

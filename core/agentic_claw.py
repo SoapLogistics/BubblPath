@@ -3,8 +3,6 @@ import subprocess
 import logging
 import json
 from typing import Dict, Any
-import logging
-from typing import Dict, Any
 
 from gabriel_engine.core.independent_construction import CleanRoomBuilder
 
@@ -111,7 +109,7 @@ class SolomonAgenticClaw:
                 final_report = crucible.run_validation(feature_name, injected_errors=0)
                 if final_report.decision != "PROMOTE":
                     return f">> [AGENTIC CLAW] Final Crucible validation failed. Scrapping {feature_name}."
-                logger.info(f">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
+                logger.info(">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
                 
         except Exception as e:
             return f">> [AGENTIC CLAW] Healer Engine validation crashed: {e}"

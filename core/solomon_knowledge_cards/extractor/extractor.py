@@ -1,7 +1,7 @@
 import datetime
 import uuid
 import re
-from typing import Dict, Any, Optional, List
+from typing import Any, Optional, List
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
 class KnowledgeExtractor:

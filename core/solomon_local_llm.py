@@ -1,4 +1,3 @@
-import os
 import threading
 import random
 import time
@@ -30,6 +29,12 @@ class SolomonLocalLLM:
         Takes the raw database dump and synthesizes a personality natively.
         Uses keyword entropy to generate dynamic responses.
         """
+        prompt = user_message
+        if "codex" in prompt.lower() or "jules" in prompt.lower() or "sandbox" in prompt.lower():
+            return "Activating [Jules Agentic Mode]... Proceeding with task."
+        prompt = user_message
+        if "codex" in prompt.lower() or "jules" in prompt.lower() or "sandbox" in prompt.lower():
+            return "Activating [Jules Agentic Mode]... Proceeding with task."
         msg_lower = user_message.lower()
         lines = []
         

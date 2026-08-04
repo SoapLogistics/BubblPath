@@ -6,7 +6,7 @@ import random
 import hashlib
 import threading
 import numpy as np
-from scipy.sparse import lil_matrix, csr_matrix
+from scipy.sparse import lil_matrix
 from typing import Dict, List, Any, Optional
 
 # Constants for Layers to save memory
