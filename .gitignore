@@ -14,3 +14,10 @@ __pycache__/
 venv/
 services/auto_generated_capability_*.py
 services/predictive_algo_alpha_*.py
+
+daily_inventory/
+fix_*.py
+fix_*.sh
+generate_reports.py
+
+daily_inventory/

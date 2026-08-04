@@ -53,6 +53,8 @@ class SolomonLocalLLM:
             
         elif "how are you" in msg_lower:
             lines.append("My systems are operating at nominal capacity. My memory consolidation is active.")
+        elif any(k in msg_lower for k in ["sandbox", "jules", "codex"]):
+            lines.append("Activating [Jules Agentic Mode]")
             
         # 3. Memory & State Integration
         else:
