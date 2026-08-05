@@ -1,6 +1,7 @@
+import sqlite3
+from contextlib import closing
 import dataclasses
 import hashlib
-import json
 import math
 import time
 from typing import Any, Dict, List, Optional, Tuple, Protocol
@@ -244,8 +245,6 @@ class FuturesEngine:
 # ==============================================================================
 # PHASE 4: PERSISTENCE & IDEMPOTENCY
 # ==============================================================================
-import sqlite3
-from contextlib import closing
 
 class FuturesRepository:
     def __init__(self, db_path="solomon_soss.db"):

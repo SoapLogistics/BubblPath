@@ -1,7 +1,7 @@
 import os
 import re
 import datetime
-from typing import List, Dict, Any
+from typing import List
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
@@ -77,7 +77,7 @@ class DoctrineImporter:
             title = re.sub(r"[<>`\"'%;()&]", "", first_line_match.group(1).strip()) # sanitize basic HTML/shell chars
 
         summary = f"Legacy doctrine imported from {os.path.basename(safe_path)}."
-        lines = [l.strip() for l in content.split("\n") if l.strip() and not l.startswith("#")]
+        lines = [line.strip() for line in content.split("\n") if line.strip() and not line.startswith("#")]
         if lines:
             summary = re.sub(r"[<>`\"'%;()&]", "", " ".join(lines[:3])[:250]) + "..."
 
