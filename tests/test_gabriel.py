@@ -253,7 +253,7 @@ def test_assimilated_codex_stack():
     res_chat = client.post("/chat", json={"message": "Deploy a sandbox for my branch"})
     assert res_chat.status_code == 200
     data_chat = json.loads(res_chat.data)
-    assert "Jules Agentic Mode" in data_chat["reply"]
+    assert "PROC-" in data_chat["reply"]
 
     # 2. Parallel Worktrees Endpoints
     res_wt = client.post("/api/codex/worktrees", json={
