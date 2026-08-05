@@ -1,5 +1,8 @@
 import logging
+import warnings
 from duckduckgo_search import DDGS
+
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*duckduckgo_search.*")
 
 logger = logging.getLogger("solomon_web_crawler")
 
