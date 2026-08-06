@@ -3012,3 +3012,163 @@
 }
 ```
 <!-- FUTURES_DAILY_END:2026-08-05_6e921c6a-e9c2-4474-a30f-1a63fc9038df -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_7afaab45-dee2-4170-8357-974ce5687428 -->
+### Futures Run 7afaab45-dee2-4170-8357-974ce5687428
+```json
+{
+  "run_id": "7afaab45-dee2-4170-8357-974ce5687428",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_7afaab45-dee2-4170-8357-974ce5687428 -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_132b1c42-21a5-492e-a983-7a13a48a74f0 -->
+### Futures Run 132b1c42-21a5-492e-a983-7a13a48a74f0
+```json
+{
+  "run_id": "132b1c42-21a5-492e-a983-7a13a48a74f0",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 1,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_132b1c42-21a5-492e-a983-7a13a48a74f0 -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_e94419d6-0df6-4bea-b07e-2a22f8f146e0 -->
+### Futures Run e94419d6-0df6-4bea-b07e-2a22f8f146e0
+```json
+{
+  "run_id": "e94419d6-0df6-4bea-b07e-2a22f8f146e0",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_e94419d6-0df6-4bea-b07e-2a22f8f146e0 -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_4ab88996-b188-43af-87fc-e111ad8e3136 -->
+### Futures Run 4ab88996-b188-43af-87fc-e111ad8e3136
+```json
+{
+  "run_id": "4ab88996-b188-43af-87fc-e111ad8e3136",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_4ab88996-b188-43af-87fc-e111ad8e3136 -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_26d62448-52d9-4aa1-aaae-7bfbedbf79e1 -->
+### Futures Run 26d62448-52d9-4aa1-aaae-7bfbedbf79e1
+```json
+{
+  "run_id": "26d62448-52d9-4aa1-aaae-7bfbedbf79e1",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_26d62448-52d9-4aa1-aaae-7bfbedbf79e1 -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_cd41abf8-32bb-4d43-a6ad-adba0a5ed55d -->
+### Futures Run cd41abf8-32bb-4d43-a6ad-adba0a5ed55d
+```json
+{
+  "run_id": "cd41abf8-32bb-4d43-a6ad-adba0a5ed55d",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_cd41abf8-32bb-4d43-a6ad-adba0a5ed55d -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_e03dcb90-0044-4530-af1a-6b426adc3a6b -->
+### Futures Run e03dcb90-0044-4530-af1a-6b426adc3a6b
+```json
+{
+  "run_id": "e03dcb90-0044-4530-af1a-6b426adc3a6b",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_e03dcb90-0044-4530-af1a-6b426adc3a6b -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_cb69da29-261b-46ac-95ef-fef506be0f2b -->
+### Futures Run cb69da29-261b-46ac-95ef-fef506be0f2b
+```json
+{
+  "run_id": "cb69da29-261b-46ac-95ef-fef506be0f2b",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_cb69da29-261b-46ac-95ef-fef506be0f2b -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_fdf0a0ab-5d46-44b6-a151-dc453e5b276c -->
+### Futures Run fdf0a0ab-5d46-44b6-a151-dc453e5b276c
+```json
+{
+  "run_id": "fdf0a0ab-5d46-44b6-a151-dc453e5b276c",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 1,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_fdf0a0ab-5d46-44b6-a151-dc453e5b276c -->
+
+<!-- FUTURES_DAILY_START:2026-08-06_99e43d71-9678-45a7-8ac8-a91a06eb6e32 -->
+### Futures Run 99e43d71-9678-45a7-8ac8-a91a06eb6e32
+```json
+{
+  "run_id": "99e43d71-9678-45a7-8ac8-a91a06eb6e32",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-06_99e43d71-9678-45a7-8ac8-a91a06eb6e32 -->

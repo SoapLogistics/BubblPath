@@ -1,5 +1,10 @@
+import warnings
+warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*duckduckgo_search.*')
 import logging
-from duckduckgo_search import DDGS
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from duckduckgo_search import DDGS
 
 logger = logging.getLogger("solomon_web_crawler")
 
@@ -9,7 +14,9 @@ class SolomonWebCrawler:
     This replaces all simulation with hard reality.
     """
     def __init__(self):
-        self.ddgs = DDGS()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            self.ddgs = DDGS()
 
     def search_and_extract(self, query: str, max_results: int = 3) -> str:
         """
