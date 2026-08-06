@@ -1,15 +1,16 @@
+import hashlib
 import os
+import random
+import sqlite3
+import struct
+import threading
 import time
 import uuid
-import struct
-import random
-import hashlib
-import threading
-import sqlite3
 import zlib
+from typing import Any
+
 import numpy as np
-from scipy.sparse import lil_matrix, csr_matrix
-from typing import Dict, List, Any, Optional
+from scipy.sparse import lil_matrix
 
 # Constants for Layers to save memory
 LAYER_WORKING = 0
@@ -71,8 +72,8 @@ class QuantizedMemoryNode:
 class QuantizedBrainMap:
     def __init__(self, max_nodes: int = 10000):
         self.max_nodes = max_nodes
-        self.nodes: Dict[int, QuantizedMemoryNode] = {}
-        self.id_map: Dict[str, int] = {} # UUID str to int index
+        self.nodes: dict[int, QuantizedMemoryNode] = {}
+        self.id_map: dict[str, int] = {} # UUID str to int index
 
         # Sparse Matrix Adjacency (3.1 Vectorized Spreading Activation)
         self.adj_matrix = lil_matrix((self.max_nodes, self.max_nodes), dtype=np.float32)
@@ -186,7 +187,7 @@ class QuantizedBrainMap:
                 self.adj_matrix[existing_idx, idx] = similarity * 0.5 # reverse edge weaker
         self.is_matrix_dirty = True
 
-    def _read_from_blob(self, target_id_int: int) -> Optional[Dict]:
+    def _read_from_blob(self, target_id_int: int) -> dict | None:
         """4.1 Zero-copy read from binary blob without parsing the whole file"""
         if not os.path.exists("solomon_brain_map.bin"):
             return None
@@ -224,7 +225,7 @@ class QuantizedBrainMap:
             pass
         return None
 
-    def recall(self, query: str, top_k: int = 5) -> List[Dict]:
+    def recall(self, query: str, top_k: int = 5) -> list[dict]:
         """3.1 Vectorized Spreading Activation using Sparse Matrices"""
         if not self.nodes:
             return []
@@ -297,7 +298,7 @@ class QuantizedBrainMap:
 
         return results
 
-    def _vectorized_hebbian_learning(self, activated_nodes: List[QuantizedMemoryNode]):
+    def _vectorized_hebbian_learning(self, activated_nodes: list[QuantizedMemoryNode]):
         """O(1) vector outer-product update for co-activated nodes."""
         if len(activated_nodes) < 2:
             return
@@ -418,7 +419,7 @@ class QuantizedBrainMap:
             self.adj_matrix[path_indices[0], path_indices[-1]] = 0.3
             self.is_matrix_dirty = True
 
-    def _node_to_dict(self, node: QuantizedMemoryNode) -> Dict:
+    def _node_to_dict(self, node: QuantizedMemoryNode) -> dict:
         return {
             "id": node.id_str,
             "type_idx": node.type_idx,

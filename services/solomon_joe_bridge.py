@@ -1,7 +1,4 @@
 # services/solomon_joe_bridge.py
-import subprocess
-import os
-import json
 
 # Registry Metadata requirements
 readiness_key = "joe_omega_bridge"

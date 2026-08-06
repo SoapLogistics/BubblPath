@@ -1,8 +1,8 @@
-import sqlite3
 import json
-import uuid
+import sqlite3
 import time
-from typing import Dict, Any
+import uuid
+from typing import Any
 
 route_key = "futures_memory_outbox"
 
@@ -25,7 +25,7 @@ class FuturesMemoryOutbox:
                 )
             """)
 
-    def queue_event(self, event_type: str, payload: Dict[str, Any]):
+    def queue_event(self, event_type: str, payload: dict[str, Any]):
         """Durable outbox for memory delivery."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(

@@ -2,6 +2,7 @@ import json
 import sys
 import time
 
+
 def verify():
     report = {
         "schema_version": "solomon.futures.verification.v1",
@@ -13,7 +14,7 @@ def verify():
     # We would theoretically execute the gates here.
     # We just run the tests to confirm base mathematical validity.
     import subprocess
-    result = subprocess.run([sys.executable, "-m", "pytest", "tests/futures/test_threshold_logic.py", "-q"], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, "-m", "pytest", "tests/futures/test_threshold_logic.py", "-q"], capture_output=True, text=True, check=False)
 
     if result.returncode == 0:
         report["gates"].append({"name": "test_threshold_logic", "status": "PASS"})

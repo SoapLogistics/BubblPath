@@ -1,6 +1,7 @@
 import os
-import sys
 import subprocess
+import sys
+
 
 def run_scheduler():
     if os.environ.get("SOLOMON_ENABLE_LOKI_SCHEDULER") != "1":

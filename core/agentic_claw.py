@@ -1,10 +1,8 @@
+import json
+import logging
 import os
 import subprocess
-import logging
-import json
-from typing import Dict, Any
-import logging
-from typing import Dict, Any
+from typing import Any
 
 from gabriel_engine.core.independent_construction import CleanRoomBuilder
 
@@ -21,7 +19,7 @@ class SolomonAgenticClaw:
         else:
             self.workspace_root = workspace_root
 
-    def write_file(self, relative_path: str, content: str) -> Dict[str, Any]:
+    def write_file(self, relative_path: str, content: str) -> dict[str, Any]:
         """
         Writes code or text to a file within Solomon's workspace.
         """
@@ -39,7 +37,7 @@ class SolomonAgenticClaw:
             logger.error(f"Failed to write file {relative_path}: {e}")
             return {"status": "error", "error": str(e)}
 
-    def execute_command(self, command: str) -> Dict[str, Any]:
+    def execute_command(self, command: str) -> dict[str, Any]:
         """
         Executes a shell command in the workspace.
         """
@@ -51,7 +49,8 @@ class SolomonAgenticClaw:
                 cwd=self.workspace_root,
                 capture_output=True,
                 text=True,
-                timeout=30 # Safety timeout
+                timeout=30, # Safety timeout
+                check=False
             )
             
             return {
@@ -87,7 +86,9 @@ class SolomonAgenticClaw:
         # 3. The Self-Healing Brain: Crucible + Healer Engine Validation
         try:
             from gabriel_engine.core.crucible import Crucible
-            from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
+            from gabriel_engine.core.recursive_optimizer import (
+                RecursiveCrucibleOptimizer,
+            )
             
             logger.info(f">> [HEALER ENGINE] Injecting {feature_name} into the Crucible sandbox...")
             crucible = Crucible()
@@ -111,7 +112,7 @@ class SolomonAgenticClaw:
                 final_report = crucible.run_validation(feature_name, injected_errors=0)
                 if final_report.decision != "PROMOTE":
                     return f">> [AGENTIC CLAW] Final Crucible validation failed. Scrapping {feature_name}."
-                logger.info(f">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
+                logger.info(">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
                 
         except Exception as e:
             return f">> [AGENTIC CLAW] Healer Engine validation crashed: {e}"
