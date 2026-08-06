@@ -1,7 +1,8 @@
-import requests
-import feedparser
 import logging
-from typing import List, Dict, Any
+from typing import Any
+
+import feedparser
+import requests
 
 from solomon_ingest.core.connector import SourceConnector
 
@@ -28,7 +29,7 @@ class FreeSportsRSSConnector(SourceConnector):
         except Exception as e:
             return {"status": "error", "source": self.source_id, "error": str(e)}
 
-    def discover(self, cursor: str | None = None) -> List[Dict[str, Any]]:
+    def discover(self, cursor: str | None = None) -> list[dict[str, Any]]:
         all_entries = []
         for url in self.feed_urls:
             try:

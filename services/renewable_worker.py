@@ -1,5 +1,6 @@
 import logging
 
+
 class SolomonRenewableWorker:
     """
     Solomon-native clean-room implementation of renewable_worker.

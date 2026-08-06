@@ -1,5 +1,6 @@
 import datetime
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 
 class TaskPlan:
     def __init__(
@@ -7,12 +8,12 @@ class TaskPlan:
         plan_id: str,
         task_id: str,
         objective: str,
-        steps: List[Dict[str, Any]],
-        retrieved_memory_card_ids: List[str],
-        injected_safeguards: List[Dict[str, Any]],
+        steps: list[dict[str, Any]],
+        retrieved_memory_card_ids: list[str],
+        injected_safeguards: list[dict[str, Any]],
         status: str = "DRAFT",
-        created_at: Optional[str] = None,
-        updated_at: Optional[str] = None
+        created_at: str | None = None,
+        updated_at: str | None = None
     ):
         self.plan_id = plan_id
         self.task_id = task_id
@@ -35,7 +36,7 @@ class TaskPlan:
         if self.status not in ("DRAFT", "APPROVED", "EXECUTED", "FAILED"):
             raise ValueError(f"Invalid plan status: {self.status}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the task plan to a dictionary."""
         return {
             "plan_id": self.plan_id,
@@ -50,7 +51,7 @@ class TaskPlan:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TaskPlan":
+    def from_dict(cls, data: dict[str, Any]) -> "TaskPlan":
         """Deserializes a dictionary into a TaskPlan instance."""
         return cls(
             plan_id=data.get("plan_id"),

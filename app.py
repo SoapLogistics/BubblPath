@@ -1,18 +1,19 @@
+import logging
 import os
-import traceback
-import openai
-import threading
-import time
 import subprocess
 import sys
-from flask import Flask, request, jsonify, render_template
+import threading
+import time
+import traceback
 
-from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
-from core.solomon_quantized_memory import QuantizedBrainMap
+import openai
+from flask import Flask, jsonify, render_template, request
+
 from backend.services.futures_dashboard_backend import FuturesDashboardBackend
-from core.solomon_web_crawler import SolomonWebCrawler
 from core.agentic_claw import SolomonAgenticClaw
 from core.solomon_local_llm import SolomonLocalLLM
+from core.solomon_quantized_memory import QuantizedBrainMap
+from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
@@ -49,7 +50,7 @@ def get_or_create_codex_components():
             module = gabriel_loop.registry.load_capability("codex_parallel_worktrees")
             codex_worktree_instance = module.CodexParallelWorktrees()
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
     # 2. Instantiation of Kanban / Task Board
     if not codex_kanban_instance:
@@ -59,7 +60,7 @@ def get_or_create_codex_components():
             module = gabriel_loop.registry.load_capability("codex_kanban")
             codex_kanban_instance = module.RenewableWorkerLease()
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
     # 3. Instantiation of MCP Bridge
     if not codex_mcp_instance:
@@ -69,7 +70,7 @@ def get_or_create_codex_components():
             module = gabriel_loop.registry.load_capability("codex_mcp_bridge")
             codex_mcp_instance = module.CodexMCPBridge()
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
     # 4. Instantiation of Issue-to-PR Pipeline (Jules)
     if not codex_pipeline_instance:
@@ -82,7 +83,7 @@ def get_or_create_codex_components():
                 mcp_bridge=codex_mcp_instance
             )
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
 
 def get_or_create_jules_components():
@@ -100,7 +101,7 @@ def get_or_create_jules_components():
             module = gabriel_loop.registry.load_capability("jules_dependency_installer")
             jules_installer_instance = module.JulesDependencyInstaller()
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
     # 2. Instantiation of Code Patcher
     if not jules_patcher_instance:
@@ -110,7 +111,7 @@ def get_or_create_jules_components():
             module = gabriel_loop.registry.load_capability("jules_code_patcher")
             jules_patcher_instance = module.JulesCodePatcher()
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
     # 3. Instantiation of Test Runner Loop
     if not jules_test_loop_instance:
@@ -120,7 +121,7 @@ def get_or_create_jules_components():
             module = gabriel_loop.registry.load_capability("jules_test_runner_loop")
             jules_test_loop_instance = module.JulesTestRunnerLoop()
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
 
 @app.errorhandler(Exception)
@@ -130,7 +131,7 @@ def handle_unexpected_error(error):
     """
     response = {
         "status": "error",
-        "message": f"Global SOSS Boundary Intercepted Crash: {str(error)}",
+        "message": f"Global SOSS Boundary Intercepted Crash: {error!s}",
         "traceback": traceback.format_exc()
     }
     return jsonify(response), 500
@@ -453,7 +454,7 @@ def assimilate():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"An error occurred during assimilation: {str(e)}",
+            "message": f"An error occurred during assimilation: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -501,7 +502,7 @@ def execute_assimilated_code():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"Execution failed: {str(e)}",
+            "message": f"Execution failed: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -541,7 +542,7 @@ def ast_inject():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"AST Injection failed: {str(e)}",
+            "message": f"AST Injection failed: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -582,7 +583,7 @@ def optimize_capability():
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Optimization failed: {str(e)}"
+            "message": f"Optimization failed: {e!s}"
         }), 500
 
 
@@ -603,7 +604,7 @@ def observe_and_deconstruct():
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Observational profiling failed: {str(e)}"
+            "message": f"Observational profiling failed: {e!s}"
         }), 500
 
 
@@ -742,7 +743,6 @@ def futures_dashboard():
 
 @app.route("/api/futures/dashboard")
 def api_futures_dashboard():
-    from backend.services.futures_dashboard_backend import FuturesDashboardBackend
     backend = FuturesDashboardBackend()
     return jsonify(backend.get_dashboard_data())
 
@@ -763,7 +763,7 @@ def perpetual_background_worker():
             os.environ["SOLOMON_ENABLE_LOKI_SCHEDULER"] = "1"
             os.environ["SOLOMON_RUN_FUTURES_SCAN"] = "1"
             script_path = os.path.join(os.path.dirname(__file__), "scripts/scheduler.py")
-            subprocess.run([sys.executable, script_path], capture_output=True)
+            subprocess.run([sys.executable, script_path], capture_output=True, check=False)
             
             print("[PERPETUAL] Loop complete. Sleeping for 5 minutes...")
             time.sleep(300)  # Sleep 5 minutes

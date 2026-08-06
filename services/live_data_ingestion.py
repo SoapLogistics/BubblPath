@@ -1,10 +1,9 @@
-import os
-import time
-import uuid
-import random
-import logging
 import hashlib
-from typing import Dict, Any, List
+import logging
+import os
+import uuid
+from typing import Any
+
 from core.solomon_web_crawler import SolomonWebCrawler
 
 logger = logging.getLogger("live_data_ingestion")
@@ -16,14 +15,14 @@ class LiveAPIIngestor:
         if self.use_simulation:
             logger.info(f"[{self.__class__.__name__}] No API key found for {api_key_env}. Using hyper-realistic simulation fallback.")
 
-    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+    def fetch_live_candidates(self) -> list[dict[str, Any]]:
         raise NotImplementedError()
 
 class FinanceAPIIngestor(LiveAPIIngestor):
     def __init__(self):
         super().__init__("ALPHAVANTAGE_API_KEY")
 
-    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+    def fetch_live_candidates(self) -> list[dict[str, Any]]:
         if self.use_simulation:
             crawler = SolomonWebCrawler()
             res = crawler.search_and_extract("live stock market breaking news volatility", max_results=1)
@@ -50,7 +49,7 @@ class GeopoliticsAPIIngestor(LiveAPIIngestor):
     def __init__(self):
         super().__init__("NEWS_API_KEY")
 
-    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+    def fetch_live_candidates(self) -> list[dict[str, Any]]:
         if self.use_simulation:
             crawler = SolomonWebCrawler()
             res = crawler.search_and_extract("geopolitical crisis news today", max_results=1)
@@ -76,7 +75,7 @@ class SportsAPIIngestor(LiveAPIIngestor):
     def __init__(self):
         super().__init__("ODDS_API_KEY")
 
-    def fetch_live_candidates(self) -> List[Dict[str, Any]]:
+    def fetch_live_candidates(self) -> list[dict[str, Any]]:
         if self.use_simulation:
             crawler = SolomonWebCrawler()
             res = crawler.search_and_extract("live sports betting odds today", max_results=1)
@@ -110,5 +109,4 @@ class OmniDataRouter:
     def stream_global_events(self):
         for ingestor in self.ingestors:
             candidates = ingestor.fetch_live_candidates()
-            for c in candidates:
-                yield c
+            yield from candidates

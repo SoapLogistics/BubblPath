@@ -1,8 +1,9 @@
 import datetime
 import uuid
-from typing import List, Dict, Any, Tuple
-from solomon_knowledge_cards.api.repository import CardRepository
-from solomon_knowledge_cards.planner.models import TaskPlan
+
+from core.solomon_knowledge_cards.api.repository import CardRepository
+from core.solomon_knowledge_cards.planner.models import TaskPlan
+
 
 class DynamicPlanner:
     def __init__(self, repository: CardRepository):
@@ -28,7 +29,6 @@ class DynamicPlanner:
         retrieved_ids = [m["card_id"] for m in trusted_memories]
 
         # 2. Extract failures and repairs to synthesize safeguards
-        failures = [m for m in trusted_memories if m["card_type"] == "FAILURE"]
         repairs = [m for m in trusted_memories if m["card_type"] == "REPAIR"]
 
         injected_safeguards = []

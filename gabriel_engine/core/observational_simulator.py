@@ -1,7 +1,7 @@
-import os
+import logging
 import time
-import subprocess
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 
 class ObservationalSandboxSimulator:
     """
@@ -13,9 +13,9 @@ class ObservationalSandboxSimulator:
     def deconstruct_binary(
         self,
         binary_name: str,
-        simulated_cli_args: Optional[List[str]] = None,
-        mock_output_file: Optional[str] = None
-    ) -> Dict[str, Any]:
+        simulated_cli_args: list[str] | None = None,
+        mock_output_file: str | None = None
+    ) -> dict[str, Any]:
         """
         Runs systematic black-box probing of the target binary.
         Generates a rigorous behavioral specification profile.
@@ -69,7 +69,7 @@ Provide a Flask-compatible API and SQLite connection worker capable of:
                 with open(mock_output_file, "w", encoding="utf-8") as f:
                     f.write(behavioral_spec)
             except Exception:
-                pass
+                logging.getLogger(__name__).exception("An error occurred")
 
         return {
             "target": binary_name,

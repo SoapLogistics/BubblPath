@@ -1,9 +1,10 @@
+import datetime
 import os
 import re
-import datetime
-from typing import List, Dict, Any
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
+
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+
 
 def validate_safe_path(filepath: str, allowed_base_dir: str = ".") -> str:
     """
@@ -115,7 +116,7 @@ class DoctrineImporter:
         self.db_manager.store_card(card, updater="doctrine_importer", reason="Initial legacy asset migration")
         return card
 
-    def import_directory(self, dir_path: str) -> List[KnowledgeCard]:
+    def import_directory(self, dir_path: str) -> list[KnowledgeCard]:
         """Recursively finds all .md files in the directory and imports them safely."""
         safe_dir = validate_safe_path(dir_path)
         imported_cards = []
