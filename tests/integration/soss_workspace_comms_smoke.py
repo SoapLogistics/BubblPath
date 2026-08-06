@@ -1,5 +1,5 @@
 import os
-import sys
+
 
 def test_soss_workspace_smoke():
     template_path = "templates/solomon_loki_workspace.html"

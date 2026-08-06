@@ -10,16 +10,17 @@ This pushes the boundaries of efficient state-space navigation and fault-toleran
 """
 
 import heapq
-import uuid
 import logging
-from typing import Dict, List, Any, Optional, Callable, Set
+import uuid
+from collections.abc import Callable
+from typing import Any
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ChronosPlanner")
 
 class Action:
     """Represents a transition between states."""
-    def __init__(self, name: str, cost: float, effects: Dict[str, Any], preconditions: Dict[str, Any], execute_fn: Callable = None):
+    def __init__(self, name: str, cost: float, effects: dict[str, Any], preconditions: dict[str, Any], execute_fn: Callable = None):
         self.name = name
         self.cost = cost
         self.effects = effects
@@ -28,31 +29,31 @@ class Action:
 
 class StateNode:
     """Represents a state in the temporal execution graph."""
-    def __init__(self, state_dict: Dict[str, Any], parent: 'StateNode' = None, action_taken: Action = None):
+    def __init__(self, state_dict: dict[str, Any], parent: 'StateNode' = None, action_taken: Action = None):
         self.id = str(uuid.uuid4())
         self.state = state_dict.copy()
         self.parent = parent
         self.action_taken = action_taken
-        self.children: List['StateNode'] = []
-        self.failed_actions: Set[str] = set()  # Track actions that failed from this state
+        self.children: list['StateNode'] = []
+        self.failed_actions: set[str] = set()  # Track actions that failed from this state
 
     def get_hashable_state(self) -> frozenset:
         return frozenset(self.state.items())
 
 class ChronosTemporalPlanner:
-    def __init__(self, available_actions: List[Action]):
+    def __init__(self, available_actions: list[Action]):
         self.actions = available_actions
-        self.execution_graph: Dict[str, StateNode] = {}
-        self.current_node: Optional[StateNode] = None
+        self.execution_graph: dict[str, StateNode] = {}
+        self.current_node: StateNode | None = None
 
-    def _state_satisfies(self, current_state: Dict[str, Any], conditions: Dict[str, Any]) -> bool:
+    def _state_satisfies(self, current_state: dict[str, Any], conditions: dict[str, Any]) -> bool:
         """Check if current_state satisfies the required conditions."""
         for k, v in conditions.items():
             if current_state.get(k) != v:
                 return False
         return True
 
-    def _regress_state(self, current_goal: Dict[str, Any], action: Action) -> Optional[Dict[str, Any]]:
+    def _regress_state(self, current_goal: dict[str, Any], action: Action) -> dict[str, Any] | None:
         """
         Retrocausal step: Regress a goal state through an action to find the required preconditions.
         Returns the new goal state (preconditions + unmodified goals), or None if action doesn't help.
@@ -78,7 +79,7 @@ class ChronosTemporalPlanner:
 
         return new_goal
 
-    def retrocausal_plan(self, start_node: StateNode, goal_state: Dict[str, Any]) -> Optional[List[Action]]:
+    def retrocausal_plan(self, start_node: StateNode, goal_state: dict[str, Any]) -> list[Action] | None:
         """
         Plans backward from goal to the start_node state. A* search in reverse state space.
         Avoids actions known to fail from specific states.
@@ -111,7 +112,7 @@ class ChronosTemporalPlanner:
 
         return None
 
-    def execute_plan(self, initial_state: Dict[str, Any], goal_state: Dict[str, Any]) -> bool:
+    def execute_plan(self, initial_state: dict[str, Any], goal_state: dict[str, Any]) -> bool:
         """
         Executes a plan with retrocausal replanning on failure.
         Treats time as a graph, rewinding execution to the exact divergence node.
@@ -163,7 +164,7 @@ class ChronosTemporalPlanner:
         logger.info("Perfect end-state achieved via Chronos Retrocausal Planner.")
         return True
 
-    def _rewind_and_replan(self, goal_state: Dict[str, Any]) -> bool:
+    def _rewind_and_replan(self, goal_state: dict[str, Any]) -> bool:
         """Rewinds execution graph to a divergence point that allows an alternative future."""
         node = self.current_node
         while node is not None:

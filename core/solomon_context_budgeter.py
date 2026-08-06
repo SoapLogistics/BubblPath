@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
-import math
+from typing import Any
+
 
 class ContextBudgetPlanner:
     def __init__(
@@ -25,7 +25,7 @@ class ContextBudgetPlanner:
                      - dynamic_safety)
         return max(0, available)
 
-    def retrieve_context(self, db, task_input: str, task_input_size: int, relevance_threshold: float = 0.5) -> List[Dict[str, Any]]:
+    def retrieve_context(self, db, task_input: str, task_input_size: int, relevance_threshold: float = 0.5) -> list[dict[str, Any]]:
         """
         Retrieves context in layered priority, stopping when budget is hit or relevance drops.
         """

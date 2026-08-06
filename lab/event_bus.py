@@ -1,12 +1,13 @@
+import logging
 import queue
 import threading
-import logging
-from typing import Callable, Dict, List, Any, Optional
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 class Event:
-    def __init__(self, topic: str, payload: Any, source: Optional[str] = None):
+    def __init__(self, topic: str, payload: Any, source: str | None = None):
         self.topic = topic
         self.payload = payload
         self.source = source
@@ -27,7 +28,7 @@ class CognitiveEventBus:
             return cls._instance
 
     def _init(self):
-        self._subscribers: Dict[str, List[Callable]] = {}
+        self._subscribers: dict[str, list[Callable]] = {}
         self._queue = queue.Queue()
         self._shutdown_event = threading.Event()
         self._worker_thread = threading.Thread(target=self._dispatch_loop, daemon=True, name="EventBusDispatcher")
@@ -47,12 +48,12 @@ class CognitiveEventBus:
             if topic in self._subscribers and callback in self._subscribers[topic]:
                 self._subscribers[topic].remove(callback)
 
-    def publish(self, topic: str, payload: Any, source: Optional[str] = None) -> None:
+    def publish(self, topic: str, payload: Any, source: str | None = None) -> None:
         """Publish an event to the bus asynchronously."""
         event = Event(topic, payload, source)
         self._queue.put(event)
 
-    def publish_sync(self, topic: str, payload: Any, source: Optional[str] = None) -> None:
+    def publish_sync(self, topic: str, payload: Any, source: str | None = None) -> None:
         """Publish an event and execute callbacks synchronously (blocking)."""
         event = Event(topic, payload, source)
         self._execute_callbacks(event)
