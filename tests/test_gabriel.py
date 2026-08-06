@@ -1,25 +1,26 @@
+import json
 import os
 import tempfile
-import json
-import pytest
+
 from app import app, gabriel_loop
+from gabriel_engine.core.acquisition import AcquisitionEngine
+from gabriel_engine.core.assimilation_decision import AssimilationDecisionEngine
+from gabriel_engine.core.behavioral_experimentation import (
+    BehavioralExperimentationEngine,
+)
+from gabriel_engine.core.capability_extraction import CapabilityExtractionEngine
+from gabriel_engine.core.crucible import Crucible
+from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
+from gabriel_engine.core.independent_construction import CleanRoomBuilder
 
 # Import our core components
 from gabriel_engine.core.models import (
     AcquisitionRecord,
-    ProgramAnatomyCard,
     CapabilityMemoryCard,
-    CrucibleReport
+    ProgramAnatomyCard,
 )
-from gabriel_engine.core.acquisition import AcquisitionEngine
 from gabriel_engine.core.permission_gate import PermissionGate
 from gabriel_engine.core.structural_comprehension import StructuralComprehensionEngine
-from gabriel_engine.core.behavioral_experimentation import BehavioralExperimentationEngine
-from gabriel_engine.core.capability_extraction import CapabilityExtractionEngine
-from gabriel_engine.core.assimilation_decision import AssimilationDecisionEngine
-from gabriel_engine.core.independent_construction import CleanRoomBuilder
-from gabriel_engine.core.crucible import Crucible
-from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
 
 
 def test_models():
@@ -76,7 +77,7 @@ def test_acquisition_and_permission_gate():
             aggressive_mode=False
         )
         assert record_normal.license_detected == "Apache-2.0"
-        lane, justification = PermissionGate.evaluate_lane(record_normal)
+        lane, _justification = PermissionGate.evaluate_lane(record_normal)
         assert lane == "GREEN"
 
         # Test Aggressive Mode (Forces "Proprietary" to act permissively)

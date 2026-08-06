@@ -1,8 +1,9 @@
 import datetime
 import re
-from typing import Optional, Dict, Any
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
+
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
+from core.solomon_knowledge_cards.storage.db import DatabaseManager
+
 
 class ReviewGate:
     def __init__(self, db_manager: DatabaseManager):
@@ -10,7 +11,7 @@ class ReviewGate:
         # Clean regex to strip injection payloads
         self.clean_regex = re.compile(r"[<>`%;()&]")
 
-    def _sanitize(self, text: Optional[str]) -> str:
+    def _sanitize(self, text: str | None) -> str:
         if not text:
             return ""
         return self.clean_regex.sub("", text).strip()
@@ -20,8 +21,8 @@ class ReviewGate:
         card_id: str,
         target_status: str,
         updater: str = "reviewer",
-        reason: Optional[str] = None,
-        notes: Optional[str] = None
+        reason: str | None = None,
+        notes: str | None = None
     ) -> KnowledgeCard:
         """
         Transitions a card through the explicit promotion process safely:
@@ -52,9 +53,8 @@ class ReviewGate:
         elif current == "ACTIVE":
             if target_status_clean == "DEPRECATED":
                 valid = True
-        elif current == "DEPRECATED":
-            if target_status_clean == "DRAFT":
-                valid = True
+        elif current == "DEPRECATED" and target_status_clean == "DRAFT":
+            valid = True
 
         if not valid:
             raise ValueError(f"Invalid status transition from {current} to {target_status_clean}")

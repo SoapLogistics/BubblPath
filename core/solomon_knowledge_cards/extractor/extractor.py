@@ -1,8 +1,10 @@
 import datetime
-import uuid
 import re
-from typing import Dict, Any, Optional, List
-from solomon_knowledge_cards.models.card import KnowledgeCard
+import uuid
+from typing import Any
+
+from core.solomon_knowledge_cards.models.card import KnowledgeCard
+
 
 class KnowledgeExtractor:
     def __init__(self, schema_version: str = "1.0.0"):
@@ -26,9 +28,9 @@ class KnowledgeExtractor:
     def extract_draft_cards(
         self,
         worker_report: Any,
-        review_result: Optional[Any] = None,
+        review_result: Any | None = None,
         creator: str = "extractor"
-    ) -> List[KnowledgeCard]:
+    ) -> list[KnowledgeCard]:
         """
         Accepts a Worker Report and optional Review Result, parses them, and
         generates draft Knowledge, Failure, Repair, or Lesson Cards in DRAFT status.

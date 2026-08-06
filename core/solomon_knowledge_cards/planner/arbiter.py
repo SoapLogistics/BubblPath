@@ -1,11 +1,13 @@
-from typing import Dict, Any, Optional
-from solomon_knowledge_cards.api.repository import CardRepository
+from typing import Any
+
+from core.solomon_knowledge_cards.api.repository import CardRepository
+
 
 class ToolArbiter:
     def __init__(self, repository: CardRepository):
         self.repository = repository
 
-    def arbitrate_tool_config(self, tool_name: str, base_config: Dict[str, Any]) -> Dict[str, Any]:
+    def arbitrate_tool_config(self, tool_name: str, base_config: dict[str, Any]) -> dict[str, Any]:
         """
         Evaluates memory cards matching the tool_name and dynamically adjusts base_config parameters
         (e.g., rewriting port numbers, increasing timeout thresholds) based on approved playbooks.

@@ -1,8 +1,10 @@
+import logging
+import json
 import os
 import re
-import json
-from typing import List, Dict, Any, Set
+
 from gabriel_engine.core.models import ProgramAnatomyCard
+
 
 class StructuralComprehensionEngine:
     """
@@ -14,14 +16,14 @@ class StructuralComprehensionEngine:
         """
         Recursively scans directory_path to build a ProgramAnatomyCard.
         """
-        languages: Set[str] = set()
-        dependencies: Set[str] = set()
-        api_routes: List[str] = []
-        entry_points: List[str] = []
-        modules: List[str] = []
-        core_mechanisms: List[str] = []
-        valuable_patterns: List[str] = []
-        solomon_relevance: List[str] = []
+        languages: set[str] = set()
+        dependencies: set[str] = set()
+        api_routes: list[str] = []
+        entry_points: list[str] = []
+        modules: list[str] = []
+        core_mechanisms: list[str] = []
+        valuable_patterns: list[str] = []
+        solomon_relevance: list[str] = []
 
         if not os.path.exists(directory_path) or not os.path.isdir(directory_path):
             # Fallback for mock strings or single files
@@ -122,7 +124,7 @@ class StructuralComprehensionEngine:
             dependencies=list(dependencies)
         )
 
-    def _parse_python_file(self, filepath: str, routes: List[str], deps: Set[str]):
+    def _parse_python_file(self, filepath: str, routes: list[str], deps: set[str]):
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
@@ -137,9 +139,9 @@ class StructuralComprehensionEngine:
                     if im not in ["os", "sys", "re", "json", "hashlib", "datetime", "typing", "time"]:
                         deps.add(im)
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
-    def _parse_requirements(self, filepath: str, deps: Set[str]):
+    def _parse_requirements(self, filepath: str, deps: set[str]):
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 for line in f:
@@ -150,15 +152,15 @@ class StructuralComprehensionEngine:
                         if package:
                             deps.add(package)
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")
 
-    def _parse_package_json(self, filepath: str, deps: Set[str]):
+    def _parse_package_json(self, filepath: str, deps: set[str]):
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 data = json.load(f)
                 for dep_type in ["dependencies", "devDependencies"]:
                     if dep_type in data:
-                        for dep_name in data[dep_type].keys():
+                        for dep_name in data[dep_type]:
                             deps.add(dep_name)
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")

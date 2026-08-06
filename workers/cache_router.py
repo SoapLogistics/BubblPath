@@ -1,6 +1,7 @@
-import re
 import hashlib
+import re
 import time
+
 
 class AmygdalaRouter:
     """

@@ -1,20 +1,20 @@
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
 import hashlib
 import math
-import datetime
+from abc import ABC, abstractmethod
+from typing import Any
+
 
 class EmbeddingProvider(ABC):
     @abstractmethod
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         pass
 
     @abstractmethod
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         pass
 
 class DeterministicHashProvider(EmbeddingProvider):
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         embeddings = []
         for text in texts:
             dimensions = 128
@@ -47,7 +47,7 @@ class DeterministicHashProvider(EmbeddingProvider):
                 embeddings.append([float(x / norm) for x in vector])
         return embeddings
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         return {
             "provider": "deterministic_hash",
             "model": "sha256_fallback",
@@ -70,7 +70,7 @@ class DenseEmbeddingProvider(EmbeddingProvider):
             print(f"Warning: sentence-transformers not installed. {self.model_name} cannot be loaded.")
             self.model = None
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
         if self.model is None:
             return DeterministicHashProvider().embed_texts(texts)
 
@@ -78,7 +78,7 @@ class DenseEmbeddingProvider(EmbeddingProvider):
         embeddings = self.model.encode(texts)
         return [list(map(float, emb)) for emb in embeddings]
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         if self.model is None:
             return DeterministicHashProvider().get_metadata()
 

@@ -1,7 +1,8 @@
+import logging
 # services/solomon_governance_approval_packet.py
 import mmap
-import struct
 import os
+import struct
 
 route_key = "solomon_governance_approval_packet"
 
@@ -48,4 +49,4 @@ class GovernanceApprovalLane:
                 mm.flush()
                 mm.close()
         except Exception:
-            pass
+            logging.getLogger(__name__).exception("An error occurred")

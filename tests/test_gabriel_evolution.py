@@ -1,13 +1,13 @@
+import json
 import os
 import tempfile
-import json
-import pytest
-from app import app, gabriel_loop
+
+from app import app
 
 # Import target components
 from gabriel_engine.core.ast_injector import ASTCodeInjector
-from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
 from gabriel_engine.core.observational_simulator import ObservationalSandboxSimulator
+from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
 
 
 def test_ast_code_injector():

@@ -1,6 +1,8 @@
 import feedparser
 import requests
+
 from solomon_ingest.core.connector import SourceConnector
+
 
 class OfficialRSSConnector(SourceConnector):
     source_id = "official_rss"

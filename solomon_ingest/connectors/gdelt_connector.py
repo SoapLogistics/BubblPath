@@ -1,6 +1,9 @@
-import requests
 import urllib.parse
+
+import requests
+
 from solomon_ingest.core.connector import SourceConnector
+
 
 class GDELTConnector(SourceConnector):
     source_id = "gdelt"
