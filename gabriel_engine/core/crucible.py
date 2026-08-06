@@ -1,5 +1,3 @@
-import time
-from typing import Dict, Any, Tuple
 from gabriel_engine.core.models import CrucibleReport
 
 class Crucible:

@@ -38,7 +38,7 @@ class BehavioralExperimentationEngine:
                     shell=True,
                     capture_output=True,
                     text=True,
-                    timeout=timeout
+                    timeout=timeout, check=False
                 )
                 results["observations"]["subprocess_execution"] = {
                     "success": proc.returncode == 0,
@@ -105,7 +105,7 @@ class BehavioralExperimentationEngine:
         # Calculate final reliability summary
         success_count = sum(
             1 for sc, obs in results["observations"].items()
-            if obs.get("success", True) and not "error" in obs
+            if obs.get("success", True) and "error" not in obs
         )
         results["reliability_index"] = success_count / len(results["observations"])
 
