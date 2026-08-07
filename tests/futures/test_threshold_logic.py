@@ -1,5 +1,4 @@
-import pytest
-from services.solomon_futures_engine import Candidate, FuturesEngine, WilsonInterval, SimulationConfig
+from services.solomon_futures_engine import Candidate, FuturesEngine, WilsonInterval
 
 def test_wilson_interval():
     lower, upper = WilsonInterval.calculate(900, 1000, 0.95)
