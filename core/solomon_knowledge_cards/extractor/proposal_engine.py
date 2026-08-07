@@ -2,7 +2,7 @@ import datetime
 import uuid
 import os
 import re
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
@@ -42,11 +42,11 @@ class ProposalEngine:
         # Try to retrieve the original legacy Doctrine card from the database to find original file path
         legacy_card = self.repository.get_card(procedure_id)
         file_path = None
-        original_content = ""
+        pass
 
         if legacy_card:
             file_path = legacy_card.extra_metadata.get("original_file_path")
-            original_content = legacy_card.body
+            pass
         else:
             # Fallback: search checklists folder for file ending in name
             checklists_dir = "openclaw-workspace/checklists/"
@@ -60,12 +60,12 @@ class ProposalEngine:
         if file_path:
             if os.path.exists(file_path):
                 with open(file_path, "r", encoding="utf-8") as f:
-                    original_content = f.read()
+                    pass
             else:
-                original_content = f"# Master Procedure Card: {procedure_id}\n\nNo template text found."
+                pass
         else:
             file_path = f"openclaw-workspace/checklists/{procedure_id.lower()}.md"
-            original_content = f"# Master Procedure Card: {procedure_id}\n\nNo template text found."
+            pass
 
         # Draft a safe proposed patch
         remediation_actions = repair_card.body
@@ -138,7 +138,7 @@ class ProposalEngine:
         # Extract target file path from body using robust regex allowing bold markdown formatting asterisks
         match = re.search(r"Target Document:.*?`([^`]+)`", proposal.body)
         if not match:
-            print(f"[ProposalEngine] File path parsing failed from proposal body.")
+            print("[ProposalEngine] File path parsing failed from proposal body.")
             return False
 
         target_file_path = match.group(1)
@@ -147,7 +147,7 @@ class ProposalEngine:
             os.makedirs(os.path.dirname(target_file_path), exist_ok=True)
             # Create a basic stub to write to
             with open(target_file_path, "w", encoding="utf-8") as f:
-                f.write(f"# Procedure Card\n")
+                f.write("# Procedure Card\n")
 
         # Read original text
         with open(target_file_path, "r", encoding="utf-8") as f:
@@ -156,7 +156,7 @@ class ProposalEngine:
         # Safely append the proposed section at the end of the file (or merge)
         proposed_block_match = re.search(r"```markdown\n(.*?)\n```", proposal.body, re.DOTALL)
         if not proposed_block_match:
-            print(f"[ProposalEngine] Proposed markdown block parsing failed from proposal body.")
+            print("[ProposalEngine] Proposed markdown block parsing failed from proposal body.")
             return False
 
         proposed_block = proposed_block_match.group(1)
