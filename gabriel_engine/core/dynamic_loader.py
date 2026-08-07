@@ -37,7 +37,7 @@ class DynamicCapabilityRegistry:
     def register_and_save(self, capability_name: str, code_content: str) -> str:
         """
         Saves the compiled Python code to a file, hyper-quantizes it into raw .pyc bytecode,
-        and instantly deletes the source code to save space.
+        and preserves the source code to prevent version control deletion issues.
         Returns the absolute filepath to the bytecode.
         """
         with self._lock:
@@ -53,9 +53,8 @@ class DynamicCapabilityRegistry:
             # Compile directly to bytecode
             py_compile.compile(temp_filepath, cfile=pyc_filepath)
 
-            # Shred the human-readable source code
-            if os.path.exists(temp_filepath):
-                os.remove(temp_filepath)
+            # Preserve the human-readable source code to prevent VCS deletion issues
+            pass
 
             return pyc_filepath
 

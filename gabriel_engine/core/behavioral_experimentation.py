@@ -38,7 +38,8 @@ class BehavioralExperimentationEngine:
                     shell=True,
                     capture_output=True,
                     text=True,
-                    timeout=timeout
+                    timeout=timeout,
+                    check=False
                 )
                 results["observations"]["subprocess_execution"] = {
                     "success": proc.returncode == 0,

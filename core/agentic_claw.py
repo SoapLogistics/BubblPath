@@ -3,8 +3,6 @@ import subprocess
 import logging
 import json
 from typing import Dict, Any
-import logging
-from typing import Dict, Any
 
 from gabriel_engine.core.independent_construction import CleanRoomBuilder
 
@@ -51,7 +49,8 @@ class SolomonAgenticClaw:
                 cwd=self.workspace_root,
                 capture_output=True,
                 text=True,
-                timeout=30 # Safety timeout
+                timeout=30, # Safety timeout
+                check=False
             )
             
             return {

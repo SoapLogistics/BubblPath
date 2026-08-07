@@ -130,7 +130,7 @@ def handle_unexpected_error(error):
     """
     response = {
         "status": "error",
-        "message": f"Global SOSS Boundary Intercepted Crash: {str(error)}",
+        "message": f"Global SOSS Boundary Intercepted Crash: {error!s}",
         "traceback": traceback.format_exc()
     }
     return jsonify(response), 500
@@ -453,7 +453,7 @@ def assimilate():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"An error occurred during assimilation: {str(e)}",
+            "message": f"An error occurred during assimilation: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -501,7 +501,7 @@ def execute_assimilated_code():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"Execution failed: {str(e)}",
+            "message": f"Execution failed: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -541,7 +541,7 @@ def ast_inject():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"AST Injection failed: {str(e)}",
+            "message": f"AST Injection failed: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -582,7 +582,7 @@ def optimize_capability():
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Optimization failed: {str(e)}"
+            "message": f"Optimization failed: {e!s}"
         }), 500
 
 
@@ -603,7 +603,7 @@ def observe_and_deconstruct():
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Observational profiling failed: {str(e)}"
+            "message": f"Observational profiling failed: {e!s}"
         }), 500
 
 
@@ -763,7 +763,7 @@ def perpetual_background_worker():
             os.environ["SOLOMON_ENABLE_LOKI_SCHEDULER"] = "1"
             os.environ["SOLOMON_RUN_FUTURES_SCAN"] = "1"
             script_path = os.path.join(os.path.dirname(__file__), "scripts/scheduler.py")
-            subprocess.run([sys.executable, script_path], capture_output=True)
+            subprocess.run([sys.executable, script_path], capture_output=True, check=False)
             
             print("[PERPETUAL] Loop complete. Sleeping for 5 minutes...")
             time.sleep(300)  # Sleep 5 minutes
