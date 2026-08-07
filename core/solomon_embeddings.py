@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import hashlib
 import math
-import datetime
 
 class EmbeddingProvider(ABC):
     @abstractmethod
