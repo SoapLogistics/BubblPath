@@ -2,6 +2,7 @@ import json
 import sys
 import time
 
+
 def verify():
     report = {
         "schema_version": "solomon.futures.verification.v1",

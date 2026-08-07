@@ -1,8 +1,10 @@
-import os
 import mmap
+import os
 import struct
-import numpy as np
 import time
+
+import numpy as np
+
 
 class ZeroCopyMemorySubstrate:
     """

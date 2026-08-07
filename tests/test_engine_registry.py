@@ -1,7 +1,7 @@
-import os
-import json
 import ast
-import pytest
+import json
+import os
+
 
 def get_python_files(directories):
     files = []
@@ -70,11 +70,11 @@ def test_engine_registry_compliance():
         elif status_class == 'active_readiness':
             assert 'readiness_keys' in engine_metadata and len(engine_metadata['readiness_keys']) > 0, f"Engine {engine_metadata['engine_id']} is active_readiness but missing readiness_keys"
         elif status_class == 'internal_helper':
-            assert 'parent_surface' in engine_metadata and engine_metadata['parent_surface'], f"Engine {engine_metadata['engine_id']} is internal_helper but missing parent_surface"
+            assert engine_metadata.get('parent_surface'), f"Engine {engine_metadata['engine_id']} is internal_helper but missing parent_surface"
         elif status_class == 'approval_blocked':
-            assert 'refusal_behavior' in engine_metadata and engine_metadata['refusal_behavior'], f"Engine {engine_metadata['engine_id']} is approval_blocked but missing refusal_behavior"
+            assert engine_metadata.get('refusal_behavior'), f"Engine {engine_metadata['engine_id']} is approval_blocked but missing refusal_behavior"
 
         # Verify non-generated official services have doc/test
         if status_class != 'generated_artifact':
-            assert 'doc_path' in engine_metadata and engine_metadata['doc_path'], f"Engine {engine_metadata['engine_id']} is missing doc_path"
+            assert engine_metadata.get('doc_path'), f"Engine {engine_metadata['engine_id']} is missing doc_path"
             assert 'test_paths' in engine_metadata and len(engine_metadata['test_paths']) > 0, f"Engine {engine_metadata['engine_id']} is missing test_paths"

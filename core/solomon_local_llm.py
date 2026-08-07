@@ -1,9 +1,10 @@
-import os
-import threading
-import random
-import time
 import hashlib
+import random
+import threading
+import time
+
 from core.solomon_web_crawler import SolomonWebCrawler
+
 
 class SolomonLocalLLM:
     """
@@ -17,7 +18,7 @@ class SolomonLocalLLM:
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = super(SolomonLocalLLM, cls).__new__(cls)
+                cls._instance = super().__new__(cls)
                 cls._instance._initialize()
             return cls._instance
 
