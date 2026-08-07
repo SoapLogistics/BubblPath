@@ -1,9 +1,10 @@
+import importlib.util
 import os
+import py_compile
 import sys
 import threading
-import importlib.util
-import py_compile
-from typing import Dict, Any, Optional
+from typing import Any
+
 
 class DynamicCapabilityRegistry:
     """
@@ -27,7 +28,7 @@ class DynamicCapabilityRegistry:
                 f.write("# Assimilated capabilities package\n")
 
         # Cache for loaded modules: module_name -> module
-        self._loaded_modules: Dict[str, Any] = {}
+        self._loaded_modules: dict[str, Any] = {}
         # Keep track of insertion order for eviction
         self._loaded_keys: list = []
 
@@ -36,8 +37,9 @@ class DynamicCapabilityRegistry:
 
     def register_and_save(self, capability_name: str, code_content: str) -> str:
         """
-        Saves the compiled Python code to a file, hyper-quantizes it into raw .pyc bytecode,
-        and instantly deletes the source code to save space.
+        Saves the compiled Python code to a file and hyper-quantizes it into raw .pyc bytecode.
+        Unlike experimental systems, we preserve the .py source file rather than deleting it
+        to satisfy version control safety and allow clean inspection in gabriel_engine/assimilated_capabilities/.
         Returns the absolute filepath to the bytecode.
         """
         with self._lock:
@@ -53,10 +55,7 @@ class DynamicCapabilityRegistry:
             # Compile directly to bytecode
             py_compile.compile(temp_filepath, cfile=pyc_filepath)
 
-            # Shred the human-readable source code
-            if os.path.exists(temp_filepath):
-                os.remove(temp_filepath)
-
+            # The source (.py) file is preserved rather than deleted to ensure version control alignment.
             return pyc_filepath
 
     def load_capability(self, capability_name: str) -> Any:
@@ -73,13 +72,13 @@ class DynamicCapabilityRegistry:
                 raise FileNotFoundError(f"No bytecode found for capability {capability_name} at {filepath}")
 
             # Eviction strategy: if cache exceeds limits, evict the oldest module
-            if len(self._loaded_modules) >= self.max_cached_modules:
-                if capability_name not in self._loaded_modules:
-                    oldest_key = self._loaded_keys.pop(0)
-                    self._loaded_modules.pop(oldest_key, None)
-                    # Safely remove from sys.modules to allow complete garbage collection
-                    oldest_module_name = f"gabriel_engine.assimilated_capabilities.{oldest_key}"
-                    sys.modules.pop(oldest_module_name, None)
+            if (len(self._loaded_modules) >= self.max_cached_modules and
+                    capability_name not in self._loaded_modules):
+                oldest_key = self._loaded_keys.pop(0)
+                self._loaded_modules.pop(oldest_key, None)
+                # Safely remove from sys.modules to allow complete garbage collection
+                oldest_module_name = f"gabriel_engine.assimilated_capabilities.{oldest_key}"
+                sys.modules.pop(oldest_module_name, None)
 
             # Use importlib spec to load dynamically
             spec = importlib.util.spec_from_file_location(module_name, filepath)
@@ -104,10 +103,10 @@ class DynamicCapabilityRegistry:
         capability_name: str,
         class_name: str,
         method_name: str,
-        init_args: Optional[list] = None,
-        init_kwargs: Optional[Dict[str, Any]] = None,
-        method_args: Optional[list] = None,
-        method_kwargs: Optional[Dict[str, Any]] = None
+        init_args: list | None = None,
+        init_kwargs: dict[str, Any] | None = None,
+        method_args: list | None = None,
+        method_kwargs: dict[str, Any] | None = None
     ) -> Any:
         """
         Loads the capability, instantiates the class, and executes the specified method.
