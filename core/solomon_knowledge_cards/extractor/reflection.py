@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
