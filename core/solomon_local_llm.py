@@ -1,9 +1,10 @@
-import os
-import threading
-import random
-import time
 import hashlib
+import random
+import threading
+import time
+
 from core.solomon_web_crawler import SolomonWebCrawler
+
 
 class SolomonLocalLLM:
     """
@@ -17,7 +18,7 @@ class SolomonLocalLLM:
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = super(SolomonLocalLLM, cls).__new__(cls)
+                cls._instance = super().__new__(cls)
                 cls._instance._initialize()
             return cls._instance
 
@@ -66,7 +67,7 @@ class SolomonLocalLLM:
                     results = crawler.search_and_extract(user_message, max_results=2)
                     lines.append(f">> WEB RESULTS EXTRACTED: {results}")
                     lines.append(">> This knowledge has been permanently assimilated into my memory.")
-                except Exception as e:
+                except Exception as e: # noqa: BLE001
                     lines.append(f">> Web Crawler Failed: {e}")
             else:
                 lines.append("I have successfully retrieved matching memory atoms from my database:")

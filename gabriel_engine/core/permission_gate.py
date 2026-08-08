@@ -1,5 +1,6 @@
-from typing import Dict, Any, Tuple
+
 from gabriel_engine.core.models import AcquisitionRecord
+
 
 class PermissionGate:
     """
@@ -9,7 +10,7 @@ class PermissionGate:
     """
 
     @staticmethod
-    def evaluate_lane(record: AcquisitionRecord) -> Tuple[str, str]:
+    def evaluate_lane(record: AcquisitionRecord) -> tuple[str, str]:
         """
         Evaluates the record and returns (lane, justification).
         Lanes:

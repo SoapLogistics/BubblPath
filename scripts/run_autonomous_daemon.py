@@ -1,13 +1,12 @@
+import logging
 import os
 import sys
 import time
-import logging
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solomon_ingest.connectors.omni_rss_connector import OmniRSSConnector
 from core.solomon_quantized_memory import QuantizedBrainMap
-from core.agentic_claw import SolomonAgenticClaw
+from solomon_ingest.connectors.omni_rss_connector import OmniRSSConnector
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [DAEMON] %(message)s")
 logger = logging.getLogger("autonomous_daemon")
@@ -61,7 +60,7 @@ def run_daemon_cycle(test_mode=False):
         for res in results:
             logger.info(f"[DAEMON] >> [SWARM COMMANDER] Completed PR by {res.get('worker_id', 'unknown')}:\n{json.dumps(res, indent=2)}")
 
-    except Exception as e:
+    except Exception as e: # noqa: BLE001
         logger.error(f">> [SWARM COMMANDER] Failed to execute swarm loop: {e}")
     
     logger.info("=== DAEMON CYCLE COMPLETE ===")

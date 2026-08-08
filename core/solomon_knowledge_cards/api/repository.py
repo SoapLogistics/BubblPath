@@ -1,15 +1,17 @@
 import re
-from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.storage.db import DatabaseManager
-from solomon_knowledge_cards.models.card import KnowledgeCard
+from typing import Any
+
 from solomon_knowledge_cards.api.embeddings import SemanticEmbedder
+from solomon_knowledge_cards.models.card import KnowledgeCard
+from solomon_knowledge_cards.storage.db import DatabaseManager
+
 
 class CardRepository:
-    def __init__(self, db_manager: DatabaseManager, embedder: Optional[SemanticEmbedder] = None):
+    def __init__(self, db_manager: DatabaseManager, embedder: SemanticEmbedder | None = None):
         self.db_manager = db_manager
         self.embedder = embedder or SemanticEmbedder()
 
-    def create_card(self, card: KnowledgeCard, creator: str = "system", reason: Optional[str] = None) -> None:
+    def create_card(self, card: KnowledgeCard, creator: str = "system", reason: str | None = None) -> None:
         """Creates a new card, automatically generating and attaching its embedding vector."""
         if "embedding" not in card.extra_metadata or not card.extra_metadata["embedding"]:
             combined_text = f"{card.title} {card.summary} {card.body}"
@@ -17,11 +19,11 @@ class CardRepository:
 
         self.db_manager.store_card(card, updater=creator, reason=reason or "Initial creation")
 
-    def get_card(self, card_id: str) -> Optional[KnowledgeCard]:
+    def get_card(self, card_id: str) -> KnowledgeCard | None:
         """Reads a card by ID."""
         return self.db_manager.get_card(card_id)
 
-    def update_card(self, card: KnowledgeCard, updater: str = "system", reason: Optional[str] = None) -> None:
+    def update_card(self, card: KnowledgeCard, updater: str = "system", reason: str | None = None) -> None:
         """Updates a card, regenerating its embedding vector."""
         combined_text = f"{card.title} {card.summary} {card.body}"
         card.extra_metadata["embedding"] = self.embedder.get_embedding(combined_text)
@@ -31,15 +33,15 @@ class CardRepository:
             raise ValueError(f"Card {card.card_id} does not exist. Use create_card first.")
         self.db_manager.store_card(card, updater=updater, reason=reason or "Card update")
 
-    def deprecate_card(self, card_id: str, updater: str = "system", reason: Optional[str] = None) -> bool:
+    def deprecate_card(self, card_id: str, updater: str = "system", reason: str | None = None) -> bool:
         """Deprecates/soft-deletes a card."""
         return self.db_manager.soft_delete_card(card_id, updater=updater, reason=reason)
 
-    def list_cards(self, include_deleted: bool = False) -> List[KnowledgeCard]:
+    def list_cards(self, include_deleted: bool = False) -> list[KnowledgeCard]:
         """Lists all stored cards."""
         return self.db_manager.list_all_cards(include_deleted=include_deleted)
 
-    def link_cards(self, source_id: str, target_id: str, link_type: str, updater: str = "system", reason: Optional[str] = None) -> None:
+    def link_cards(self, source_id: str, target_id: str, link_type: str, updater: str = "system", reason: str | None = None) -> None:
         """Links two cards together."""
         source_card = self.db_manager.get_card(source_id)
         target_card = self.db_manager.get_card(target_id)
@@ -70,7 +72,7 @@ class CardRepository:
 
         self.db_manager.store_card(source_card, updater=updater, reason=reason or f"Linked to {target_id} via {link_type}")
 
-    def get_related_cards(self, card_id: str) -> List[KnowledgeCard]:
+    def get_related_cards(self, card_id: str) -> list[KnowledgeCard]:
         """Retrieves linked parent, related, and other semantic cards of a given card."""
         card = self.get_card(card_id)
         if not card:
@@ -104,7 +106,7 @@ class CardRepository:
 
         return related
 
-    def retrieve_revision_history(self, card_id: str) -> List[Dict[str, Any]]:
+    def retrieve_revision_history(self, card_id: str) -> list[dict[str, Any]]:
         """Retrieves full revision log of a card."""
         return self.db_manager.get_revision_history(card_id)
 
@@ -116,11 +118,11 @@ class CardRepository:
         """Imports cards from JSONL."""
         self.db_manager.import_from_jsonl(filepath, updater=updater)
 
-    def search_by_type(self, card_type: str) -> List[KnowledgeCard]:
+    def search_by_type(self, card_type: str) -> list[KnowledgeCard]:
         """Returns all cards of a given type."""
         return [c for c in self.list_cards() if c.card_type.upper() == card_type.upper()]
 
-    def search_by_tags(self, tags: List[str]) -> List[KnowledgeCard]:
+    def search_by_tags(self, tags: list[str]) -> list[KnowledgeCard]:
         """Returns all cards matching any of the specified tags."""
         normalized_tags = [t.lower() for t in tags]
         results = []
@@ -129,7 +131,7 @@ class CardRepository:
                 results.append(c)
         return results
 
-    def search_by_source(self, source_id: str) -> List[KnowledgeCard]:
+    def search_by_source(self, source_id: str) -> list[KnowledgeCard]:
         """Returns all cards associated with a given source ID."""
         results = []
         for c in self.list_cards():
@@ -140,10 +142,10 @@ class CardRepository:
     def search(
         self,
         query: str,
-        card_type: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        security_classification: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        card_type: str | None = None,
+        tags: list[str] | None = None,
+        security_classification: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Performs hybrid semantic-lexical search with weighted scoring.
         Calculates lexical scores (keywords) and dense cosine similarity scores.

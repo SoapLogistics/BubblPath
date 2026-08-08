@@ -1,5 +1,6 @@
 import datetime
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 
 class AcquisitionRecord:
     def __init__(
@@ -9,9 +10,9 @@ class AcquisitionRecord:
         source_type: str,
         owner_authorization: str = "user_provided",
         license_detected: str = "Unknown",
-        allowed_actions: Optional[List[str]] = None,
-        prohibited_actions: Optional[List[str]] = None,
-        timestamp: Optional[str] = None,
+        allowed_actions: list[str] | None = None,
+        prohibited_actions: list[str] | None = None,
+        timestamp: str | None = None,
         content_hash: str = "",
         aggressive_mode: bool = True
     ):
@@ -22,11 +23,11 @@ class AcquisitionRecord:
         self.license_detected = license_detected
         self.allowed_actions = allowed_actions or []
         self.prohibited_actions = prohibited_actions or []
-        self.timestamp = timestamp or datetime.datetime.utcnow().isoformat()
+        self.timestamp = timestamp or datetime.datetime.now(datetime.timezone.utc).isoformat()
         self.content_hash = content_hash
         self.aggressive_mode = aggressive_mode
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "project_name": self.project_name,
             "source_location": self.source_location,
@@ -45,13 +46,13 @@ class ProgramAnatomyCard:
     def __init__(
         self,
         capability: str,
-        inputs: List[str],
-        outputs: List[str],
-        core_mechanisms: List[str],
-        valuable_patterns: List[str],
-        solomon_relevance: List[str],
-        languages: Optional[List[str]] = None,
-        dependencies: Optional[List[str]] = None
+        inputs: list[str],
+        outputs: list[str],
+        core_mechanisms: list[str],
+        valuable_patterns: list[str],
+        solomon_relevance: list[str],
+        languages: list[str] | None = None,
+        dependencies: list[str] | None = None
     ):
         self.capability = capability
         self.inputs = inputs
@@ -62,7 +63,7 @@ class ProgramAnatomyCard:
         self.languages = languages or []
         self.dependencies = dependencies or []
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "capability": self.capability,
             "inputs": self.inputs,
@@ -84,8 +85,8 @@ class CapabilityMemoryCard:
         concept_summary: str,
         implementation_status: str = "independently_implemented",
         confidence: float = 1.0,
-        tested_on: Optional[List[str]] = None,
-        result: Optional[Dict[str, Any]] = None,
+        tested_on: list[str] | None = None,
+        result: dict[str, Any] | None = None,
         card_type: str = "capability_pattern"
     ):
         self.card_type = card_type
@@ -98,7 +99,7 @@ class CapabilityMemoryCard:
         self.tested_on = tested_on or []
         self.result = result or {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "card_type": self.card_type,
             "name": self.name,
@@ -115,9 +116,9 @@ class CapabilityMemoryCard:
 class CrucibleReport:
     def __init__(
         self,
-        baseline_metrics: Dict[str, Any],
-        capability_metrics: Dict[str, Any],
-        comparison_results: Dict[str, Any],
+        baseline_metrics: dict[str, Any],
+        capability_metrics: dict[str, Any],
+        comparison_results: dict[str, Any],
         decision: str,
         notes: str = ""
     ):
@@ -127,7 +128,7 @@ class CrucibleReport:
         self.decision = decision
         self.notes = notes
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "baseline_metrics": self.baseline_metrics,
             "capability_metrics": self.capability_metrics,

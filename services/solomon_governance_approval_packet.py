@@ -1,7 +1,7 @@
 # services/solomon_governance_approval_packet.py
 import mmap
-import struct
 import os
+import struct
 
 route_key = "solomon_governance_approval_packet"
 
@@ -47,5 +47,5 @@ class GovernanceApprovalLane:
                         break
                 mm.flush()
                 mm.close()
-        except Exception:
+        except Exception: # noqa: BLE001
             pass
