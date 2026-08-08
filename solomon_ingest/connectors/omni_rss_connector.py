@@ -1,11 +1,10 @@
-import requests
-import feedparser
-import logging
 import json
-import os
-from typing import List, Dict, Any
 import logging
-from typing import List, Dict, Any
+import os
+from typing import Any
+
+import feedparser
+import requests
 
 from solomon_ingest.core.connector import SourceConnector
 
@@ -18,7 +17,7 @@ class OmniRSSConnector(SourceConnector):
     """
     source_id = "omni_rss"
 
-    def __init__(self, target_categories: List[str] = None):
+    def __init__(self, target_categories: list[str] | None = None):
         """
         :param target_categories: e.g. ["sports", "finance"]. If None, pulls EVERYTHING.
         """
@@ -45,7 +44,7 @@ class OmniRSSConnector(SourceConnector):
         except Exception as e:
             return {"status": "error", "source": self.source_id, "error": str(e)}
 
-    def discover(self, cursor: str | None = None) -> List[Dict[str, Any]]:
+    def discover(self, cursor: str | None = None) -> list[dict[str, Any]]:
         all_entries = []
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
         

@@ -1,9 +1,14 @@
-import os
-import threading
-import random
-import time
 import hashlib
+import logging
+import random
+import threading
+import time
+
 from core.solomon_web_crawler import SolomonWebCrawler
+
+logger = logging.getLogger("solomon_local_llm")
+logger.setLevel(logging.INFO)
+
 
 class SolomonLocalLLM:
     """
@@ -17,13 +22,13 @@ class SolomonLocalLLM:
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = super(SolomonLocalLLM, cls).__new__(cls)
+                cls._instance = super().__new__(cls)
                 cls._instance._initialize()
             return cls._instance
 
     def _initialize(self):
         self.ready = True
-        print("[SYSTEM] Hyper-Quantized Synthesizer Brain Online (RAM usage: ~12MB).")
+        logger.info("[SYSTEM] Hyper-Quantized Synthesizer Brain Online (RAM usage: ~12MB).")
 
     def generate_response(self, raw_system_data: str, user_message: str) -> str:
         """

@@ -1,10 +1,15 @@
+import logging
 import os
-import sys
 import subprocess
+import sys
+
+logger = logging.getLogger("scheduler")
+logger.setLevel(logging.INFO)
+
 
 def run_scheduler():
     if os.environ.get("SOLOMON_ENABLE_LOKI_SCHEDULER") != "1":
-        print("Loki scheduler is disabled by default. Set SOLOMON_ENABLE_LOKI_SCHEDULER=1 to run.")
+        logger.info("Loki scheduler is disabled by default. Set SOLOMON_ENABLE_LOKI_SCHEDULER=1 to run.")
         return
 
     if os.environ.get("SOLOMON_RUN_FUTURES_SCAN") == "1":

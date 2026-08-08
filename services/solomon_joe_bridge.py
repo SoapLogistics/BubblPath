@@ -1,7 +1,8 @@
 # services/solomon_joe_bridge.py
-import subprocess
-import os
-import json
+import logging
+
+logger = logging.getLogger("solomon_joe_bridge")
+logger.setLevel(logging.INFO)
 
 # Registry Metadata requirements
 readiness_key = "joe_omega_bridge"

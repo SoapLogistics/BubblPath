@@ -1,10 +1,8 @@
+import json
+import logging
 import os
 import subprocess
-import logging
-import json
-from typing import Dict, Any
-import logging
-from typing import Dict, Any
+from typing import Any
 
 from gabriel_engine.core.independent_construction import CleanRoomBuilder
 
@@ -15,13 +13,13 @@ class SolomonAgenticClaw:
     The Agentic Claw: Solomon's physical interface with the host machine.
     Allows his LLM logic to write files and execute commands.
     """
-    def __init__(self, workspace_root: str = None):
+    def __init__(self, workspace_root: str | None = None):
         if workspace_root is None:
             self.workspace_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         else:
             self.workspace_root = workspace_root
 
-    def write_file(self, relative_path: str, content: str) -> Dict[str, Any]:
+    def write_file(self, relative_path: str, content: str) -> dict[str, Any]:
         """
         Writes code or text to a file within Solomon's workspace.
         """
@@ -39,7 +37,7 @@ class SolomonAgenticClaw:
             logger.error(f"Failed to write file {relative_path}: {e}")
             return {"status": "error", "error": str(e)}
 
-    def execute_command(self, command: str) -> Dict[str, Any]:
+    def execute_command(self, command: str) -> dict[str, Any]:
         """
         Executes a shell command in the workspace.
         """
@@ -75,7 +73,7 @@ class SolomonAgenticClaw:
         # 1. Engage Gabriel Engine to build the native capability
         builder = CleanRoomBuilder()
         try:
-            packet, code = builder.build_native_capability(feature_name, objective)
+            _packet, code = builder.build_native_capability(feature_name, objective)
         except Exception as e:
             return f">> [AGENTIC CLAW] Gabriel Engine failed to synthesize {feature_name}: {e}"
 
@@ -87,7 +85,9 @@ class SolomonAgenticClaw:
         # 3. The Self-Healing Brain: Crucible + Healer Engine Validation
         try:
             from gabriel_engine.core.crucible import Crucible
-            from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
+            from gabriel_engine.core.recursive_optimizer import (
+                RecursiveCrucibleOptimizer,
+            )
             
             logger.info(f">> [HEALER ENGINE] Injecting {feature_name} into the Crucible sandbox...")
             crucible = Crucible()
@@ -99,7 +99,7 @@ class SolomonAgenticClaw:
             
             if report.decision == "REJECT" or report.baseline_metrics.get("errors_logged", 0) > 0:
                 logger.warning(f">> [HEALER ENGINE] Crucible rejected {feature_name}. Engaging Recursive Optimizer...")
-                optimized_code, opt_metrics, rounds = optimizer.optimize_code(
+                optimized_code, _opt_metrics, rounds = optimizer.optimize_code(
                     capability_name=feature_name,
                     original_code=code,
                     crucible_metrics=report.baseline_metrics
@@ -111,7 +111,7 @@ class SolomonAgenticClaw:
                 final_report = crucible.run_validation(feature_name, injected_errors=0)
                 if final_report.decision != "PROMOTE":
                     return f">> [AGENTIC CLAW] Final Crucible validation failed. Scrapping {feature_name}."
-                logger.info(f">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
+                logger.info(">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
                 
         except Exception as e:
             return f">> [AGENTIC CLAW] Healer Engine validation crashed: {e}"

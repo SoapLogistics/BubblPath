@@ -1,24 +1,25 @@
 import datetime
 import uuid
-from typing import List, Dict, Any, Optional
+
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
+
 
 class ReflectionSynthesizer:
     def __init__(self, repository: CardRepository):
         self.repository = repository
 
-    def analyze_failures_and_synthesize_research(self) -> List[KnowledgeCard]:
+    def analyze_failures_and_synthesize_research(self) -> list[KnowledgeCard]:
         """
         Scans all failure and repair cards in the repository, clusters them by common keywords/tags,
         and generates new RESEARCH cards for high-frequency failure modes that need investigation.
         """
         all_cards = self.repository.list_cards()
         failures = [c for c in all_cards if c.card_type == "FAILURE"]
-        repairs = [c for c in all_cards if c.card_type == "REPAIR"]
+        [c for c in all_cards if c.card_type == "REPAIR"]
 
         # Cluster by tags or keywords
-        keyword_counts: Dict[str, List[str]] = {}
+        keyword_counts: dict[str, list[str]] = {}
         # Keywords to scan for
         target_keywords = ["timeout", "docker", "port", "pip", "api", "database", "memory"]
 
@@ -77,7 +78,7 @@ class ReflectionSynthesizer:
                     evidence=f"Synthesized from historical failure records: {fail_ids}",
                     why_created=f"To investigate and systematically resolve recurring failure patterns around '{kw}'.",
                     problem_solved=f"Structures active study targets for {len(fail_ids)} unresolved errors.",
-                    future_work_dependent=f"Outcome of this research will drive the creation of new SKILL and REPAIR playbooks."
+                    future_work_dependent="Outcome of this research will drive the creation of new SKILL and REPAIR playbooks."
                 )
 
                 self.repository.create_card(research_card, creator="reflection_synthesizer", reason="Synthesized from recurring failure analysis")
@@ -90,7 +91,7 @@ class ReflectionSynthesizer:
         card_id: str,
         was_successful: bool,
         operator: str = "feedback_engine"
-    ) -> Optional[KnowledgeCard]:
+    ) -> KnowledgeCard | None:
         """
         Increments or decrements a card's confidence score based on worker execution outcomes.
         - If was_successful = True: Increments confidence by +0.05 (clamped to 1.0).

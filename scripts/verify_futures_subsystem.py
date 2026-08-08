@@ -1,6 +1,11 @@
 import json
+import logging
 import sys
 import time
+
+logger = logging.getLogger("verify_futures_subsystem")
+logger.setLevel(logging.INFO)
+
 
 def verify():
     report = {
@@ -21,7 +26,7 @@ def verify():
         report["gates"].append({"name": "test_threshold_logic", "status": "FAIL"})
         report["status"] = "FAIL"
 
-    print(json.dumps(report, indent=2))
+    logger.info(json.dumps(report, indent=2))
 
     if report["status"] == "FAIL":
         sys.exit(1)

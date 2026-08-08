@@ -1,9 +1,10 @@
-import time
 import logging
 import threading
-from typing import Dict, Any, Callable, List, Optional
-from collections import defaultdict
+import time
 import uuid
+from collections import defaultdict
+from collections.abc import Callable
+from typing import Any
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 logger = logging.getLogger("SolomonKernel")
@@ -18,7 +19,7 @@ class SolomonModule:
         self.kernel = None
         self.state = "INIT"
         self.start_time = None
-        self.dependencies: List[str] = []
+        self.dependencies: list[str] = []
 
     def attach(self, kernel):
         self.kernel = kernel
@@ -34,7 +35,7 @@ class SolomonModule:
         self.state = "STOPPED"
         logger.info(f"Module {self.name} stopped.")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "state": self.state,
@@ -42,7 +43,7 @@ class SolomonModule:
         }
 
 class Event:
-    def __init__(self, topic: str, sender: str, payload: Dict[str, Any]):
+    def __init__(self, topic: str, sender: str, payload: dict[str, Any]):
         self.id = str(uuid.uuid4())
         self.topic = topic
         self.sender = sender
@@ -58,7 +59,7 @@ class SolomonKernel:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(SolomonKernel, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.modules = {}
             cls._instance.event_subscribers = defaultdict(list)
             cls._instance.rpc_registry = {}
@@ -104,7 +105,7 @@ class SolomonKernel:
 
             logger.info(f"Unloaded module: {module_name}")
 
-    def get_module(self, module_name: str) -> Optional[SolomonModule]:
+    def get_module(self, module_name: str) -> SolomonModule | None:
         return self.modules.get(module_name)
 
     # --- IPC: Event Bus (Pub/Sub) ---
@@ -112,7 +113,7 @@ class SolomonKernel:
         with self._lock:
             self.event_subscribers[topic].append(callback)
 
-    def publish(self, topic: str, sender: str, payload: Dict[str, Any]):
+    def publish(self, topic: str, sender: str, payload: dict[str, Any]):
         event = Event(topic, sender, payload)
         with self._lock:
             subscribers = list(self.event_subscribers.get(topic, []))
@@ -136,7 +137,7 @@ class SolomonKernel:
             raise ValueError(f"RPC method {method_name} not found.")
         return handler(*args, **kwargs)
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         return {
             "kernel_state": self.state,
             "modules": {name: mod.get_status() for name, mod in self.modules.items()},

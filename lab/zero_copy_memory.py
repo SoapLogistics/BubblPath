@@ -1,8 +1,10 @@
-import os
 import mmap
+import os
 import struct
-import numpy as np
 import time
+
+import numpy as np
+
 
 class ZeroCopyMemorySubstrate:
     """
@@ -62,7 +64,7 @@ class ZeroCopyMemorySubstrate:
         self.mmap_obj = mmap.mmap(self.file_obj.fileno(), 0, access=mmap.ACCESS_WRITE)
 
         # Verify Magic
-        magic, version, self.num_records, self.mapped_max_records = struct.unpack_from(self.HEADER_FORMAT, self.mmap_obj, 0)
+        magic, _version, self.num_records, self.mapped_max_records = struct.unpack_from(self.HEADER_FORMAT, self.mmap_obj, 0)
         if magic != self.MAGIC:
             raise ValueError("Invalid memory file format. Magic bytes mismatch.")
 

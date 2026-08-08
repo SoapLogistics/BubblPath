@@ -1,7 +1,5 @@
 import datetime
-import uuid
-import re
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 # Supported card types
 SUPPORTED_CARD_TYPES = {
@@ -50,19 +48,19 @@ class KnowledgeCard:
         updated_at: str,
         created_by: str,
         source_type: str,
-        source_ids: List[str],
-        parent_card_ids: List[str],
-        related_card_ids: List[str],
-        tags: List[str],
+        source_ids: list[str],
+        parent_card_ids: list[str],
+        related_card_ids: list[str],
+        tags: list[str],
         security_classification: str,
         evidence: str,
-        supersedes: Optional[str] = None,
-        superseded_by: Optional[str] = None,
+        supersedes: str | None = None,
+        superseded_by: str | None = None,
         # "Why does this exist?" fields
         why_created: str = "",
         problem_solved: str = "",
         future_work_dependent: str = "",
-        extra_metadata: Optional[Dict[str, Any]] = None
+        extra_metadata: dict[str, Any] | None = None
     ):
         self.card_id = card_id
         self.card_type = card_type
@@ -141,7 +139,7 @@ class KnowledgeCard:
         if not isinstance(self.future_work_dependent, str):
             raise ValidationError("future_work_dependent must be a string")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the card instance to a dictionary."""
         return {
             "card_id": self.card_id,
@@ -172,7 +170,7 @@ class KnowledgeCard:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "KnowledgeCard":
+    def from_dict(cls, data: dict[str, Any]) -> "KnowledgeCard":
         """Deserializes a dictionary into a KnowledgeCard instance."""
         return cls(
             card_id=data.get("card_id"),

@@ -1,9 +1,10 @@
+import importlib.util
 import os
+import py_compile
 import sys
 import threading
-import importlib.util
-import py_compile
-from typing import Dict, Any, Optional
+from typing import Any
+
 
 class DynamicCapabilityRegistry:
     """
@@ -27,7 +28,7 @@ class DynamicCapabilityRegistry:
                 f.write("# Assimilated capabilities package\n")
 
         # Cache for loaded modules: module_name -> module
-        self._loaded_modules: Dict[str, Any] = {}
+        self._loaded_modules: dict[str, Any] = {}
         # Keep track of insertion order for eviction
         self._loaded_keys: list = []
 
@@ -104,10 +105,10 @@ class DynamicCapabilityRegistry:
         capability_name: str,
         class_name: str,
         method_name: str,
-        init_args: Optional[list] = None,
-        init_kwargs: Optional[Dict[str, Any]] = None,
-        method_args: Optional[list] = None,
-        method_kwargs: Optional[Dict[str, Any]] = None
+        init_args: list | None = None,
+        init_kwargs: dict[str, Any] | None = None,
+        method_args: list | None = None,
+        method_kwargs: dict[str, Any] | None = None
     ) -> Any:
         """
         Loads the capability, instantiates the class, and executes the specified method.

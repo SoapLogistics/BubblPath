@@ -1,5 +1,6 @@
 from solomon_ingest.core.connector import SourceConnector
 
+
 class APISportsConnector(SourceConnector):
     source_id = "api_sports"
 
