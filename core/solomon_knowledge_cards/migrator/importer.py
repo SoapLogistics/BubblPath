@@ -1,9 +1,11 @@
 import os
 import re
 import datetime
-from typing import List, Dict, Any
+from typing import List
 from solomon_knowledge_cards.storage.db import DatabaseManager
 from solomon_knowledge_cards.models.card import KnowledgeCard
+import logging
+logger = logging.getLogger(__name__)
 
 def validate_safe_path(filepath: str, allowed_base_dir: str = ".") -> str:
     """
@@ -129,7 +131,7 @@ class DoctrineImporter:
                     try:
                         card = self.import_file(full_path)
                         imported_cards.append(card)
-                    except Exception as e:
-                        print(f"Error importing {full_path}: {e}")
+                    except Exception as e:  # noqa: BLE001
+                        logger.exception(f"Error importing {full_path}: {e}")
 
         return imported_cards

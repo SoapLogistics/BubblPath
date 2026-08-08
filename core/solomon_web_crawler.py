@@ -30,6 +30,6 @@ class SolomonWebCrawler:
                 
             return " | ".join(extracted_text)
             
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[WEB CRAWLER EXCEPTION] {e}")
             return f"[WEB CRAWLER FAILURE] Connection to live internet severed: {e}"

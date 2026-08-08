@@ -1,4 +1,3 @@
-import pytest
 from services.solomon_joe_bridge import JoeOmegaEngine
 
 def test_joe_omega_dry_run():

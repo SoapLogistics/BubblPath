@@ -8,8 +8,10 @@ import threading
 import sqlite3
 import zlib
 import numpy as np
-from scipy.sparse import lil_matrix, csr_matrix
+from scipy.sparse import lil_matrix
 from typing import Dict, List, Any, Optional
+import logging
+logger = logging.getLogger(__name__)
 
 # Constants for Layers to save memory
 LAYER_WORKING = 0
@@ -162,8 +164,8 @@ class QuantizedBrainMap:
                     (node.id_int, node.id_str, node.type_idx, compressed_content, node.layer, node.importance)
                 )
                 self.db.commit()
-            except Exception as e:
-                print(f"[ERROR] Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
+            except Exception as e:  # noqa: BLE001, S110
+                logger.exception(f"[ERROR] Failed to hyper-quantize memory atom {node.id_str} to DB: {e}")
                 
             return node.id_str
 
@@ -220,7 +222,7 @@ class QuantizedBrainMap:
                             "activation": 0.1,
                             "access_count": access_count
                         }
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
         return None
 

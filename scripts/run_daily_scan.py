@@ -26,7 +26,7 @@ def inject_daily_report(run_id, output_summary):
     try:
         with open(codex_path, "a") as f:
             f.write(report)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to append to context pack: {e}")
 
 def run_scan(mode="TEST", seed=42):

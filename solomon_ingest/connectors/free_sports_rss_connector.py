@@ -25,7 +25,7 @@ class FreeSportsRSSConnector(SourceConnector):
         try:
             res = requests.get(self.feed_urls[0], timeout=5)
             return {"status": "ok", "source": self.source_id, "http_code": res.status_code}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"status": "error", "source": self.source_id, "error": str(e)}
 
     def discover(self, cursor: str | None = None) -> List[Dict[str, Any]]:
@@ -45,7 +45,7 @@ class FreeSportsRSSConnector(SourceConnector):
                             "link": entry.get("link", ""),
                             "feed_source": url
                         })
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error fetching {url}: {e}")
         return all_entries
 

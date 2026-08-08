@@ -122,7 +122,7 @@ class SolomonKernel:
             try:
                 # In a real OS, this might be dispatched to a thread pool or queue
                 callback(event)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error in event subscriber for {topic}: {e}")
 
     # --- IPC: RPC (Request/Response) ---

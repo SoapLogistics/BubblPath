@@ -1,4 +1,3 @@
-import json
 import sqlite3
 from typing import Dict, Any
 
@@ -41,7 +40,7 @@ class FuturesDashboardBackend:
                     "service_status": "ONLINE",
                     "degraded": False
                 }
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {
                 "status": "error",
                 "message": str(e),

@@ -47,5 +47,5 @@ class GovernanceApprovalLane:
                         break
                 mm.flush()
                 mm.close()
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass

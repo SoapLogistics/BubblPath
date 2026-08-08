@@ -52,7 +52,7 @@ class BehavioralExperimentationEngine:
                     "error": "TimeoutExpired",
                     "latency_sec": timeout
                 }
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 results["observations"]["subprocess_execution"] = {
                     "success": False,
                     "error": str(e)

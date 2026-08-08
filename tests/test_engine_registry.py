@@ -1,7 +1,6 @@
 import os
 import json
 import ast
-import pytest
 
 def get_python_files(directories):
     files = []

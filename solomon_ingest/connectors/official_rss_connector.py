@@ -1,6 +1,8 @@
 import feedparser
 import requests
 from solomon_ingest.core.connector import SourceConnector
+import logging
+logger = logging.getLogger(__name__)
 
 class OfficialRSSConnector(SourceConnector):
     source_id = "official_rss"
@@ -21,7 +23,7 @@ class OfficialRSSConnector(SourceConnector):
             if feed.bozo == 0 or len(feed.entries) > 0:
                 return {"status": "ok", "source": self.source_id, "entries": len(feed.entries)}
             return {"status": "degraded", "source": self.source_id, "error": "Feed parsed but bozo flag set or empty"}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"status": "error", "source": self.source_id, "error": str(e)}
 
     def discover(self, cursor: str | None = None) -> list[dict]:
@@ -33,8 +35,8 @@ class OfficialRSSConnector(SourceConnector):
                 # Take top 5 entries from each feed for discovery
                 entries = feed.entries[:5]
                 all_items.extend(self.normalize(entries))
-            except Exception as e:
-                print(f"[RSS] Failed to fetch {feed_url}: {e}")
+            except Exception as e:  # noqa: BLE001
+                logger.exception(f"[RSS] Failed to fetch {feed_url}: {e}")
         return all_items
 
     def fetch(self, native_id: str) -> dict:

@@ -1,9 +1,10 @@
-import os
 import threading
 import random
 import time
 import hashlib
 from core.solomon_web_crawler import SolomonWebCrawler
+import logging
+logger = logging.getLogger(__name__)
 
 class SolomonLocalLLM:
     """
@@ -23,7 +24,7 @@ class SolomonLocalLLM:
 
     def _initialize(self):
         self.ready = True
-        print("[SYSTEM] Hyper-Quantized Synthesizer Brain Online (RAM usage: ~12MB).")
+        logger.info("[SYSTEM] Hyper-Quantized Synthesizer Brain Online (RAM usage: ~12MB).")
 
     def generate_response(self, raw_system_data: str, user_message: str) -> str:
         """
@@ -66,7 +67,7 @@ class SolomonLocalLLM:
                     results = crawler.search_and_extract(user_message, max_results=2)
                     lines.append(f">> WEB RESULTS EXTRACTED: {results}")
                     lines.append(">> This knowledge has been permanently assimilated into my memory.")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     lines.append(f">> Web Crawler Failed: {e}")
             else:
                 lines.append("I have successfully retrieved matching memory atoms from my database:")
