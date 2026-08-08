@@ -67,7 +67,7 @@ class CognitiveEventBus:
                 self._queue.task_done()
             except queue.Empty:
                 continue
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"EventBus error in dispatch loop: {e}")
 
     def _execute_callbacks(self, event: Event):
@@ -82,7 +82,7 @@ class CognitiveEventBus:
         for callback in all_callbacks:
             try:
                 callback(event)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error executing callback {callback} for event {event.topic}: {e}")
 
     def shutdown(self):

@@ -2,9 +2,11 @@ import datetime
 import uuid
 import os
 import re
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
+import logging
+logger = logging.getLogger(__name__)
 
 class ProposalEngine:
     def __init__(self, repository: CardRepository):
@@ -132,13 +134,13 @@ class ProposalEngine:
             raise ValueError(f"Card {proposal_id} is not of type PROPOSAL.")
 
         if proposal.status != "APPROVED" and proposal.status != "ACTIVE":
-            print(f"[ProposalEngine] Safe Mutation Aborted: Proposal {proposal_id} status is {proposal.status}. Must be APPROVED/ACTIVE first.")
+            logger.info(f"[ProposalEngine] Safe Mutation Aborted: Proposal {proposal_id} status is {proposal.status}. Must be APPROVED/ACTIVE first.")
             return False
 
         # Extract target file path from body using robust regex allowing bold markdown formatting asterisks
         match = re.search(r"Target Document:.*?`([^`]+)`", proposal.body)
         if not match:
-            print(f"[ProposalEngine] File path parsing failed from proposal body.")
+            logger.error(f"[ProposalEngine] File path parsing failed from proposal body.")
             return False
 
         target_file_path = match.group(1)
@@ -156,14 +158,14 @@ class ProposalEngine:
         # Safely append the proposed section at the end of the file (or merge)
         proposed_block_match = re.search(r"```markdown\n(.*?)\n```", proposal.body, re.DOTALL)
         if not proposed_block_match:
-            print(f"[ProposalEngine] Proposed markdown block parsing failed from proposal body.")
+            logger.error(f"[ProposalEngine] Proposed markdown block parsing failed from proposal body.")
             return False
 
         proposed_block = proposed_block_match.group(1)
 
         # Verify the block isn't already appended
         if proposed_block in content:
-            print(f"[ProposalEngine] Amendment already exists in file {target_file_path}. Skipping write.")
+            logger.info(f"[ProposalEngine] Amendment already exists in file {target_file_path}. Skipping write.")
             return True
 
         # Append to file
@@ -171,5 +173,5 @@ class ProposalEngine:
         with open(target_file_path, "w", encoding="utf-8") as f:
             f.write(updated_content)
 
-        print(f"[ProposalEngine] Mutation Triggered: Safely applied proposal {proposal_id} to file {target_file_path}")
+        logger.info(f"[ProposalEngine] Mutation Triggered: Safely applied proposal {proposal_id} to file {target_file_path}")
         return True

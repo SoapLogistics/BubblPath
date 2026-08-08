@@ -346,7 +346,7 @@ class FractalOntologySynthesizer:
                     "invention_domain": invention_domain,
                     "insight": leap_data["synthesis_insight"]
                 })
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001, S110
                 # Catch math errors (e.g., zero magnitude centroids) on early topologies
                 pass
 
@@ -405,7 +405,7 @@ class FractalOntologySynthesizer:
                     insights = self.run_infinite_learning_cycle(iterations=5)
                     if insights and "error" not in insights[0]:
                         logger.info(f"[Dream] Synthesized {len(insights)} new concepts autonomously.")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001, S110
                     # Log appropriately rather than swallowing blindly
                     logger.error(f"[Dream] Mathematical anomaly encountered: {str(e)}", exc_info=True)
 

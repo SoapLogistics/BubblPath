@@ -4,7 +4,7 @@ import os
 import datetime
 import threading
 from typing import List, Dict, Any, Optional
-from solomon_knowledge_cards.models.card import KnowledgeCard, ValidationError
+from solomon_knowledge_cards.models.card import KnowledgeCard
 
 class DatabaseManager:
     def __init__(self, db_path: str):
@@ -212,7 +212,7 @@ class DatabaseManager:
                 """, (card.card_id, revision_num, serialized, card.updated_at, updater, reason))
 
                 conn.commit()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 conn.rollback()
                 raise e
             finally:
@@ -311,7 +311,7 @@ class DatabaseManager:
 
                 conn.commit()
                 return True
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 conn.rollback()
                 raise e
             finally:

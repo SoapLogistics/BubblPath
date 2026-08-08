@@ -1,6 +1,8 @@
 import requests
 import urllib.parse
 from solomon_ingest.core.connector import SourceConnector
+import logging
+logger = logging.getLogger(__name__)
 
 class GDELTConnector(SourceConnector):
     source_id = "gdelt"
@@ -13,7 +15,7 @@ class GDELTConnector(SourceConnector):
             if res.status_code == 200:
                 return {"status": "ok", "source": self.source_id, "http_code": res.status_code}
             return {"status": "degraded", "source": self.source_id, "http_code": res.status_code}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"status": "error", "source": self.source_id, "error": str(e)}
 
     def discover(self, cursor: str | None = None) -> list[dict]:
@@ -29,8 +31,8 @@ class GDELTConnector(SourceConnector):
             data = res.json()
             articles = data.get("articles", [])
             return self.normalize(articles)
-        except Exception as e:
-            print(f"[GDELT] Discover error: {e}")
+        except Exception as e:  # noqa: BLE001
+            logger.exception(f"[GDELT] Discover error: {e}")
             return []
 
     def fetch(self, native_id: str) -> dict:

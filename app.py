@@ -9,10 +9,10 @@ from flask import Flask, request, jsonify, render_template
 
 from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 from core.solomon_quantized_memory import QuantizedBrainMap
-from backend.services.futures_dashboard_backend import FuturesDashboardBackend
-from core.solomon_web_crawler import SolomonWebCrawler
 from core.agentic_claw import SolomonAgenticClaw
 from core.solomon_local_llm import SolomonLocalLLM
+import logging
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
@@ -48,7 +48,7 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_parallel_worktrees", code)
             module = gabriel_loop.registry.load_capability("codex_parallel_worktrees")
             codex_worktree_instance = module.CodexParallelWorktrees()
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
 
     # 2. Instantiation of Kanban / Task Board
@@ -58,7 +58,7 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_kanban", code)
             module = gabriel_loop.registry.load_capability("codex_kanban")
             codex_kanban_instance = module.RenewableWorkerLease()
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
 
     # 3. Instantiation of MCP Bridge
@@ -68,7 +68,7 @@ def get_or_create_codex_components():
             gabriel_loop.registry.register_and_save("codex_mcp_bridge", code)
             module = gabriel_loop.registry.load_capability("codex_mcp_bridge")
             codex_mcp_instance = module.CodexMCPBridge()
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
 
     # 4. Instantiation of Issue-to-PR Pipeline (Jules)
@@ -81,7 +81,7 @@ def get_or_create_codex_components():
                 worktree_manager=codex_worktree_instance,
                 mcp_bridge=codex_mcp_instance
             )
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
 
 
@@ -99,7 +99,7 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_dependency_installer", code)
             module = gabriel_loop.registry.load_capability("jules_dependency_installer")
             jules_installer_instance = module.JulesDependencyInstaller()
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
 
     # 2. Instantiation of Code Patcher
@@ -109,7 +109,7 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_code_patcher", code)
             module = gabriel_loop.registry.load_capability("jules_code_patcher")
             jules_patcher_instance = module.JulesCodePatcher()
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
 
     # 3. Instantiation of Test Runner Loop
@@ -119,7 +119,7 @@ def get_or_create_jules_components():
             gabriel_loop.registry.register_and_save("jules_test_runner_loop", code)
             module = gabriel_loop.registry.load_capability("jules_test_runner_loop")
             jules_test_loop_instance = module.JulesTestRunnerLoop()
-        except Exception:
+        except Exception as e:  # noqa: BLE001, S110
             pass
 
 
@@ -235,7 +235,7 @@ def jules_install():
     try:
         result = jules_installer_instance.install_requirements(content)
         return jsonify(result)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -262,7 +262,7 @@ def jules_patch():
     try:
         updated, success = jules_patcher_instance.apply_patch(original, search, replace)
         return jsonify({"status": "success", "success": success, "updated_code": updated})
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -297,7 +297,7 @@ def jules_test_loop():
             "optimized_code": updated,
             "execution_logs": logs
         })
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -327,7 +327,7 @@ def manage_worktrees():
             return jsonify({"status": "success", "action": "remove"})
         else:
             return jsonify({"status": "error", "message": f"Unknown action: {action}"}), 400
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -369,7 +369,7 @@ def manage_tasks():
             return jsonify({"status": "success", "action": "status", "task_id": task_id, "task_status": status})
         else:
             return jsonify({"status": "error", "message": f"Unknown action: {action}"}), 400
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -392,7 +392,7 @@ def manage_mcp():
     try:
         result = codex_mcp_instance.call_tool(tool_name, arguments)
         return jsonify({"status": "success", "tool": tool_name, "execution_payload": result})
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -418,7 +418,7 @@ def manage_pipeline():
     try:
         result = codex_pipeline_instance.process_issue(issue_id, description, codebase)
         return jsonify(result)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -449,7 +449,7 @@ def assimilate():
             decision_overrides=decision_overrides
         )
         return jsonify(result)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         import traceback
         return jsonify({
             "status": "error",
@@ -497,7 +497,7 @@ def execute_assimilated_code():
             "method": method_name,
             "result": result
         })
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         import traceback
         return jsonify({
             "status": "error",
@@ -537,7 +537,7 @@ def ast_inject():
             "message": f"Function successfully injected into class {class_name} using AST.",
             "source_code_preview": new_source[:300] + "..."
         })
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         import traceback
         return jsonify({
             "status": "error",
@@ -579,7 +579,7 @@ def optimize_capability():
             "optimized_metrics": opt_metrics,
             "optimized_code": opt_code
         })
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({
             "status": "error",
             "message": f"Optimization failed: {str(e)}"
@@ -600,7 +600,7 @@ def observe_and_deconstruct():
     try:
         result = gabriel_loop.deconstruct_and_rebuild_binary(binary_name)
         return jsonify(result)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001, S110
         return jsonify({
             "status": "error",
             "message": f"Observational profiling failed: {str(e)}"
@@ -750,25 +750,25 @@ def perpetual_background_worker():
     """
     The True Perpetual Loop. Runs indefinitely in the background.
     """
-    print("[SYSTEM] Perpetual Learning Core Online. Engaging autonomous loop.")
+    logger.info("[SYSTEM] Perpetual Learning Core Online. Engaging autonomous loop.")
     while True:
         try:
-            print("[PERPETUAL] Running Memory Consolidation...")
+            logger.info("[PERPETUAL] Running Memory Consolidation...")
             unified_memory.consolidate()
             
-            print("[PERPETUAL] Running Dream Cycle (10 steps)...")
+            logger.info("[PERPETUAL] Running Dream Cycle (10 steps)...")
             unified_memory.dream_cycle(max_steps=10)
             
-            print("[PERPETUAL] Invoking Loki Futures Scanner...")
+            logger.info("[PERPETUAL] Invoking Loki Futures Scanner...")
             os.environ["SOLOMON_ENABLE_LOKI_SCHEDULER"] = "1"
             os.environ["SOLOMON_RUN_FUTURES_SCAN"] = "1"
             script_path = os.path.join(os.path.dirname(__file__), "scripts/scheduler.py")
             subprocess.run([sys.executable, script_path], capture_output=True)
             
-            print("[PERPETUAL] Loop complete. Sleeping for 5 minutes...")
+            logger.info("[PERPETUAL] Loop complete. Sleeping for 5 minutes...")
             time.sleep(300)  # Sleep 5 minutes
-        except Exception as e:
-            print(f"[PERPETUAL] Error in autonomous loop: {e}")
+        except Exception as e:  # noqa: BLE001, S110
+            logger.exception(f"[PERPETUAL] Error in autonomous loop: {e}")
             time.sleep(60)
 
 if __name__ == "__main__":

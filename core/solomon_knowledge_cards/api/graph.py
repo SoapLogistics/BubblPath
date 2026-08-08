@@ -1,6 +1,8 @@
-from typing import List, Dict, Any, Set, Tuple, Optional
+from typing import List, Dict, Any, Tuple
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
+import logging
+logger = logging.getLogger(__name__)
 
 class RelationGraph:
     def __init__(self, repository: CardRepository, max_recursion_depth: int = 50):
@@ -40,7 +42,7 @@ class RelationGraph:
 
         def traverse(current_id: str, current_depth: int):
             if current_depth > self.max_recursion_depth:
-                print(f"[RelationGraph] Recursion Limit Alert: Aborting traversal of {current_id} to prevent stack exhaustion.")
+                logger.error(f"[RelationGraph] Recursion Limit Alert: Aborting traversal of {current_id} to prevent stack exhaustion.")
                 return
 
             if current_id in visited:
@@ -76,7 +78,7 @@ class RelationGraph:
 
         while queue:
             if len(nodes) >= max_bfs_nodes:
-                print(f"[RelationGraph] BFS Nodes Limit Hit ({max_bfs_nodes}). Terminating subgraph search pre-emptively.")
+                logger.info(f"[RelationGraph] BFS Nodes Limit Hit ({max_bfs_nodes}). Terminating subgraph search pre-emptively.")
                 break
 
             curr_id, depth = queue.pop(0)

@@ -46,7 +46,7 @@ def run():
                 arousal=0.5
             )
             ingested_count += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to ingest knowledge atom: {e}")
             
     logger.info(f"Knowledge Ingestion Complete. {ingested_count} atoms permanently burned into memory.")

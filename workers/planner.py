@@ -151,7 +151,7 @@ class ChronosTemporalPlanner:
                     self.current_node = new_node
                     self.execution_graph[self.current_node.id] = self.current_node
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Execution temporal divergence at {action.name}: {e}")
                     self.current_node.failed_actions.add(action.name)
 

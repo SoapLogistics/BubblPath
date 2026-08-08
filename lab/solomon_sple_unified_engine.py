@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 import time
 
 from solomon_meta_learner import MetaLearner

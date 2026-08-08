@@ -1,4 +1,3 @@
-import os
 import time
 import logging
 from typing import List, Dict, Any, Optional
@@ -83,7 +82,7 @@ class GabrielPerpetualLoop:
             )
             self.acquisition_records[project_name] = record
             lane, lane_justification = PermissionGate.evaluate_lane(record)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Intake/Permission Gate failed: {str(e)}")
             # Handle fail-safe fallback
             record = AcquisitionRecord(
@@ -100,7 +99,7 @@ class GabrielPerpetualLoop:
         try:
             anatomy = self.structural_engine.scan_project(source_location)
             self.anatomy_cards[project_name] = anatomy
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Structural scans failed: {str(e)}")
             anatomy = ProgramAnatomyCard(
                 capability="Generic Process Handler",
@@ -117,7 +116,7 @@ class GabrielPerpetualLoop:
             experiment_results = self.behavioral_engine.run_experiment(
                 test_scenarios=["normal_execution", "network_failure", "worker_crash"]
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Behavioral profiling failed: {str(e)}")
             experiment_results = {
                 "observations": {
@@ -136,7 +135,7 @@ class GabrielPerpetualLoop:
                 source_license=record.license_detected
             )
             self.capability_cards[project_name] = extracted_caps
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Capability extraction failed: {str(e)}")
             extracted_caps = [
                 CapabilityMemoryCard(
@@ -211,7 +210,7 @@ class GabrielPerpetualLoop:
                                 decision="PROMOTE",
                                 notes=f"Optimized recursively over {optimization_rounds} rounds. Throttling and latencies successfully balanced."
                             )
-                        except Exception as opt_err:
+                        except Exception as opt_err:  # noqa: BLE001
                             logger.error(f"Recursive optimization failed for {cap.name}: {str(opt_err)}")
 
                     self.native_implementations[cap.name] = {
@@ -225,7 +224,7 @@ class GabrielPerpetualLoop:
                         self.registry.register_and_save(cap.name, native_code)
                         self.registry.load_capability(cap.name)
                         fold_status = "SUCCESS"
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         fold_status = f"FAILED: {str(e)}"
                 else:
                     fold_status = "SKIPPED_NOT_PROMOTED"
@@ -247,7 +246,7 @@ class GabrielPerpetualLoop:
                     "native_code_preview": native_code[:200] + "..." if native_code else "",
                     "crucible_report": report.to_dict()
                 })
-            except Exception as cap_err:
+            except Exception as cap_err:  # noqa: BLE001
                 logger.error(f"Error processing capability {cap.name}: {str(cap_err)}")
                 results_list.append({
                     "capability_name": cap.name,
@@ -277,7 +276,7 @@ class GabrielPerpetualLoop:
                 }
             }
             self.assimilation_history.append(loop_log)
-        except Exception as log_err:
+        except Exception as log_err:  # noqa: BLE001
             logger.error(f"Logging history stats failed: {str(log_err)}")
             loop_log = {"status": "error", "message": str(log_err)}
 
@@ -328,7 +327,7 @@ class GabrielPerpetualLoop:
                 "generated_capability": cap_name,
                 "folded_into_self": True
             }
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Deconstruct and rebuild of binary {binary_name} failed: {str(e)}")
             return {
                 "status": "error",

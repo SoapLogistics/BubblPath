@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import hashlib
 import math
-import datetime
+import logging
+logger = logging.getLogger(__name__)
 
 class EmbeddingProvider(ABC):
     @abstractmethod
@@ -67,7 +68,7 @@ class DenseEmbeddingProvider(EmbeddingProvider):
             from sentence_transformers import SentenceTransformer
             self.model = SentenceTransformer(self.model_name)
         except ImportError:
-            print(f"Warning: sentence-transformers not installed. {self.model_name} cannot be loaded.")
+            logger.error(f"Warning: sentence-transformers not installed. {self.model_name} cannot be loaded.")
             self.model = None
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:

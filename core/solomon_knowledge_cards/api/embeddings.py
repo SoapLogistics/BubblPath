@@ -2,7 +2,9 @@ import os
 import re
 import math
 import hashlib
-from typing import List, Dict, Any, Optional
+from typing import List
+import logging
+logger = logging.getLogger(__name__)
 
 try:
     import openai
@@ -63,9 +65,9 @@ class SemanticEmbedder:
                         model="text-embedding-ada-002"
                     )
                     return response['data'][0]['embedding']
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Log error and fallback gracefully to avoid service disruption
-                print(f"[SemanticEmbedder] OpenAI API error: {e}. Falling back to deterministic hashing vector.")
+                logger.exception(f"[SemanticEmbedder] OpenAI API error: {e}. Falling back to deterministic hashing vector.")
 
         return self._generate_hash_vector(text)
 

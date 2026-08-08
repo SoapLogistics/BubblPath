@@ -1,6 +1,4 @@
 import datetime
-import uuid
-import re
 from typing import List, Dict, Any, Optional
 
 # Supported card types
@@ -130,7 +128,7 @@ class KnowledgeCard:
                 if val_to_parse.endswith("Z"):
                     val_to_parse = val_to_parse[:-1] + "+00:00"
                 datetime.datetime.fromisoformat(val_to_parse)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 raise ValidationError(f"Field {ts_name} is not a valid ISO 8601 string: {e}")
 
         # Ensure "Why does this exist?" fields are valid strings
