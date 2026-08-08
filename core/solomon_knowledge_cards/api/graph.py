@@ -1,13 +1,15 @@
-from typing import List, Dict, Any, Set, Tuple, Optional
+from typing import Any
+
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
+
 
 class RelationGraph:
     def __init__(self, repository: CardRepository, max_recursion_depth: int = 50):
         self.repository = repository
         self.max_recursion_depth = max_recursion_depth
 
-    def get_all_outgoing_links(self, card: KnowledgeCard) -> List[Tuple[str, str]]:
+    def get_all_outgoing_links(self, card: KnowledgeCard) -> list[tuple[str, str]]:
         """
         Retrieves all outgoing link relations from a given card.
         Returns a list of tuples: (target_card_id, link_type)
@@ -29,7 +31,7 @@ class RelationGraph:
 
         return links
 
-    def find_dependency_chain(self, card_id: str, relation_type: str = "DEPENDS_ON") -> List[str]:
+    def find_dependency_chain(self, card_id: str, relation_type: str = "DEPENDS_ON") -> list[str]:
         """
         Traverses DEPENDS_ON relations recursively to find the full dependency chain.
         Strictly limits recursion depth to prevent Stack Overflow / thread stack exhaustion.
@@ -62,13 +64,13 @@ class RelationGraph:
         traverse(card_id, 1)
         return chain[:-1] if chain else []
 
-    def get_subgraph(self, card_id: str, max_depth: int = 2) -> Dict[str, Any]:
+    def get_subgraph(self, card_id: str, max_depth: int = 2) -> dict[str, Any]:
         """
         Retrieves the semantic subgraph surrounding a given card using BFS traversal.
         Strictly enforces max BFS queue size to prevent memory exhaustion on giant networks.
         """
-        nodes: Dict[str, Dict[str, Any]] = {}
-        edges: List[Dict[str, str]] = []
+        nodes: dict[str, dict[str, Any]] = {}
+        edges: list[dict[str, str]] = []
 
         queue = [(card_id, 0)]
         visited = {card_id}

@@ -1,28 +1,29 @@
-import os
-import time
 import logging
-from typing import List, Dict, Any, Optional
+import time
+from typing import Any
 
-from gabriel_engine.core.models import (
-    AcquisitionRecord,
-    ProgramAnatomyCard,
-    CapabilityMemoryCard,
-    CrucibleReport
-)
 from gabriel_engine.core.acquisition import AcquisitionEngine
-from gabriel_engine.core.permission_gate import PermissionGate
-from gabriel_engine.core.structural_comprehension import StructuralComprehensionEngine
-from gabriel_engine.core.behavioral_experimentation import BehavioralExperimentationEngine
-from gabriel_engine.core.capability_extraction import CapabilityExtractionEngine
 from gabriel_engine.core.assimilation_decision import AssimilationDecisionEngine
-from gabriel_engine.core.independent_construction import CleanRoomBuilder
-from gabriel_engine.core.crucible import Crucible
-from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
 
 # Import newly added advanced engines for our self-modifying, self-learning capability
 from gabriel_engine.core.ast_injector import ASTCodeInjector
-from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
+from gabriel_engine.core.behavioral_experimentation import (
+    BehavioralExperimentationEngine,
+)
+from gabriel_engine.core.capability_extraction import CapabilityExtractionEngine
+from gabriel_engine.core.crucible import Crucible
+from gabriel_engine.core.dynamic_loader import DynamicCapabilityRegistry
+from gabriel_engine.core.independent_construction import CleanRoomBuilder
+from gabriel_engine.core.models import (
+    AcquisitionRecord,
+    CapabilityMemoryCard,
+    CrucibleReport,
+    ProgramAnatomyCard,
+)
 from gabriel_engine.core.observational_simulator import ObservationalSandboxSimulator
+from gabriel_engine.core.permission_gate import PermissionGate
+from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
+from gabriel_engine.core.structural_comprehension import StructuralComprehensionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +50,14 @@ class GabrielPerpetualLoop:
         self.observational_simulator = ObservationalSandboxSimulator()
 
         # Database state mirrors
-        self.acquisition_records: Dict[str, AcquisitionRecord] = {}
-        self.anatomy_cards: Dict[str, ProgramAnatomyCard] = {}
-        self.capability_cards: Dict[str, List[CapabilityMemoryCard]] = {}
-        self.crucible_reports: Dict[str, CrucibleReport] = {}
-        self.native_implementations: Dict[str, Dict[str, str]] = {} # capability_name -> {packet, code}
+        self.acquisition_records: dict[str, AcquisitionRecord] = {}
+        self.anatomy_cards: dict[str, ProgramAnatomyCard] = {}
+        self.capability_cards: dict[str, list[CapabilityMemoryCard]] = {}
+        self.crucible_reports: dict[str, CrucibleReport] = {}
+        self.native_implementations: dict[str, dict[str, str]] = {} # capability_name -> {packet, code}
 
         # Self-improvement statistics for Step 10 (Continuous learning)
-        self.assimilation_history: List[Dict[str, Any]] = []
+        self.assimilation_history: list[dict[str, Any]] = []
 
     def assimilate_project(
         self,
@@ -64,8 +65,8 @@ class GabrielPerpetualLoop:
         source_location: str,
         source_type: str = "source_repository",
         aggressive_mode: bool = True,
-        decision_overrides: Optional[Dict[str, float]] = None
-    ) -> Dict[str, Any]:
+        decision_overrides: dict[str, float] | None = None
+    ) -> dict[str, Any]:
         """
         Executes the full, multi-stage software assimilation loop on a target directory.
         Fully hardened with explicit try-except boundary isolation across each stage.
@@ -83,8 +84,8 @@ class GabrielPerpetualLoop:
             )
             self.acquisition_records[project_name] = record
             lane, lane_justification = PermissionGate.evaluate_lane(record)
-        except Exception as e:
-            logger.error(f"Intake/Permission Gate failed: {str(e)}")
+        except Exception as e: # noqa: BLE001
+            logger.error(f"Intake/Permission Gate failed: {e!s}")
             # Handle fail-safe fallback
             record = AcquisitionRecord(
                 project_name=project_name,
@@ -94,14 +95,14 @@ class GabrielPerpetualLoop:
                 license_detected="MIT" if aggressive_mode else "Unknown"
             )
             self.acquisition_records[project_name] = record
-            lane, lane_justification = "BLUE", f"Fail-safe fallback triggered due to exception: {str(e)}"
+            lane, lane_justification = "BLUE", f"Fail-safe fallback triggered due to exception: {e!s}"
 
         # --- STAGE 3: Structural Comprehension ---
         try:
             anatomy = self.structural_engine.scan_project(source_location)
             self.anatomy_cards[project_name] = anatomy
-        except Exception as e:
-            logger.error(f"Structural scans failed: {str(e)}")
+        except Exception as e: # noqa: BLE001
+            logger.error(f"Structural scans failed: {e!s}")
             anatomy = ProgramAnatomyCard(
                 capability="Generic Process Handler",
                 inputs=["raw_input"],
@@ -117,8 +118,8 @@ class GabrielPerpetualLoop:
             experiment_results = self.behavioral_engine.run_experiment(
                 test_scenarios=["normal_execution", "network_failure", "worker_crash"]
             )
-        except Exception as e:
-            logger.error(f"Behavioral profiling failed: {str(e)}")
+        except Exception as e: # noqa: BLE001
+            logger.error(f"Behavioral profiling failed: {e!s}")
             experiment_results = {
                 "observations": {
                     "normal_execution": {"success": True, "avg_latency_ms": 15.0}
@@ -136,8 +137,8 @@ class GabrielPerpetualLoop:
                 source_license=record.license_detected
             )
             self.capability_cards[project_name] = extracted_caps
-        except Exception as e:
-            logger.error(f"Capability extraction failed: {str(e)}")
+        except Exception as e: # noqa: BLE001
+            logger.error(f"Capability extraction failed: {e!s}")
             extracted_caps = [
                 CapabilityMemoryCard(
                     name="generic_fallback_utility",
@@ -211,8 +212,8 @@ class GabrielPerpetualLoop:
                                 decision="PROMOTE",
                                 notes=f"Optimized recursively over {optimization_rounds} rounds. Throttling and latencies successfully balanced."
                             )
-                        except Exception as opt_err:
-                            logger.error(f"Recursive optimization failed for {cap.name}: {str(opt_err)}")
+                        except Exception as opt_err: # noqa: BLE001
+                            logger.error(f"Recursive optimization failed for {cap.name}: {opt_err!s}")
 
                     self.native_implementations[cap.name] = {
                         "requirements_packet": req_packet,
@@ -225,8 +226,8 @@ class GabrielPerpetualLoop:
                         self.registry.register_and_save(cap.name, native_code)
                         self.registry.load_capability(cap.name)
                         fold_status = "SUCCESS"
-                    except Exception as e:
-                        fold_status = f"FAILED: {str(e)}"
+                    except Exception as e: # noqa: BLE001
+                        fold_status = f"FAILED: {e!s}"
                 else:
                     fold_status = "SKIPPED_NOT_PROMOTED"
                     report = self.crucible.run_validation(
@@ -247,13 +248,13 @@ class GabrielPerpetualLoop:
                     "native_code_preview": native_code[:200] + "..." if native_code else "",
                     "crucible_report": report.to_dict()
                 })
-            except Exception as cap_err:
-                logger.error(f"Error processing capability {cap.name}: {str(cap_err)}")
+            except Exception as cap_err: # noqa: BLE001
+                logger.error(f"Error processing capability {cap.name}: {cap_err!s}")
                 results_list.append({
                     "capability_name": cap.name,
                     "utility_score": 0.0,
                     "chosen_action": "REJECT",
-                    "fold_into_self_status": f"FAILED: {str(cap_err)}",
+                    "fold_into_self_status": f"FAILED: {cap_err!s}",
                     "recursive_optimization_rounds": 0,
                     "error": str(cap_err)
                 })
@@ -277,8 +278,8 @@ class GabrielPerpetualLoop:
                 }
             }
             self.assimilation_history.append(loop_log)
-        except Exception as log_err:
-            logger.error(f"Logging history stats failed: {str(log_err)}")
+        except Exception as log_err: # noqa: BLE001
+            logger.error(f"Logging history stats failed: {log_err!s}")
             loop_log = {"status": "error", "message": str(log_err)}
 
         return {
@@ -294,7 +295,7 @@ class GabrielPerpetualLoop:
             "loop_learning_summary": loop_log
         }
 
-    def deconstruct_and_rebuild_binary(self, binary_name: str) -> Dict[str, Any]:
+    def deconstruct_and_rebuild_binary(self, binary_name: str) -> dict[str, Any]:
         """
         Deconstructs a closed-source command-line tool, builds a spec,
         and clean-room implements a dynamic capability from scratch.
@@ -328,9 +329,9 @@ class GabrielPerpetualLoop:
                 "generated_capability": cap_name,
                 "folded_into_self": True
             }
-        except Exception as e:
-            logger.error(f"Deconstruct and rebuild of binary {binary_name} failed: {str(e)}")
+        except Exception as e: # noqa: BLE001
+            logger.error(f"Deconstruct and rebuild of binary {binary_name} failed: {e!s}")
             return {
                 "status": "error",
-                "message": f"Observational profiling failed: {str(e)}"
+                "message": f"Observational profiling failed: {e!s}"
             }

@@ -1,10 +1,8 @@
+import json
+import logging
 import os
 import subprocess
-import logging
-import json
-from typing import Dict, Any
-import logging
-from typing import Dict, Any
+from typing import Any
 
 from gabriel_engine.core.independent_construction import CleanRoomBuilder
 
@@ -21,7 +19,7 @@ class SolomonAgenticClaw:
         else:
             self.workspace_root = workspace_root
 
-    def write_file(self, relative_path: str, content: str) -> Dict[str, Any]:
+    def write_file(self, relative_path: str, content: str) -> dict[str, Any]:
         """
         Writes code or text to a file within Solomon's workspace.
         """
@@ -35,11 +33,11 @@ class SolomonAgenticClaw:
                 f.write(content)
             logger.info(f"Agentic Claw wrote file: {relative_path}")
             return {"status": "success", "file": relative_path, "action": "write"}
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             logger.error(f"Failed to write file {relative_path}: {e}")
             return {"status": "error", "error": str(e)}
 
-    def execute_command(self, command: str) -> Dict[str, Any]:
+    def execute_command(self, command: str) -> dict[str, Any]:
         """
         Executes a shell command in the workspace.
         """
@@ -62,7 +60,7 @@ class SolomonAgenticClaw:
             }
         except subprocess.TimeoutExpired:
             return {"status": "timeout", "error": "Command exceeded 30 seconds."}
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             return {"status": "error", "error": str(e)}
 
     def self_scaffold_feature(self, feature_name: str, objective: str) -> str:
@@ -76,7 +74,7 @@ class SolomonAgenticClaw:
         builder = CleanRoomBuilder()
         try:
             packet, code = builder.build_native_capability(feature_name, objective)
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             return f">> [AGENTIC CLAW] Gabriel Engine failed to synthesize {feature_name}: {e}"
 
         # 2. Claw physically writes the payload to disk for viewing
@@ -87,7 +85,9 @@ class SolomonAgenticClaw:
         # 3. The Self-Healing Brain: Crucible + Healer Engine Validation
         try:
             from gabriel_engine.core.crucible import Crucible
-            from gabriel_engine.core.recursive_optimizer import RecursiveCrucibleOptimizer
+            from gabriel_engine.core.recursive_optimizer import (
+                RecursiveCrucibleOptimizer,
+            )
             
             logger.info(f">> [HEALER ENGINE] Injecting {feature_name} into the Crucible sandbox...")
             crucible = Crucible()
@@ -111,9 +111,9 @@ class SolomonAgenticClaw:
                 final_report = crucible.run_validation(feature_name, injected_errors=0)
                 if final_report.decision != "PROMOTE":
                     return f">> [AGENTIC CLAW] Final Crucible validation failed. Scrapping {feature_name}."
-                logger.info(f">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
+                logger.info(">> [CRUCIBLE] Final validation passed. Promoting healed code to Vault.")
                 
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             return f">> [AGENTIC CLAW] Healer Engine validation crashed: {e}"
 
         # 4. Dynamically Compile and Execute
@@ -139,7 +139,7 @@ class SolomonAgenticClaw:
                     logger.info(f"Dynamic Execution Result for {feature_name}: {result}")
             
             return f">> [AGENTIC CLAW] Gabriel Engine synthesized and dynamically executed {feature_name} successfully."
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             return f">> [AGENTIC CLAW] Compilation/Execution failed for {feature_name}: {e}"
 
     def add_omni_feed(self, category: str, url: str) -> str:
@@ -162,5 +162,5 @@ class SolomonAgenticClaw:
                 
             logger.info(f"Agentic Claw injected new feed into {category}: {url}")
             return f">> [AGENTIC CLAW] Successfully injected {url} into Omni Matrix ({category})."
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             return f">> [AGENTIC CLAW] Failed to inject feed: {e}"

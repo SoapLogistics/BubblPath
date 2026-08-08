@@ -1,6 +1,7 @@
-import time
 import subprocess
-from typing import Dict, Any, List, Optional
+import time
+from typing import Any
+
 
 class BehavioralExperimentationEngine:
     """
@@ -11,10 +12,10 @@ class BehavioralExperimentationEngine:
 
     def run_experiment(
         self,
-        command_or_script: Optional[str] = None,
-        test_scenarios: Optional[List[str]] = None,
+        command_or_script: str | None = None,
+        test_scenarios: list[str] | None = None,
         timeout: int = 5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Runs a suite of experiments on the program to observe its behavior.
         If a shell command is provided, it tries to execute it. Otherwise,
@@ -23,7 +24,7 @@ class BehavioralExperimentationEngine:
         if not test_scenarios:
             test_scenarios = ["normal_execution", "network_failure", "worker_crash", "database_latency"]
 
-        results: Dict[str, Any] = {
+        results: dict[str, Any] = {
             "timestamp": time.time(),
             "scenarios_tested": test_scenarios,
             "observations": {}
@@ -52,7 +53,7 @@ class BehavioralExperimentationEngine:
                     "error": "TimeoutExpired",
                     "latency_sec": timeout
                 }
-            except Exception as e:
+            except Exception as e: # noqa: BLE001
                 results["observations"]["subprocess_execution"] = {
                     "success": False,
                     "error": str(e)

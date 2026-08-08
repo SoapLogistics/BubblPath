@@ -1,11 +1,11 @@
+import logging
 import os
 import sys
-import logging
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from solomon_ingest.connectors.official_rss_connector import OfficialRSSConnector
 from core.solomon_quantized_memory import QuantizedBrainMap
+from solomon_ingest.connectors.official_rss_connector import OfficialRSSConnector
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [KNOWLEDGE_INGEST] %(message)s")
 logger = logging.getLogger("knowledge_ingest")
@@ -46,7 +46,7 @@ def run():
                 arousal=0.5
             )
             ingested_count += 1
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             logger.error(f"Failed to ingest knowledge atom: {e}")
             
     logger.info(f"Knowledge Ingestion Complete. {ingested_count} atoms permanently burned into memory.")
