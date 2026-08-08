@@ -3012,3 +3012,83 @@
 }
 ```
 <!-- FUTURES_DAILY_END:2026-08-05_6e921c6a-e9c2-4474-a30f-1a63fc9038df -->
+
+<!-- FUTURES_DAILY_START:2026-08-08_46d7ebe6-95bd-46e0-90ea-e2d40ae4fcce -->
+### Futures Run 46d7ebe6-95bd-46e0-90ea-e2d40ae4fcce
+```json
+{
+  "run_id": "46d7ebe6-95bd-46e0-90ea-e2d40ae4fcce",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-08_46d7ebe6-95bd-46e0-90ea-e2d40ae4fcce -->
+
+<!-- FUTURES_DAILY_START:2026-08-08_bacd9a0f-72ae-4d3c-9854-e2fcaf1c1e9d -->
+### Futures Run bacd9a0f-72ae-4d3c-9854-e2fcaf1c1e9d
+```json
+{
+  "run_id": "bacd9a0f-72ae-4d3c-9854-e2fcaf1c1e9d",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-08_bacd9a0f-72ae-4d3c-9854-e2fcaf1c1e9d -->
+
+<!-- FUTURES_DAILY_START:2026-08-08_48e68736-3042-4b44-9f2d-dcc42d2524b7 -->
+### Futures Run 48e68736-3042-4b44-9f2d-dcc42d2524b7
+```json
+{
+  "run_id": "48e68736-3042-4b44-9f2d-dcc42d2524b7",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 0,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-08_48e68736-3042-4b44-9f2d-dcc42d2524b7 -->
+
+<!-- FUTURES_DAILY_START:2026-08-08_427a9f7b-9cfc-437c-902a-6cb8341e05c9 -->
+### Futures Run 427a9f7b-9cfc-437c-902a-6cb8341e05c9
+```json
+{
+  "run_id": "427a9f7b-9cfc-437c-902a-6cb8341e05c9",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 1,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-08_427a9f7b-9cfc-437c-902a-6cb8341e05c9 -->
+
+<!-- FUTURES_DAILY_START:2026-08-08_d5018010-a63c-4aec-b6bd-03888a0e34cc -->
+### Futures Run d5018010-a63c-4aec-b6bd-03888a0e34cc
+```json
+{
+  "run_id": "d5018010-a63c-4aec-b6bd-03888a0e34cc",
+  "mode": "TEST",
+  "stats": {
+    "received": 3,
+    "simulated": 3,
+    "confirmed_90": 1,
+    "skipped": 0
+  }
+}
+```
+<!-- FUTURES_DAILY_END:2026-08-08_d5018010-a63c-4aec-b6bd-03888a0e34cc -->

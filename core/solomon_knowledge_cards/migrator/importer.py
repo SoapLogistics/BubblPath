@@ -1,9 +1,13 @@
+import datetime
+import logging
 import os
 import re
-import datetime
-from typing import List, Dict, Any
-from solomon_knowledge_cards.storage.db import DatabaseManager
+
 from solomon_knowledge_cards.models.card import KnowledgeCard
+from solomon_knowledge_cards.storage.db import DatabaseManager
+
+logger = logging.getLogger("doctrine_importer")
+
 
 def validate_safe_path(filepath: str, allowed_base_dir: str = ".") -> str:
     """
@@ -15,15 +19,14 @@ def validate_safe_path(filepath: str, allowed_base_dir: str = ".") -> str:
     abs_file = os.path.abspath(filepath)
 
     # Check for direct path traversal tricks
-    if ".." in filepath or filepath.startswith(("/", "\\")):
-        # If absolute, it must start with the base directory path
-        if not abs_file.startswith(abs_base):
-            raise ValueError(f"Security Violation: Path traversal attempt blocked: {filepath}")
+    if (".." in filepath or filepath.startswith(("/", "\\"))) and not abs_file.startswith(abs_base):
+        raise ValueError(f"Security Violation: Path traversal attempt blocked: {filepath}")
 
     if not abs_file.startswith(abs_base):
         raise ValueError(f"Security Violation: Path falls outside allowed base directory: {filepath}")
 
     return abs_file
+
 
 class DoctrineImporter:
     def __init__(self, db_manager: DatabaseManager):
@@ -31,10 +34,16 @@ class DoctrineImporter:
 
     def parse_card_id(self, filepath: str, content: str) -> str:
         """Attempts to parse card ID from markdown text safely."""
-        match = re.search(r"(?i)card[-_\s]id:\s*([A-Za-z0-9\-]+)", content)
+        match = re.search(r"(?i)card[-_\s]—*id:\s*([A-Za-z0-9\-]+)", content)
         if match:
             # Prevent injection of weird strings into card ID
             clean_id = re.sub(r"[^a-zA-Z0-9\-]", "", match.group(1).strip())
+            return clean_id
+
+        # Also support standard regex
+        match_std = re.search(r"(?i)card[-_\s]id:\s*([A-Za-z0-9\-]+)", content)
+        if match_std:
+            clean_id = re.sub(r"[^a-zA-Z0-9\-]", "", match_std.group(1).strip())
             return clean_id
 
         base = os.path.basename(filepath)
@@ -115,7 +124,7 @@ class DoctrineImporter:
         self.db_manager.store_card(card, updater="doctrine_importer", reason="Initial legacy asset migration")
         return card
 
-    def import_directory(self, dir_path: str) -> List[KnowledgeCard]:
+    def import_directory(self, dir_path: str) -> list[KnowledgeCard]:
         """Recursively finds all .md files in the directory and imports them safely."""
         safe_dir = validate_safe_path(dir_path)
         imported_cards = []
@@ -129,7 +138,7 @@ class DoctrineImporter:
                     try:
                         card = self.import_file(full_path)
                         imported_cards.append(card)
-                    except Exception as e:
-                        print(f"Error importing {full_path}: {e}")
+                    except Exception as e:  # noqa: BLE001
+                        logger.error(f"Error importing {full_path}: {e}")
 
         return imported_cards

@@ -1,33 +1,36 @@
+import hashlib
+import logging
+import math
 import os
 import re
-import math
-import hashlib
-from typing import List, Dict, Any, Optional
 
 try:
     import openai
 except ImportError:
     openai = None
 
+logger = logging.getLogger("semantic_embedder")
+
+
 class SemanticEmbedder:
     def __init__(self, dimension: int = 128):
         self.dimension = dimension
         self.api_key = os.environ.get("OPENAI_API_KEY")
 
-    def _generate_hash_vector(self, text: str) -> List[float]:
+    def _generate_hash_vector(self, text: str) -> list[float]:
         """
         Fallback feature hashing vectorizer (Hashing Trick) in pure Python.
         Deterministic, fixed-dimension, normalized frequency representation.
         """
         # Tokenize text
-        words = [w.lower() for w in re.findall(r'\w+', text)]
+        words = [w.lower() for w in re.findall(r"\w+", text)]
         if not words:
             return [0.0] * self.dimension
 
         vector = [0.0] * self.dimension
         for word in words:
             # Use md5 to deterministically hash word to index in range [0, dimension - 1]
-            h = int(hashlib.md5(word.encode('utf-8')).hexdigest(), 16)
+            h = int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
             idx = h % self.dimension
             vector[idx] += 1.0
 
@@ -38,7 +41,7 @@ class SemanticEmbedder:
 
         return vector
 
-    def get_embedding(self, text: str) -> List[float]:
+    def get_embedding(self, text: str) -> list[float]:
         """
         Retrieves embedding. Uses OpenAI API if configured and available,
         otherwise falls back to deterministic feature hashing vectorizer.
@@ -62,14 +65,14 @@ class SemanticEmbedder:
                         input=[text],
                         model="text-embedding-ada-002"
                     )
-                    return response['data'][0]['embedding']
-            except Exception as e:
+                    return response["data"][0]["embedding"]
+            except Exception as e:  # noqa: BLE001
                 # Log error and fallback gracefully to avoid service disruption
-                print(f"[SemanticEmbedder] OpenAI API error: {e}. Falling back to deterministic hashing vector.")
+                logger.error(f"[SemanticEmbedder] OpenAI API error: {e}. Falling back to deterministic hashing vector.")
 
         return self._generate_hash_vector(text)
 
-    def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
+    def cosine_similarity(self, vec_a: list[float], vec_b: list[float]) -> float:
         """Computes cosine similarity between two numeric lists."""
         if len(vec_a) != len(vec_b) or not vec_a or not vec_b:
             return 0.0

@@ -1,7 +1,22 @@
 import logging
+import warnings
+
+# Suppress the duckduckgo_search renaming RuntimeWarning cleanly by intercepting warnings.warn
+_original_warn = warnings.warn
+
+
+def _safe_warn(message, category=None, stacklevel=1, source=None):
+    if category == RuntimeWarning and "duckduckgo_search" in str(message):
+        return
+    _original_warn(message, category, stacklevel, source)
+
+
+warnings.warn = _safe_warn
+
 from duckduckgo_search import DDGS
 
 logger = logging.getLogger("solomon_web_crawler")
+
 
 class SolomonWebCrawler:
     """
@@ -19,17 +34,17 @@ class SolomonWebCrawler:
         try:
             results = self.ddgs.text(query, max_results=max_results)
             extracted_text = []
-            
+
             for idx, res in enumerate(results):
-                title = res.get('title', 'Unknown Title')
-                body = res.get('body', '')
+                title = res.get("title", "Unknown Title")
+                body = res.get("body", "")
                 extracted_text.append(f"[{idx+1}] {title}: {body}")
-                
+
             if not extracted_text:
                 return f"[WEB CRAWLER FAILURE] No live data found for query: {query}"
-                
+
             return " | ".join(extracted_text)
-            
-        except Exception as e:
+
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[WEB CRAWLER EXCEPTION] {e}")
             return f"[WEB CRAWLER FAILURE] Connection to live internet severed: {e}"
