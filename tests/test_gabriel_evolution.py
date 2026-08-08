@@ -1,8 +1,7 @@
 import os
 import tempfile
 import json
-import pytest
-from app import app, gabriel_loop
+from app import app
 
 # Import target components
 from gabriel_engine.core.ast_injector import ASTCodeInjector

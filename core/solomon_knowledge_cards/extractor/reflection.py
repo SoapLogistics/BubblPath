@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from solomon_knowledge_cards.api.repository import CardRepository
 from solomon_knowledge_cards.models.card import KnowledgeCard
 
@@ -15,7 +15,6 @@ class ReflectionSynthesizer:
         """
         all_cards = self.repository.list_cards()
         failures = [c for c in all_cards if c.card_type == "FAILURE"]
-        repairs = [c for c in all_cards if c.card_type == "REPAIR"]
 
         # Cluster by tags or keywords
         keyword_counts: Dict[str, List[str]] = {}
@@ -77,7 +76,7 @@ class ReflectionSynthesizer:
                     evidence=f"Synthesized from historical failure records: {fail_ids}",
                     why_created=f"To investigate and systematically resolve recurring failure patterns around '{kw}'.",
                     problem_solved=f"Structures active study targets for {len(fail_ids)} unresolved errors.",
-                    future_work_dependent=f"Outcome of this research will drive the creation of new SKILL and REPAIR playbooks."
+                    future_work_dependent="Outcome of this research will drive the creation of new SKILL and REPAIR playbooks."
                 )
 
                 self.repository.create_card(research_card, creator="reflection_synthesizer", reason="Synthesized from recurring failure analysis")
