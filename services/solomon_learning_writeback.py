@@ -1,6 +1,5 @@
 # services/solomon_learning_writeback.py
 import sqlite3
-import os
 
 route_key = "solomon_learning_writeback"
 

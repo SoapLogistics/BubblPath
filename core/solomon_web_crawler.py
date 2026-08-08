@@ -1,4 +1,5 @@
 import logging
+
 from duckduckgo_search import DDGS
 
 logger = logging.getLogger("solomon_web_crawler")

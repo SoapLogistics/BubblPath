@@ -1,18 +1,18 @@
 import os
-import traceback
-import openai
-import threading
-import time
 import subprocess
 import sys
-from flask import Flask, request, jsonify, render_template
+import threading
+import time
+import traceback
 
-from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
-from core.solomon_quantized_memory import QuantizedBrainMap
+import openai
+from flask import Flask, jsonify, render_template, request
+
 from backend.services.futures_dashboard_backend import FuturesDashboardBackend
-from core.solomon_web_crawler import SolomonWebCrawler
 from core.agentic_claw import SolomonAgenticClaw
 from core.solomon_local_llm import SolomonLocalLLM
+from core.solomon_quantized_memory import QuantizedBrainMap
+from gabriel_engine.core.perpetual_loop import GabrielPerpetualLoop
 
 app = Flask(__name__)
 unified_memory = QuantizedBrainMap()
@@ -130,7 +130,7 @@ def handle_unexpected_error(error):
     """
     response = {
         "status": "error",
-        "message": f"Global SOSS Boundary Intercepted Crash: {str(error)}",
+        "message": f"Global SOSS Boundary Intercepted Crash: {error!s}",
         "traceback": traceback.format_exc()
     }
     return jsonify(response), 500
@@ -453,7 +453,7 @@ def assimilate():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"An error occurred during assimilation: {str(e)}",
+            "message": f"An error occurred during assimilation: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -501,7 +501,7 @@ def execute_assimilated_code():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"Execution failed: {str(e)}",
+            "message": f"Execution failed: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -541,7 +541,7 @@ def ast_inject():
         import traceback
         return jsonify({
             "status": "error",
-            "message": f"AST Injection failed: {str(e)}",
+            "message": f"AST Injection failed: {e!s}",
             "traceback": traceback.format_exc()
         }), 500
 
@@ -582,7 +582,7 @@ def optimize_capability():
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Optimization failed: {str(e)}"
+            "message": f"Optimization failed: {e!s}"
         }), 500
 
 
@@ -603,7 +603,7 @@ def observe_and_deconstruct():
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Observational profiling failed: {str(e)}"
+            "message": f"Observational profiling failed: {e!s}"
         }), 500
 
 
@@ -742,7 +742,6 @@ def futures_dashboard():
 
 @app.route("/api/futures/dashboard")
 def api_futures_dashboard():
-    from backend.services.futures_dashboard_backend import FuturesDashboardBackend
     backend = FuturesDashboardBackend()
     return jsonify(backend.get_dashboard_data())
 

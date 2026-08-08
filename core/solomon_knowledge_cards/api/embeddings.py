@@ -1,8 +1,12 @@
+import hashlib
+import logging
+import math
 import os
 import re
-import math
-import hashlib
-from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger("embeddings")
+logger.setLevel(logging.INFO)
+
 
 try:
     import openai
@@ -14,7 +18,7 @@ class SemanticEmbedder:
         self.dimension = dimension
         self.api_key = os.environ.get("OPENAI_API_KEY")
 
-    def _generate_hash_vector(self, text: str) -> List[float]:
+    def _generate_hash_vector(self, text: str) -> list[float]:
         """
         Fallback feature hashing vectorizer (Hashing Trick) in pure Python.
         Deterministic, fixed-dimension, normalized frequency representation.
@@ -38,7 +42,7 @@ class SemanticEmbedder:
 
         return vector
 
-    def get_embedding(self, text: str) -> List[float]:
+    def get_embedding(self, text: str) -> list[float]:
         """
         Retrieves embedding. Uses OpenAI API if configured and available,
         otherwise falls back to deterministic feature hashing vectorizer.
@@ -65,11 +69,11 @@ class SemanticEmbedder:
                     return response['data'][0]['embedding']
             except Exception as e:
                 # Log error and fallback gracefully to avoid service disruption
-                print(f"[SemanticEmbedder] OpenAI API error: {e}. Falling back to deterministic hashing vector.")
+                logger.error(f"[SemanticEmbedder] OpenAI API error: {e}. Falling back to deterministic hashing vector.")
 
         return self._generate_hash_vector(text)
 
-    def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
+    def cosine_similarity(self, vec_a: list[float], vec_b: list[float]) -> float:
         """Computes cosine similarity between two numeric lists."""
         if len(vec_a) != len(vec_b) or not vec_a or not vec_b:
             return 0.0
